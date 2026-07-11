@@ -1,0 +1,778 @@
+fetch("https://discord.com/api/v9/channels/1006358244786196510/threads/search?archived=true&sort_by=last_message_time&sort_order=desc&limit=25&tag_setting=match_some&offset=75", {
+  "headers": {
+    "accept": "*/*",
+    "accept-language": "en-US,en;q=0.9",
+    "authorization": "XXX",
+    "cache-control": "no-cache",
+    "pragma": "no-cache",
+    "priority": "u=1, i",
+    "sec-ch-ua": "\"Google Chrome\";v=\"149\", \"Chromium\";v=\"149\", \"Not)A;Brand\";v=\"24\"",
+    "sec-ch-ua-mobile": "?0",
+    "sec-ch-ua-platform": "\"macOS\"",
+    "sec-fetch-dest": "empty",
+    "sec-fetch-mode": "cors",
+    "sec-fetch-site": "same-origin",
+    "x-debug-options": "bugReporterEnabled",
+    "x-discord-locale": "en-GB",
+    "x-discord-timezone": "Australia/Adelaide",
+    "x-installation-id": "1492269122690744491.cqCnnjLqaxbts2Z0VLZCwyxXfSk",
+ 
+  },
+  "body": null,
+  "method": "GET"
+});
+
+fetch("https://discord.com/api/v9/channels/1006358244786196510/post-data", {
+  "headers": {
+    "accept": "*/*",
+    "accept-language": "en-US,en;q=0.9",
+    "authorization": "XXX",
+    "cache-control": "no-cache",
+    "content-type": "application/json",
+    "pragma": "no-cache",
+    "priority": "u=1, i",
+    "sec-ch-ua": "\"Google Chrome\";v=\"149\", \"Chromium\";v=\"149\", \"Not)A;Brand\";v=\"24\"",
+    "sec-ch-ua-mobile": "?0",
+    "sec-ch-ua-platform": "\"macOS\"",
+    "sec-fetch-dest": "empty",
+    "sec-fetch-mode": "cors",
+    "sec-fetch-site": "same-origin",
+    "x-debug-options": "bugReporterEnabled",
+    "x-discord-locale": "en-GB",
+    "x-discord-timezone": "Australia/Adelaide",
+    "x-installation-id": "1492269122690744491.cqCnnjLqaxbts2Z0VLZCwyxXfSk",
+    "x-super-properties": "eyJvcyI6Ik1hYyBPUyBYIiwiYnJvd3NlciI6IkNocm9tZSIsImRldmljZSI6IiIsInN5c3RlbV9sb2NhbGUiOiJlbi1VUyIsImhhc19jbGllbnRfbW9kcyI6ZmFsc2UsImJyb3dzZXJfdXNlcl9hZ2VudCI6Ik1vemlsbGEvNS4wIChNYWNpbnRvc2g7IEludGVsIE1hYyBPUyBYIDEwXzE1XzcpIEFwcGxlV2ViS2l0LzUzNy4zNiAoS0hUTUwsIGxpa2UgR2Vja28pIENocm9tZS8xNDkuMC4wLjAgU2FmYXJpLzUzNy4zNiIsImJyb3dzZXJfdmVyc2lvbiI6IjE0OS4wLjAuMCIsIm9zX3ZlcnNpb24iOiIxMC4xNS43IiwicmVmZXJyZXIiOiJodHRwczovL2dpdGh1Yi5jb20vYW50aHJvcGljcy9jbGF1ZGUtY29kZSIsInJlZmVycmluZ19kb21haW4iOiJnaXRodWIuY29tIiwicmVmZXJyZXJfY3VycmVudCI6Imh0dHBzOi8vZGlzY29yZC5jb20vZGV2ZWxvcGVycyIsInJlZmVycmluZ19kb21haW5fY3VycmVudCI6ImRpc2NvcmQuY29tIiwicmVsZWFzZV9jaGFubmVsIjoic3RhYmxlIiwiY2xpZW50X2J1aWxkX251bWJlciI6NTc2NzU0LCJjbGllbnRfZXZlbnRfc291cmNlIjpudWxsLCJjbGllbnRfbGF1bmNoX2lkIjoiMjMwYzUzNDktNjM3Yi00ODhjLWI3MDQtNDA1MjIwOGM3MmFmIiwibGF1bmNoX3NpZ25hdHVyZSI6IjBjNDJhNDQ4LTAyMDAtNDEyYi05NDBjLTMxMjQ0MjdiYzcyMSIsImNsaWVudF9oZWFydGJlYXRfc2Vzc2lvbl9pZCI6ImMxZWIzMTY2LWZmZGItNDU2Ni1iODU3LTNjYjc2ODIxNGQ1YiIsImNsaWVudF9hcHBfc3RhdGUiOiJmb2N1c2VkIn0=",
+    "cookie": "__dcfduid=9da86f3080b611f0857ca74b7b865d26; __sdcfduid=9da86f3180b611f0857ca74b7b865d26966378049a8b17bf5cfc2aa9ebd77332c12ebe529431567efafe38d5a19c5061; locale=en-GB; cpa=eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJjbmYiOnsiZSI6IkFRQUIiLCJrdHkiOiJSU0EiLCJuIjoia2FlbndPRU81ay0wWFhSVjM4amdrSE50Uk0xVW14ZDdCVGt6SFFCZXJFVnByLUNuV0NIMUFqbUZ6anR5UHBPejIyUHlhNlNnbnFOVWo4b2lhY0NRTnpKWWpsSVJMTDlKVWlDTTRhS242NWVVZU82TWFUQzAyeVdUYWEyRnp5dHVBNnlaVGtvTzhvUVMyY2FGTzV0NmM0QzB6VmdkLXNnNnc3YXVtV2NzTEI0Vl9XZHRaNmRfYnhHYWdlakZHQ1FkVzQ2YVJva2xHWU1yRE1PdGhqNGotRXUzYmI3cGFUakJSUXRidHJRVGdDSUpmSTRHYUkydzctVTN6bHpLMHJYdDdDUW1zcVpLVXpndjVwOUdTTkoxT2dxVUUwM3l4YWFEbjJCN2c5c2Zab3VLOUdmbmgydGRtMlk3V1NCMzRTclVwa3djRXhsTmVLb0VoN2V6Z3FBLW1RIn0sImV4cCI6MTc4NDMzMDMwMywic3ViIjoiOTIxOTE3NzUiLCJ0aWVyIjoiY29tZXRfcGx1cyJ9.nCZFE4gVeaS1I42fDMJrb5Mhcct3IlkmDaCdKjZIZOh4iGeY6_teM4NTWs5tGfqCnRBN2RDOJrwQakLCp4uTz-eBBjW9uFWx5KLK7xE1l3xff6HzaORG_I1jsKHj6vBkfCixP0JaFRk94s4PU5Gi3Fis1T124dvLf64_FlLGzIlUB4EOrwEC9bMTq9bGnR0r9eBqXXVQbTCXDlM4mMM2NQ2KJ35yAj6quTiGPsU2G2mcFML7M2jqcLW9utM_tY1wLF-pm14mFbKZ215p5P-s6vjH6jzG4fBY_6d2lrL8_Tav0zkyxAt0yGPbOnhlIzzeaqniYDr-NYJjEeRGKBqfFg!eyJhbGciOiJSUzI1NiJ9.eyJkZWZhdWx0Ijp0cnVlLCJkbnQiOmZhbHNlLCJleHAiOjE3ODM3NTA3MDh9.RllSmugmWOyo2scjsxGz5vB9BFFOcm_V8COPMwypZBqI_kPcgO1lGcs3pZZ5p3YHEM9U46daJP_bnpb-tiV8ceOG6lI6u-4vIpcoEtUQ4WKaJizJ4_fveZHwADQ62UZnhlBGaMvAbz3d8WMiEVvKVxn4EMCIGwlWnpKjVYIFZvU0AM50zfVJp485miDCWTGb2kPPfcUWUSljFppBjbFQTach5nD4uDt_TgCy1BXb8aB4FAoNmlDcjNV05G7prbcHH7YV-loSOxzewDKAgG1zh1yI3ukLnBColuXRTYY6a-TfOfgLIG7NifYF3sL6VVkqoWT3uonsdEMMciascqUOXQ; cf_clearance=wJvy_gbg7kvVmizZlsRhYf4TAmsdiE9L1ispqqPQQtI-1783750467-1.2.1.1-VHu5PPwZgNLRYw457nRDaohhH56EoleBhNnWNLQbXsvxWK8cQr2Dz.WEXCeae1QVyBDojNLwcfOhEpYPNc.nsURU_fzhwOo0FZDGKAbSH1TYs3sdCy2fUxk_xvdrO0yag0O1rW3Ujy8jPTFt77oygfqQW_kLe0ka1AbthLol_jOzyxCUF7e7MSp2xRjnQZvfXsHPzZFgptIunxm7txwOSJ5XEFurksONLRz._YlM5rheozOixQm8Cs7wOl4cFD3PhXfk8AAkpJSjp2M5.dqkzT.jDwBjMCTF9hB_reFRT2d9EWHr1c3vTJNjJtbPOU9JswJxzSeFwZNElCEn_i5yzg; OptanonConsent=isGpcEnabled=0&datestamp=Sat+Jul+11+2026+15%3A44%3A27+GMT%2B0930+(Australian+Central+Standard+Time)&version=202501.2.0&browserGpcFlag=0&isIABGlobal=false&hosts=&landingPath=NotLandingPage&groups=C0001%3A1%2CC0002%3A1%2CC0003%3A1%2CC0004%3A1&consentId=b29c9e48-b2ce-4dd6-8dbe-5a333b6db307&interactionCount=0&isAnonUser=1&AwaitingReconsent=false; _cfuvid=nYs4Z6wVJ0IigzoOO7ojdN2EwAGv1Evm4hjxLuk3jC0-1783750467.7173662-1.0.1.1-Bajz.IkJkYNf5dCVW0v1Twy.xPTiPFaF1_ev4vbRI.U",
+    "Referer": "https://discord.com/channels/839993398554656828/1006358244786196510"
+  },
+  "body": "{\"thread_ids\":[\"1524451821895155793\",\"1524450716352122960\",\"1524447232286527488\",\"1524437587467702463\",\"1524437199838380173\",\"1524435340713001110\",\"1524425962450714705\",\"1524409811574329415\",\"1524406320818552852\",\"1524400088192127117\"]}",
+  "method": "POST"
+});
+
+# post-data response
+```
+{
+    "threads": {
+        "1524451821895155793": {
+            "first_message": {
+                "id": "1524451821895155793",
+                "type": 0,
+                "content": "Hi everyone,\nI\u2019m dealing with an urgent access issue and hoping someone here can guide me.\n\nMy GitHub account (username: ShobhitPurva) was suddenly suspended without any warning. My Supabase account is linked only through GitHub OAuth, so I\u2019m now completely locked out of my Supabase dashboard.\n\nI have an important project running on Supabase \u2014 the backend is still functioning, but I cannot access the dashboard, database credentials, environment variables, or any project settings. This has put me in a critical situation because I need to make updates and check the database urgently.\n\nI\u2019ve already contacted GitHub Support and provided all verification details, but I\u2019m stuck until they respond. In the meantime, I\u2019m trying to understand if there\u2019s any way Supabase can help, such as:\n\nTransferring my project to a new Supabase account\nEnabling email/password login for my existing account\nTemporarily bypassing GitHub-only authentication\n\nI can verify ownership through my email (purvashobhit@gmail.com) or any other method required.\nAny guidance or help from the community or team would mean a lot.\nThank you.\n\n\u2014 Shobhit",
+                "channel_id": "1524451821895155793",
+                "author": {
+                    "id": "551823674831798272",
+                    "username": "designjutsu_grandmaster",
+                    "global_name": "GRANDMASTER",
+                    "avatar": "7dea1c29edebbeffb023ee9dd5b9cb3e",
+                    "avatar_decoration_data": null,
+                    "collectibles": null,
+                    "discriminator": "0",
+                    "display_name_styles": null,
+                    "public_flags": 0,
+                    "primary_guild": null,
+                    "clan": null
+                },
+                "attachments": [],
+                "embeds": [],
+                "mentions": [],
+                "mention_roles": [],
+                "mention_everyone": false,
+                "pinned": false,
+                "tts": false,
+                "timestamp": "2026-07-08T16:27:17.285000+00:00",
+                "edited_timestamp": null,
+                "flags": 0,
+                "components": [],
+                "position": 0
+            },
+            "owner": {
+                "avatar": null,
+                "banner": null,
+                "communication_disabled_until": null,
+                "flags": 42,
+                "joined_at": "2026-07-08T16:22:48.757000+00:00",
+                "nick": null,
+                "pending": false,
+                "premium_since": null,
+                "roles": [],
+                "unusual_dm_activity_until": null,
+                "user": {
+                    "id": "551823674831798272",
+                    "username": "designjutsu_grandmaster",
+                    "global_name": "GRANDMASTER",
+                    "avatar": "7dea1c29edebbeffb023ee9dd5b9cb3e",
+                    "avatar_decoration_data": null,
+                    "collectibles": null,
+                    "discriminator": "0",
+                    "display_name_styles": null,
+                    "public_flags": 0,
+                    "primary_guild": null,
+                    "clan": null
+                },
+                "mute": false,
+                "deaf": false
+            }
+        },
+        "1524450716352122960": {
+            "first_message": {
+                "id": "1524450716352122960",
+                "type": 0,
+                "content": "I'm waiting for more than 2h for the restoring of a paused db.\nBut, look at the logs, there is something wrong!\nI have already opened a support ticket, but since I'm in the free plan, I have no idea if they will solve this...\nAnyone can help me?\nGreetings from Brazil!",
+                "channel_id": "1524450716352122960",
+                "author": {
+                    "id": "294098877479518209",
+                    "username": "zeekbr",
+                    "global_name": "Zeka Cardoso",
+                    "avatar": "cdd919a9c2387957212d94a40072941e",
+                    "avatar_decoration_data": null,
+                    "collectibles": {
+                        "nameplate": {
+                            "asset": "nameplates/tarot/towers_strike/",
+                            "palette": "cobalt",
+                            "label": "COLLECTIBLES_TAROT_TOWERS_STRIKE_NP_A11Y",
+                            "sku_id": "1461062060279464048",
+                            "expires_at": null
+                        }
+                    },
+                    "discriminator": "0",
+                    "display_name_styles": null,
+                    "public_flags": 0,
+                    "primary_guild": null,
+                    "clan": null
+                },
+                "attachments": [
+                    {
+                        "id": "1524450717815931131",
+                        "filename": "image.png",
+                        "size": 63818,
+                        "url": "https://cdn.discordapp.com/attachments/1524450716352122960/1524450717815931131/image.png?ex=6a53169e&is=6a51c51e&hm=5ec7459f4fa9eab2e7ac67b856b87fdce4fda02949497510849f084364e82e24&",
+                        "proxy_url": "https://media.discordapp.net/attachments/1524450716352122960/1524450717815931131/image.png?ex=6a53169e&is=6a51c51e&hm=5ec7459f4fa9eab2e7ac67b856b87fdce4fda02949497510849f084364e82e24&",
+                        "width": 1492,
+                        "height": 504,
+                        "placeholder": "CAgCAoCPZYhoh0iV+zzMn6M=",
+                        "placeholder_version": 1,
+                        "content_type": "image/webp",
+                        "original_content_type": "image/png",
+                        "content_scan_version": 4
+                    }
+                ],
+                "embeds": [],
+                "mentions": [],
+                "mention_roles": [],
+                "mention_everyone": false,
+                "pinned": false,
+                "tts": false,
+                "timestamp": "2026-07-08T16:22:53.703000+00:00",
+                "edited_timestamp": "2026-07-08T16:28:51.587000+00:00",
+                "flags": 0,
+                "components": [],
+                "position": 0
+            },
+            "owner": {
+                "avatar": null,
+                "banner": null,
+                "communication_disabled_until": null,
+                "flags": 42,
+                "joined_at": "2026-06-07T22:53:27.935000+00:00",
+                "nick": null,
+                "pending": false,
+                "premium_since": null,
+                "roles": [],
+                "unusual_dm_activity_until": null,
+                "user": {
+                    "id": "294098877479518209",
+                    "username": "zeekbr",
+                    "global_name": "Zeka Cardoso",
+                    "avatar": "cdd919a9c2387957212d94a40072941e",
+                    "avatar_decoration_data": null,
+                    "collectibles": {
+                        "nameplate": {
+                            "asset": "nameplates/tarot/towers_strike/",
+                            "palette": "cobalt",
+                            "label": "COLLECTIBLES_TAROT_TOWERS_STRIKE_NP_A11Y",
+                            "sku_id": "1461062060279464048",
+                            "expires_at": null
+                        }
+                    },
+                    "discriminator": "0",
+                    "display_name_styles": null,
+                    "public_flags": 0,
+                    "primary_guild": null,
+                    "clan": null
+                },
+                "mute": false,
+                "deaf": false
+            }
+        },
+        "1524447232286527488": {
+            "first_message": {
+                "id": "1524447232286527488",
+                "type": 0,
+                "content": "For about two weeks now, my project has been behaving like the screenshot and I can't use the database. I'm using Supabase for the database of my Discord bot, but I'm a beginner with Supabase and don't know how to fix it. Could you please tell me how to resolve this?\nI'm currently using the free plan btw, pleas lmk if I need tell any other information",
+                "channel_id": "1524447232286527488",
+                "author": {
+                    "id": "746239899446804590",
+                    "username": "gomishan",
+                    "global_name": "gomi\u3057\u3083\u3093",
+                    "avatar": "754d3742ab86fabc0c530438116d371e",
+                    "avatar_decoration_data": null,
+                    "collectibles": {
+                        "nameplate": {
+                            "asset": "nameplates/nameplates_v3/touch_grass/",
+                            "palette": "sky",
+                            "label": "COLLECTIBLES_NAMEPLATES_VOL_3_TOUCH_GRASS_A11Y",
+                            "sku_id": "1382845914317852693",
+                            "expires_at": null
+                        }
+                    },
+                    "discriminator": "0",
+                    "display_name_styles": null,
+                    "public_flags": 128,
+                    "primary_guild": null,
+                    "clan": null
+                },
+                "attachments": [
+                    {
+                        "id": "1524447232609484890",
+                        "filename": "supa.png",
+                        "size": 75941,
+                        "url": "https://cdn.discordapp.com/attachments/1524447232286527488/1524447232609484890/supa.png?ex=6a53135f&is=6a51c1df&hm=cfc8c53a5335e2103857abfaeb9fac8c1c7b59b1249717a3ee444cbcd4a3961f&",
+                        "proxy_url": "https://media.discordapp.net/attachments/1524447232286527488/1524447232609484890/supa.png?ex=6a53135f&is=6a51c1df&hm=cfc8c53a5335e2103857abfaeb9fac8c1c7b59b1249717a3ee444cbcd4a3961f&",
+                        "width": 1919,
+                        "height": 965,
+                        "placeholder": "BvgBBICaqJiPeHiMeHmIj4/4+A==",
+                        "placeholder_version": 1,
+                        "content_type": "image/png",
+                        "original_content_type": "image/png",
+                        "content_scan_version": 4
+                    },
+                    {
+                        "id": "1524447232982646877",
+                        "filename": "image.png",
+                        "size": 13982,
+                        "url": "https://cdn.discordapp.com/attachments/1524447232286527488/1524447232982646877/image.png?ex=6a53135f&is=6a51c1df&hm=1fe86db8250f6279a8d1b39bbe68f8565ce41ade45a690eee85b1ecfd75de1cb&",
+                        "proxy_url": "https://media.discordapp.net/attachments/1524447232286527488/1524447232982646877/image.png?ex=6a53135f&is=6a51c1df&hm=1fe86db8250f6279a8d1b39bbe68f8565ce41ade45a690eee85b1ecfd75de1cb&",
+                        "width": 246,
+                        "height": 462,
+                        "placeholder": "CfgFBABMA4h4ZoN4Z4g7v1/zyg==",
+                        "placeholder_version": 1,
+                        "content_type": "image/webp",
+                        "original_content_type": "image/png",
+                        "content_scan_version": 4
+                    }
+                ],
+                "embeds": [],
+                "mentions": [],
+                "mention_roles": [],
+                "mention_everyone": false,
+                "pinned": false,
+                "tts": false,
+                "timestamp": "2026-07-08T16:09:03.037000+00:00",
+                "edited_timestamp": null,
+                "flags": 0,
+                "components": [],
+                "position": 0
+            },
+            "owner": {
+                "avatar": null,
+                "banner": null,
+                "communication_disabled_until": null,
+                "flags": 42,
+                "joined_at": "2026-07-08T15:53:20.556000+00:00",
+                "nick": null,
+                "pending": false,
+                "premium_since": null,
+                "roles": [],
+                "unusual_dm_activity_until": null,
+                "user": {
+                    "id": "746239899446804590",
+                    "username": "gomishan",
+                    "global_name": "gomi\u3057\u3083\u3093",
+                    "avatar": "754d3742ab86fabc0c530438116d371e",
+                    "avatar_decoration_data": null,
+                    "collectibles": {
+                        "nameplate": {
+                            "asset": "nameplates/nameplates_v3/touch_grass/",
+                            "palette": "sky",
+                            "label": "COLLECTIBLES_NAMEPLATES_VOL_3_TOUCH_GRASS_A11Y",
+                            "sku_id": "1382845914317852693",
+                            "expires_at": null
+                        }
+                    },
+                    "discriminator": "0",
+                    "display_name_styles": null,
+                    "public_flags": 128,
+                    "primary_guild": null,
+                    "clan": null
+                },
+                "mute": false,
+                "deaf": false
+            }
+        },
+        "1524437587467702463": {
+            "first_message": {
+                "id": "1524437587467702463",
+                "type": 0,
+                "content": "<#1006358244786196510> \n\n I never had mfa i was always using gh authentication to login. now it is asking me mfa which i never had it. I can see it recognize me and i am logged in but when i click on anything it asks me for mfa <#1006358244786196510>",
+                "channel_id": "1524437587467702463",
+                "author": {
+                    "id": "1058036281298399342",
+                    "username": "lohani2457",
+                    "global_name": "lohani",
+                    "avatar": null,
+                    "avatar_decoration_data": null,
+                    "collectibles": null,
+                    "discriminator": "0",
+                    "display_name_styles": null,
+                    "public_flags": 0,
+                    "primary_guild": null,
+                    "clan": null
+                },
+                "attachments": [],
+                "embeds": [],
+                "mentions": [],
+                "mention_roles": [],
+                "mention_everyone": false,
+                "pinned": false,
+                "tts": false,
+                "timestamp": "2026-07-08T15:30:43.533000+00:00",
+                "edited_timestamp": null,
+                "flags": 0,
+                "components": [],
+                "position": 0
+            },
+            "owner": {
+                "avatar": null,
+                "banner": null,
+                "communication_disabled_until": null,
+                "flags": 42,
+                "joined_at": "2026-07-08T15:13:35.869000+00:00",
+                "nick": null,
+                "pending": false,
+                "premium_since": null,
+                "roles": [],
+                "unusual_dm_activity_until": null,
+                "user": {
+                    "id": "1058036281298399342",
+                    "username": "lohani2457",
+                    "global_name": "lohani",
+                    "avatar": null,
+                    "avatar_decoration_data": null,
+                    "collectibles": null,
+                    "discriminator": "0",
+                    "display_name_styles": null,
+                    "public_flags": 0,
+                    "primary_guild": null,
+                    "clan": null
+                },
+                "mute": false,
+                "deaf": false
+            }
+        },
+        "1524437199838380173": {
+            "first_message": {
+                "id": "1524437199838380173",
+                "type": 0,
+                "content": "All of a sudden today my project has been throwing this error constantly:\n\nClient side:\n```\n\u26d4 ServerException constructed: FunctionException(status: 401, details: {code: UNAUTHORIZED_LEGACY_JWT, message: Invalid JWT}, reasonPhrase: Unauthorized)\n```\n\nI log my session and tokens before I run and they are all present. \n```\n[get-square-cafe-menu]: \nhasSession=true, \nhasAccessToken=true, \nuserId=7afaf9cf-8a33-4e73-bf85-6db742de8d18, \nexpiresAt=2026-07-11T15:00:27.000Z, \ntokenAlg=HS256, \ntokenRole=authenticated, \ntokenRef=null,\n```\neverything else works in terms of reaching postgres but its just these edge functions that are now saying I have an invalid JWT. Ive logged out and back in. \n\nWhen I look at the actual edge function logs there are none which means its not even being reached.\n\nThis is affecting my production clients too. It's never happened before and I haven't changed anything its only just today that this has started happening.",
+                "channel_id": "1524437199838380173",
+                "author": {
+                    "id": "1265517605720948757",
+                    "username": "o3tech",
+                    "global_name": "ken",
+                    "avatar": "d2f71c73269a25fd36ab6bd56c9e355c",
+                    "avatar_decoration_data": null,
+                    "collectibles": null,
+                    "discriminator": "0",
+                    "display_name_styles": null,
+                    "public_flags": 0,
+                    "primary_guild": null,
+                    "clan": null
+                },
+                "attachments": [],
+                "embeds": [],
+                "mentions": [],
+                "mention_roles": [],
+                "mention_everyone": false,
+                "pinned": false,
+                "tts": false,
+                "timestamp": "2026-07-08T15:29:11.115000+00:00",
+                "edited_timestamp": "2026-07-08T15:34:08.003000+00:00",
+                "flags": 0,
+                "components": [],
+                "position": 0
+            },
+            "owner": {
+                "avatar": null,
+                "banner": null,
+                "communication_disabled_until": null,
+                "flags": 106,
+                "joined_at": "2026-07-08T15:25:43.238000+00:00",
+                "nick": null,
+                "pending": false,
+                "premium_since": null,
+                "roles": [],
+                "unusual_dm_activity_until": null,
+                "user": {
+                    "id": "1265517605720948757",
+                    "username": "o3tech",
+                    "global_name": "ken",
+                    "avatar": "d2f71c73269a25fd36ab6bd56c9e355c",
+                    "avatar_decoration_data": null,
+                    "collectibles": null,
+                    "discriminator": "0",
+                    "display_name_styles": null,
+                    "public_flags": 0,
+                    "primary_guild": null,
+                    "clan": null
+                },
+                "mute": false,
+                "deaf": false
+            }
+        },
+        "1524435340713001110": {
+            "first_message": {
+                "id": "1524435340713001110",
+                "type": 0,
+                "content": "Hi,\n\nI'm migrating a production application to a new Supabase project.\n\nWhile deploying Edge Functions, deployment stops with the following error:\n\nunexpected create function status 402:\n{\"message\":\"Max number of functions reached for project\"}\n\nEnvironment:\n- Project plan: Free\n- Supabase CLI: 2.109.1\n- Successfully deployed: 105 Edge Functions\n- Deployment fails when deploying the remaining functions (total required is about 135).\n\nMy questions are:\n\n1. Is this a limitation of the Free plan?\n2. If I upgrade this project to the Pro plan, will I be able to deploy around 135 Edge Functions?\n3. Or is there a separate Edge Function count limit that requires contacting Supabase Support?\n\nI'd like to confirm this before upgrading the project.\n\nThanks!",
+                "channel_id": "1524435340713001110",
+                "author": {
+                    "id": "1291267040258297886",
+                    "username": "manish_45247",
+                    "global_name": "Manish",
+                    "avatar": "987c844ea9da6728d6d19931a26c7007",
+                    "avatar_decoration_data": null,
+                    "collectibles": null,
+                    "discriminator": "0",
+                    "display_name_styles": null,
+                    "public_flags": 0,
+                    "primary_guild": null,
+                    "clan": null
+                },
+                "attachments": [],
+                "embeds": [],
+                "mentions": [],
+                "mention_roles": [],
+                "mention_everyone": false,
+                "pinned": false,
+                "tts": false,
+                "timestamp": "2026-07-08T15:21:47.865000+00:00",
+                "edited_timestamp": null,
+                "flags": 0,
+                "components": [],
+                "position": 0
+            },
+            "owner": {
+                "avatar": null,
+                "banner": null,
+                "communication_disabled_until": null,
+                "flags": 42,
+                "joined_at": "2026-07-08T15:12:46.913000+00:00",
+                "nick": null,
+                "pending": false,
+                "premium_since": null,
+                "roles": [],
+                "unusual_dm_activity_until": null,
+                "user": {
+                    "id": "1291267040258297886",
+                    "username": "manish_45247",
+                    "global_name": "Manish",
+                    "avatar": "987c844ea9da6728d6d19931a26c7007",
+                    "avatar_decoration_data": null,
+                    "collectibles": null,
+                    "discriminator": "0",
+                    "display_name_styles": null,
+                    "public_flags": 0,
+                    "primary_guild": null,
+                    "clan": null
+                },
+                "mute": false,
+                "deaf": false
+            }
+        },
+        "1524425962450714705": {
+            "first_message": {
+                "id": "1524425962450714705",
+                "type": 0,
+                "content": "all services are down.. auth is returning 522\na simple query is returning timeout\n\n\n``` Error: Failed to run sql query: Connection terminated due to connection timeout```",
+                "channel_id": "1524425962450714705",
+                "author": {
+                    "id": "389747714897739776",
+                    "username": "feras532",
+                    "global_name": "Feras",
+                    "avatar": "9f0b5f315d6b13132b7877f0c8a5f2a6",
+                    "avatar_decoration_data": null,
+                    "collectibles": null,
+                    "discriminator": "0",
+                    "display_name_styles": null,
+                    "public_flags": 0,
+                    "primary_guild": null,
+                    "clan": null
+                },
+                "attachments": [
+                    {
+                        "id": "1524425962702377114",
+                        "filename": "image.png",
+                        "size": 26536,
+                        "url": "https://cdn.discordapp.com/attachments/1524425962450714705/1524425962702377114/image.png?ex=6a52ff8f&is=6a51ae0f&hm=4a896f3edc493af7cc7e155605859d9028534c5e5507c73a6dd6af4f987a4b18&",
+                        "proxy_url": "https://media.discordapp.net/attachments/1524425962450714705/1524425962702377114/image.png?ex=6a52ff8f&is=6a51ae0f&hm=4a896f3edc493af7cc7e155605859d9028534c5e5507c73a6dd6af4f987a4b18&",
+                        "width": 744,
+                        "height": 567,
+                        "placeholder": "B/gBBYB/NDTbSVXfWGSsmXUBWA1k",
+                        "placeholder_version": 1,
+                        "content_type": "image/png",
+                        "original_content_type": "image/png",
+                        "content_scan_version": 4
+                    }
+                ],
+                "embeds": [],
+                "mentions": [],
+                "mention_roles": [],
+                "mention_everyone": false,
+                "pinned": false,
+                "tts": false,
+                "timestamp": "2026-07-08T14:44:31.913000+00:00",
+                "edited_timestamp": null,
+                "flags": 0,
+                "components": [],
+                "position": 0
+            },
+            "owner": {
+                "avatar": null,
+                "banner": null,
+                "communication_disabled_until": null,
+                "flags": 42,
+                "joined_at": "2026-07-08T14:11:39.800000+00:00",
+                "nick": null,
+                "pending": false,
+                "premium_since": null,
+                "roles": [],
+                "unusual_dm_activity_until": null,
+                "user": {
+                    "id": "389747714897739776",
+                    "username": "feras532",
+                    "global_name": "Feras",
+                    "avatar": "9f0b5f315d6b13132b7877f0c8a5f2a6",
+                    "avatar_decoration_data": null,
+                    "collectibles": null,
+                    "discriminator": "0",
+                    "display_name_styles": null,
+                    "public_flags": 0,
+                    "primary_guild": null,
+                    "clan": null
+                },
+                "mute": false,
+                "deaf": false
+            }
+        },
+        "1524409811574329415": {
+            "first_message": {
+                "id": "1524409811574329415",
+                "type": 0,
+                "content": "Project: algo-only\nProject ID: ufbjvkcoskztywngfbxf\nProject URL: https://ufbjvkcoskztywngfbxf.supabase.co\n\nWe are completing a Cloud VAPT security revalidation and need two platform-level changes on our hosted Postgres database that cannot be done from the SQL Editor.\n\n---\n\nREQUEST 1 \u2014 Remove expired role cli_login_postgres\n\nOur auditor requires the expired role \"cli_login_postgres\" to be removed entirely from pg_roles.\n\nBackground:\n- Leftover CLI login role (rolvaliduntil 2026-04-23, already expired).\n- We already ran: ALTER ROLE cli_login_postgres NOLOGIN;\n- DROP ROLE from SQL Editor (as postgres) does not remove it \u2014 role still appears in pg_roles (permission denied / administered by supabase_admin).\n\nPlease:\n1. Reassign/drop any objects owned by cli_login_postgres.\n2. DROP ROLE cli_login_postgres.\n3. Confirm when removed (we verify with: SELECT rolname FROM pg_roles WHERE rolname = 'cli_login_postgres'; \u2014 must return 0 rows).\n\n---\n\nREQUEST 2 \u2014 Enable DML audit logging (pgaudit)\n\nAuditor requires DML log capturing. Please:\n1. Ensure pgaudit extension is enabled (if not already).\n2. Set platform-level parameter pgaudit.log to 'write' (or at minimum 'read,write') so INSERT/UPDATE/DELETE are captured in Postgres logs.\n\nPlease confirm the effective pgaudit.log value once applied.\n\nThank you.",
+                "channel_id": "1524409811574329415",
+                "author": {
+                    "id": "1499352821819244554",
+                    "username": "rexceo.",
+                    "global_name": "Rexceo",
+                    "avatar": null,
+                    "avatar_decoration_data": null,
+                    "collectibles": null,
+                    "discriminator": "0",
+                    "display_name_styles": null,
+                    "public_flags": 0,
+                    "primary_guild": null,
+                    "clan": null
+                },
+                "attachments": [],
+                "embeds": [],
+                "mentions": [],
+                "mention_roles": [],
+                "mention_everyone": false,
+                "pinned": false,
+                "tts": false,
+                "timestamp": "2026-07-08T13:40:21.244000+00:00",
+                "edited_timestamp": null,
+                "flags": 0,
+                "components": [],
+                "position": 0
+            },
+            "owner": {
+                "avatar": null,
+                "banner": null,
+                "communication_disabled_until": null,
+                "flags": 42,
+                "joined_at": "2026-07-08T13:39:19.650000+00:00",
+                "nick": null,
+                "pending": false,
+                "premium_since": null,
+                "roles": [],
+                "unusual_dm_activity_until": null,
+                "user": {
+                    "id": "1499352821819244554",
+                    "username": "rexceo.",
+                    "global_name": "Rexceo",
+                    "avatar": null,
+                    "avatar_decoration_data": null,
+                    "collectibles": null,
+                    "discriminator": "0",
+                    "display_name_styles": null,
+                    "public_flags": 0,
+                    "primary_guild": null,
+                    "clan": null
+                },
+                "mute": false,
+                "deaf": false
+            }
+        },
+        "1524406320818552852": {
+            "first_message": {
+                "id": "1524406320818552852",
+                "type": 0,
+                "content": "Hey there,\n\nI set up a pro supabase account for a project I was working on with some friends and haven't touched it in the last 6 months. I'm pretty sure the account never got used. I think they did something on their own.\n\nI've been charged for it for the last 6 months. I had logged into it and created the account via GitHub, but that GitHub account got flagged for some reason, probably because I set it up specifically for the project and then just never used it. I can't log in to Supabase from that account.\n\nIt's been charging me every month, and I can't cancel it. When I reached out to the legal team at Supabase, I got one reply two weeks ago and have been ignored since then. Trying to resolve this matter as soon as possible. Thank you for your attention and help in this matter.",
+                "channel_id": "1524406320818552852",
+                "author": {
+                    "id": "1308237505065385996",
+                    "username": "tristanthomas0716",
+                    "global_name": "Tristan Thomas",
+                    "avatar": "d4047e3151576eb5326c76d3dc80af0e",
+                    "avatar_decoration_data": null,
+                    "collectibles": null,
+                    "discriminator": "0",
+                    "display_name_styles": null,
+                    "public_flags": 0,
+                    "primary_guild": null,
+                    "clan": null
+                },
+                "attachments": [],
+                "embeds": [],
+                "mentions": [],
+                "mention_roles": [],
+                "mention_everyone": false,
+                "pinned": false,
+                "tts": false,
+                "timestamp": "2026-07-08T13:26:28.983000+00:00",
+                "edited_timestamp": null,
+                "flags": 0,
+                "components": [],
+                "position": 0
+            },
+            "owner": {
+                "avatar": null,
+                "banner": null,
+                "communication_disabled_until": null,
+                "flags": 42,
+                "joined_at": "2026-07-08T13:22:22.024000+00:00",
+                "nick": null,
+                "pending": false,
+                "premium_since": null,
+                "roles": [],
+                "unusual_dm_activity_until": null,
+                "user": {
+                    "id": "1308237505065385996",
+                    "username": "tristanthomas0716",
+                    "global_name": "Tristan Thomas",
+                    "avatar": "d4047e3151576eb5326c76d3dc80af0e",
+                    "avatar_decoration_data": null,
+                    "collectibles": null,
+                    "discriminator": "0",
+                    "display_name_styles": null,
+                    "public_flags": 0,
+                    "primary_guild": null,
+                    "clan": null
+                },
+                "mute": false,
+                "deaf": false
+            }
+        },
+        "1524400088192127117": {
+            "first_message": {
+                "id": "1524400088192127117",
+                "type": 0,
+                "content": "Hi everyone,\n\nI\u2019m on the Supabase Pro plan and I have an urgent production issue.\n\nMy support ticket is SU-414815.\n\nMy project restore failed, and my production environment has now been completely down for more than 24 hours. The support team has already escalated my case to the infrastructure team, but I haven\u2019t received any update since then.\n\nThis outage is having a serious impact on my business, and I am receiving many messages from customers because my services are unavailable.\n\nIf someone from the Supabase team could please check the status of ticket SU-414815 or help prioritize it, I would be extremely grateful.\n\nThank you very much.",
+                "channel_id": "1524400088192127117",
+                "author": {
+                    "id": "308973741822705665",
+                    "username": "d4rkai",
+                    "global_name": "D4rKai",
+                    "avatar": "17a9a77e4f382ab90c9b1a10062c0895",
+                    "avatar_decoration_data": {
+                        "asset": "a_af5ee420e5f860ff2cdbb5fa4633f2cf",
+                        "sku_id": "1306752744258011166",
+                        "expires_at": null
+                    },
+                    "collectibles": null,
+                    "discriminator": "0",
+                    "display_name_styles": null,
+                    "public_flags": 0,
+                    "primary_guild": {
+                        "identity_guild_id": "642868895241338896",
+                        "identity_enabled": true,
+                        "tag": "LGND",
+                        "badge": "14f2ea49ddc1fc5ff3f60951c3bd1c67"
+                    },
+                    "clan": {
+                        "identity_guild_id": "642868895241338896",
+                        "identity_enabled": true,
+                        "tag": "LGND",
+                        "badge": "14f2ea49ddc1fc5ff3f60951c3bd1c67"
+                    }
+                },
+                "attachments": [],
+                "embeds": [],
+                "mentions": [],
+                "mention_roles": [],
+                "mention_everyone": false,
+                "pinned": false,
+                "tts": false,
+                "timestamp": "2026-07-08T13:01:43.009000+00:00",
+                "edited_timestamp": null,
+                "flags": 0,
+                "components": [],
+                "position": 0
+            },
+            "owner": {
+                "avatar": null,
+                "banner": null,
+                "communication_disabled_until": null,
+                "flags": 42,
+                "joined_at": "2026-07-08T12:58:34.592000+00:00",
+                "nick": null,
+                "pending": false,
+                "premium_since": null,
+                "roles": [],
+                "unusual_dm_activity_until": null,
+                "user": {
+                    "id": "308973741822705665",
+                    "username": "d4rkai",
+                    "global_name": "D4rKai",
+                    "avatar": "17a9a77e4f382ab90c9b1a10062c0895",
+                    "avatar_decoration_data": {
+                        "asset": "a_af5ee420e5f860ff2cdbb5fa4633f2cf",
+                        "sku_id": "1306752744258011166",
+                        "expires_at": null
+                    },
+                    "collectibles": null,
+                    "discriminator": "0",
+                    "display_name_styles": null,
+                    "public_flags": 0,
+                    "primary_guild": {
+                        "identity_guild_id": "642868895241338896",
+                        "identity_enabled": true,
+                        "tag": "LGND",
+                        "badge": "14f2ea49ddc1fc5ff3f60951c3bd1c67"
+                    },
+                    "clan": {
+                        "identity_guild_id": "642868895241338896",
+                        "identity_enabled": true,
+                        "tag": "LGND",
+                        "badge": "14f2ea49ddc1fc5ff3f60951c3bd1c67"
+                    }
+                },
+                "mute": false,
+                "deaf": false
+            }
+        }
+    }
+}
+```
+
