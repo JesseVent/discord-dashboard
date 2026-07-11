@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import {
   Card,
   CardContent,
@@ -26,10 +26,14 @@ import {
   Sparkles,
   Database,
   Trash2,
+  KeyRound,
+  ListChecks,
+  ShieldCheck,
 } from 'lucide-react';
 import { useDashboardStore } from '@/store/dashboard-store';
 import {
   fetchFromDiscord,
+  getDiscordEnvConfig,
   loadSampleData,
   loadFromJsonFile,
   runThemeAnalysis,
@@ -42,9 +46,12 @@ export function ConfigPanel() {
     setConfig,
     issues,
     themes,
+    themeMethod,
     source,
     lastFetchedAt,
     progress,
+    envConfig,
+    setEnvConfig,
     setIssues,
     setThemes,
     setTotalResults,
@@ -56,19 +63,30 @@ export function ConfigPanel() {
   } = useDashboardStore();
 
   const [open, setOpen] = useState(false);
-  const [maxThreads, setMaxThreads] = useState(50);
+  const [maxThreads, setMaxThreads] = useState(200);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
+
+  // Query server-side env config once on mount
+  useEffect(() => {
+    getDiscordEnvConfig().then((c) => setEnvConfig(c));
+  }, [setEnvConfig]);
+
+  const hasEnvToken = !!envConfig?.hasEnvToken;
+  const hasEnvChannel = !!envConfig?.hasEnvChannelId;
+  const canFetchFromDiscord = !!authToken || hasEnvToken;
+  const usingEnvCreds = !authToken && hasEnvToken;
 
   async function handleFetch() {
     setErr(null);
     setBusy(true);
     try {
       setProgress({ stage: 'fetching-threads', fetchedCount: 0, totalResults: 0, message: 'Starting…' });
+      // Pass empty strings — server will fall back to env vars
       const { issues: newIssues, totalResults, hasMore } = await fetchFromDiscord({
-        channelId,
-        authToken,
+        channelId: channelId || '',
+        authToken: authToken || '',
         maxThreads,
         fetchMissingDetails: true,
         onProgress: (stage, fetched, total, message) => {
@@ -81,8 +99,8 @@ export function ConfigPanel() {
       setSource('discord');
 
       setProgress({ stage: 'analyzing-themes', message: 'Analyzing themes with LLM…' });
-      const newThemes = await runThemeAnalysis(newIssues);
-      setThemes(newThemes);
+      const newThemes = await runThemeAnalysis(newIssues, 'llm');
+      setThemes(newThemes, 'llm');
       markFetched();
     } catch (e) {
       setErr(e instanceof Error ? e.message : String(e));
@@ -104,8 +122,8 @@ export function ConfigPanel() {
       setSource('sample');
 
       setProgress({ stage: 'analyzing-themes', message: 'Analyzing themes with LLM…' });
-      const newThemes = await runThemeAnalysis(newIssues);
-      setThemes(newThemes);
+      const newThemes = await runThemeAnalysis(newIssues, 'llm');
+      setThemes(newThemes, 'llm');
       markFetched();
     } catch (e) {
       setErr(e instanceof Error ? e.message : String(e));
@@ -129,8 +147,8 @@ export function ConfigPanel() {
       setSource('upload');
 
       setProgress({ stage: 'analyzing-themes', message: 'Analyzing themes with LLM…' });
-      const newThemes = await runThemeAnalysis(newIssues);
-      setThemes(newThemes);
+      const newThemes = await runThemeAnalysis(newIssues, 'llm');
+      setThemes(newThemes, 'llm');
       markFetched();
     } catch (err) {
       setErr(err instanceof Error ? err.message : String(err));
@@ -141,14 +159,32 @@ export function ConfigPanel() {
     }
   }
 
-  async function handleReanalyzeThemes() {
+  async function handleReanalyzeLLM() {
     if (issues.length === 0) return;
     setErr(null);
     setBusy(true);
     try {
       setProgress({ stage: 'analyzing-themes', message: 'Re-analyzing themes with LLM…' });
-      const newThemes = await runThemeAnalysis(issues);
-      setThemes(newThemes);
+      const newThemes = await runThemeAnalysis(issues, 'llm');
+      setThemes(newThemes, 'llm');
+      markFetched();
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : String(e));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function handleReanalyzeFallback() {
+    if (issues.length === 0) return;
+    setErr(null);
+    setBusy(true);
+    try {
+      setProgress({ stage: 'analyzing-themes', message: 'Generating keyword themes…' });
+      // Run async so UI can show the spinner briefly
+      await new Promise((r) => setTimeout(r, 50));
+      const newThemes = await runThemeAnalysis(issues, 'fallback');
+      setThemes(newThemes, 'fallback');
       markFetched();
     } catch (e) {
       setErr(e instanceof Error ? e.message : String(e));
@@ -176,6 +212,12 @@ export function ConfigPanel() {
                     {issues.length} issues loaded
                   </Badge>
                 ) : null}
+                {themeMethod ? (
+                  <Badge variant="outline" className="text-[10px] capitalize">
+                    {themeMethod === 'llm' ? <Sparkles className="h-3 w-3 mr-1" /> : <ListChecks className="h-3 w-3 mr-1" />}
+                    {themeMethod === 'llm' ? 'LLM themes' : 'keyword themes'}
+                  </Badge>
+                ) : null}
                 {lastFetchedAt ? (
                   <span className="text-xs font-normal text-muted-foreground">
                     updated {new Date(lastFetchedAt).toLocaleTimeString()}
@@ -196,40 +238,73 @@ export function ConfigPanel() {
 
         <CollapsibleContent>
           <CardContent className="space-y-4 pt-0">
+            {/* Env-config banner */}
+            {hasEnvToken ? (
+              <div className="flex items-start gap-2 rounded-md border border-emerald-500/30 bg-emerald-500/10 p-3 text-xs">
+                <ShieldCheck className="h-4 w-4 mt-0.5 text-emerald-600 shrink-0" />
+                <div className="space-y-0.5">
+                  <p className="font-medium text-emerald-700 dark:text-emerald-400">
+                    Server-side token configured
+                  </p>
+                  <p className="text-emerald-700/80 dark:text-emerald-400/80">
+                    {hasEnvChannel && envConfig?.envChannelId
+                      ? `Using DISCORD_CHANNEL_ID=${envConfig.envChannelId} and DISCORD_AUTH_TOKEN from .env — click “Fetch from Discord” without pasting anything.`
+                      : 'Using DISCORD_AUTH_TOKEN from .env. Channel ID below will be used.'}
+                    {authToken ? (
+                      <span className="ml-1 italic">Your pasted token overrides the env value.</span>
+                    ) : null}
+                  </p>
+                </div>
+              </div>
+            ) : null}
+
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-1.5">
-                <Label htmlFor="channelId" className="text-xs">
+                <Label htmlFor="channelId" className="text-xs flex items-center gap-1.5">
                   Discord Channel ID (forum)
+                  {hasEnvChannel && !channelId ? (
+                    <Badge variant="outline" className="text-[9px] text-emerald-600 border-emerald-500/40">
+                      from env
+                    </Badge>
+                  ) : null}
                 </Label>
                 <Input
                   id="channelId"
                   value={channelId}
                   onChange={(e) => setConfig({ channelId: e.target.value })}
-                  placeholder="1006358244786196510"
+                  placeholder={envConfig?.envChannelId ?? '1006358244786196510'}
                   className="font-mono text-sm"
                 />
               </div>
               <div className="space-y-1.5">
-                <Label htmlFor="authToken" className="text-xs">
+                <Label htmlFor="authToken" className="text-xs flex items-center gap-1.5">
+                  <KeyRound className="h-3 w-3" />
                   Discord Authorization token
+                  {usingEnvCreds ? (
+                    <Badge variant="outline" className="text-[9px] text-emerald-600 border-emerald-500/40">
+                      from env
+                    </Badge>
+                  ) : null}
                 </Label>
                 <Input
                   id="authToken"
                   type="password"
                   value={authToken}
                   onChange={(e) => setConfig({ authToken: e.target.value })}
-                  placeholder="Paste your Discord auth token"
+                  placeholder={hasEnvToken ? '(using env token — leave blank)' : 'Paste your Discord auth token'}
                   className="font-mono text-sm"
                 />
                 <p className="text-[10px] text-muted-foreground">
-                  Stored locally in your browser only. Never sent anywhere except Discord.
+                  {hasEnvToken
+                    ? 'Optional override. Env var DISCORD_AUTH_TOKEN is used when this is blank.'
+                    : 'Stored locally in your browser only. Or set DISCORD_AUTH_TOKEN in .env to skip this.'}
                 </p>
               </div>
             </div>
 
             <div className="space-y-1.5">
               <Label htmlFor="maxThreads" className="text-xs">
-                Max threads to fetch (25 per page, max 200)
+                Max threads to fetch (25 per page, max 200) — higher = more accurate themes
               </Label>
               <Input
                 id="maxThreads"
@@ -267,7 +342,7 @@ export function ConfigPanel() {
             ) : null}
 
             <div className="flex flex-wrap gap-2">
-              <Button onClick={handleFetch} disabled={busy || !authToken} size="sm">
+              <Button onClick={handleFetch} disabled={busy || !canFetchFromDiscord} size="sm">
                 <RefreshCw className={`h-4 w-4 mr-1.5 ${busy ? 'animate-spin' : ''}`} />
                 Fetch from Discord
               </Button>
@@ -279,15 +354,30 @@ export function ConfigPanel() {
                 <Upload className="h-4 w-4 mr-1.5" />
                 Upload JSON
               </Button>
+
+              <div className="w-px h-6 bg-border mx-1 self-center" />
+
               <Button
-                onClick={handleReanalyzeThemes}
+                onClick={handleReanalyzeLLM}
                 disabled={busy || issues.length === 0}
                 variant="outline"
                 size="sm"
+                title="Re-run LLM theme clustering (slower, contextual)"
               >
                 <Sparkles className="h-4 w-4 mr-1.5" />
-                Re-analyze Themes
+                LLM Themes
               </Button>
+              <Button
+                onClick={handleReanalyzeFallback}
+                disabled={busy || issues.length === 0}
+                variant="outline"
+                size="sm"
+                title="Use deterministic keyword rules (instant, customizable)"
+              >
+                <ListChecks className="h-4 w-4 mr-1.5" />
+                Keyword Themes
+              </Button>
+
               {issues.length > 0 ? (
                 <Button
                   onClick={() => {
@@ -313,7 +403,8 @@ export function ConfigPanel() {
 
             {themes.length === 0 && issues.length > 0 ? (
               <p className="text-xs text-muted-foreground">
-                Themes not yet analyzed. Click “Re-analyze Themes” to run LLM clustering.
+                Themes not yet analyzed. Click <strong>LLM Themes</strong> for contextual clustering
+                or <strong>Keyword Themes</strong> for instant deterministic rules.
               </p>
             ) : null}
           </CardContent>

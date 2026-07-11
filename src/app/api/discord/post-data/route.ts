@@ -1,24 +1,32 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { fetchPostData } from '@/lib/discord-api';
+import { resolveDiscordCreds } from '@/lib/discord-config';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 /**
  * POST /api/discord/post-data
- * Body: { channelId, authToken, threadIds: string[] (max 10) }
+ * Body: { channelId?, authToken?, threadIds: string[] (max 10) }
  * Proxies to Discord's POST /channels/:id/post-data (server-side, no CORS).
+ *
+ * If channelId/authToken are omitted, falls back to DISCORD_AUTH_TOKEN / DISCORD_CHANNEL_ID env vars.
  */
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json().catch(() => ({}));
-    const channelId = String(body.channelId ?? '').trim();
-    const authToken = String(body.authToken ?? '').trim();
+    const { channelId, authToken } = resolveDiscordCreds({
+      channelId: body.channelId,
+      authToken: body.authToken,
+    });
     const threadIds: unknown = body.threadIds;
 
     if (!channelId || !authToken) {
       return NextResponse.json(
-        { error: 'channelId and authToken are required' },
+        {
+          error:
+            'No Discord credentials. Either pass channelId + authToken in the body, or set DISCORD_AUTH_TOKEN / DISCORD_CHANNEL_ID in .env',
+        },
         { status: 400 },
       );
     }

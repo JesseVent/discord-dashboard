@@ -4,16 +4,27 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import type { FetchProgress, Issue, ThemeCluster } from '@/lib/discord-types';
 
+interface EnvConfig {
+  hasEnvToken: boolean;
+  hasEnvChannelId: boolean;
+  envChannelId: string | null;
+}
+
 interface DashboardState {
   // config
   channelId: string;
   authToken: string;
   setConfig: (cfg: { channelId?: string; authToken?: string }) => void;
 
+  // server-side env config (not persisted; queried at runtime)
+  envConfig: EnvConfig | null;
+  setEnvConfig: (c: EnvConfig | null) => void;
+
   // data
   issues: Issue[];
   totalResults: number;
   themes: ThemeCluster[];
+  themeMethod: 'llm' | 'fallback' | null;
   lastFetchedAt: string | null;
   hasMore: boolean;
   source: 'sample' | 'discord' | 'upload' | null;
@@ -24,7 +35,7 @@ interface DashboardState {
 
   // actions
   setIssues: (issues: Issue[]) => void;
-  setThemes: (themes: ThemeCluster[]) => void;
+  setThemes: (themes: ThemeCluster[], method?: 'llm' | 'fallback') => void;
   setTotalResults: (n: number) => void;
   setHasMore: (b: boolean) => void;
   setSource: (s: 'sample' | 'discord' | 'upload' | null) => void;
@@ -43,9 +54,13 @@ export const useDashboardStore = create<DashboardState>()(
           authToken: cfg.authToken ?? s.authToken,
         })),
 
+      envConfig: null,
+      setEnvConfig: (c) => set({ envConfig: c }),
+
       issues: [],
       totalResults: 0,
       themes: [],
+      themeMethod: null,
       lastFetchedAt: null,
       hasMore: false,
       source: null,
@@ -60,7 +75,8 @@ export const useDashboardStore = create<DashboardState>()(
         set((s) => ({ progress: { ...s.progress, ...p } })),
 
       setIssues: (issues) => set({ issues }),
-      setThemes: (themes) => set({ themes }),
+      setThemes: (themes, method) =>
+        set({ themes, themeMethod: method ?? null }),
       setTotalResults: (n) => set({ totalResults: n }),
       setHasMore: (b) => set({ hasMore: b }),
       setSource: (s) => set({ source: s }),
@@ -70,6 +86,7 @@ export const useDashboardStore = create<DashboardState>()(
         set({
           issues: [],
           themes: [],
+          themeMethod: null,
           totalResults: 0,
           hasMore: false,
           lastFetchedAt: null,
@@ -84,6 +101,7 @@ export const useDashboardStore = create<DashboardState>()(
         authToken: s.authToken,
         issues: s.issues,
         themes: s.themes,
+        themeMethod: s.themeMethod,
         totalResults: s.totalResults,
         hasMore: s.hasMore,
         lastFetchedAt: s.lastFetchedAt,

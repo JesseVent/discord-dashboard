@@ -1,23 +1,31 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { searchThreads } from '@/lib/discord-api';
+import { resolveDiscordCreds } from '@/lib/discord-config';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 /**
  * POST /api/discord/search
- * Body: { channelId, authToken, archived?, limit?, offset?, sortBy?, sortOrder? }
+ * Body (optional when env vars are set): { channelId, authToken, archived?, limit?, offset?, sortBy?, sortOrder? }
  * Proxies to Discord's GET /channels/:id/threads/search (server-side, no CORS).
+ *
+ * If the body omits channelId/authToken, falls back to DISCORD_AUTH_TOKEN / DISCORD_CHANNEL_ID env vars.
  */
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json().catch(() => ({}));
-    const channelId = String(body.channelId ?? '').trim();
-    const authToken = String(body.authToken ?? '').trim();
+    const { channelId, authToken } = resolveDiscordCreds({
+      channelId: body.channelId,
+      authToken: body.authToken,
+    });
 
     if (!channelId || !authToken) {
       return NextResponse.json(
-        { error: 'channelId and authToken are required' },
+        {
+          error:
+            'No Discord credentials. Either pass channelId + authToken in the body, or set DISCORD_AUTH_TOKEN / DISCORD_CHANNEL_ID in .env',
+        },
         { status: 400 },
       );
     }

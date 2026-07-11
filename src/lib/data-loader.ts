@@ -160,9 +160,21 @@ export async function fetchFromDiscord(opts: {
 /**
  * Run LLM theme analysis on the current issues, with a keyword-based fallback
  * if the LLM call fails.
+ *
+ * Pass `method: 'fallback'` to skip the LLM call entirely and use the
+ * deterministic keyword rules — useful when the user wants instant results
+ * or when the LLM themes don't fit their community's vocabulary.
  */
-export async function runThemeAnalysis(issues: Issue[]): Promise<ThemeCluster[]> {
+export async function runThemeAnalysis(
+  issues: Issue[],
+  method: 'llm' | 'fallback' = 'llm',
+): Promise<ThemeCluster[]> {
   if (issues.length === 0) return [];
+
+  if (method === 'fallback') {
+    return fallbackThemes(issues);
+  }
+
   try {
     const res = await fetch('/api/analyze-themes', {
       method: 'POST',
@@ -178,6 +190,24 @@ export async function runThemeAnalysis(issues: Issue[]): Promise<ThemeCluster[]>
     console.warn('[runThemeAnalysis] LLM failed, using fallback:', err);
   }
   return fallbackThemes(issues);
+}
+
+/**
+ * Check whether the server has DISCORD_AUTH_TOKEN / DISCORD_CHANNEL_ID env vars set.
+ * If so, the client can call /api/discord/* without pasting credentials.
+ */
+export async function getDiscordEnvConfig(): Promise<{
+  hasEnvToken: boolean;
+  hasEnvChannelId: boolean;
+  envChannelId: string | null;
+}> {
+  try {
+    const res = await fetch('/api/discord-config', { cache: 'no-store' });
+    if (!res.ok) return { hasEnvToken: false, hasEnvChannelId: false, envChannelId: null };
+    return await res.json();
+  } catch {
+    return { hasEnvToken: false, hasEnvChannelId: false, envChannelId: null };
+  }
 }
 
 /**
