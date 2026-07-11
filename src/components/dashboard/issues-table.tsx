@@ -30,7 +30,7 @@ import {
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { MessageSquare, Users, ExternalLink, Paperclip, Lock, Archive } from 'lucide-react';
 import type { Issue } from '@/lib/discord-types';
-import { fmtRelative, fmtDate, tagName, tagColor } from '@/lib/dashboard-utils';
+import { fmtRelative, fmtDate, tagName, tagColor, tagColorSoft } from '@/lib/dashboard-utils';
 import { threadUrl } from '@/lib/discord-api';
 
 interface IssuesTableProps {
@@ -103,9 +103,9 @@ export function IssuesTable({
             No issues match the current filters.
           </div>
         ) : (
-          <ScrollArea className="h-[520px] rounded-md border">
+          <ScrollArea className="h-[520px] rounded-md">
             <Table>
-              <TableHeader className="sticky top-0 bg-background z-10">
+              <TableHeader className="sticky top-0 bg-surface-2 z-10">
                 <TableRow>
                   <TableHead className="w-[40%]">Issue</TableHead>
                   <TableHead>Tags</TableHead>
@@ -143,8 +143,11 @@ export function IssuesTable({
                         {issue.appliedTags.slice(0, 2).map((t) => (
                           <span
                             key={t}
-                            className="inline-flex items-center rounded px-1.5 py-0.5 text-[10px] font-medium text-white"
-                            style={{ backgroundColor: tagColor(t) }}
+                            className="inline-flex items-center rounded-xs px-1.5 py-0.5 text-[10px] font-mono font-medium uppercase tracking-wider"
+                            style={{
+                              backgroundColor: tagColorSoft(t),
+                              color: tagColor(t),
+                            }}
                           >
                             {tagName(t)}
                           </span>
@@ -156,16 +159,16 @@ export function IssuesTable({
                         ) : null}
                       </div>
                     </TableCell>
-                    <TableCell className="text-right tabular-nums">
+                    <TableCell className="text-right font-mono tabular-nums text-sm">
                       {issue.messageCount}
                     </TableCell>
-                    <TableCell className="text-right tabular-nums">
+                    <TableCell className="text-right font-mono tabular-nums text-sm">
                       {issue.memberCount}
                     </TableCell>
                     <TableCell className="text-sm">
                       {issue.ownerGlobalName ?? issue.ownerUsername}
                     </TableCell>
-                    <TableCell className="text-xs text-muted-foreground whitespace-nowrap">
+                    <TableCell className="text-xs text-muted-foreground whitespace-nowrap font-mono">
                       {fmtRelative(issue.createdAt)}
                     </TableCell>
                   </TableRow>
@@ -217,8 +220,11 @@ function IssueDetailDialog({
           {issue.appliedTags.map((t) => (
             <span
               key={t}
-              className="inline-flex items-center rounded px-2 py-0.5 text-[11px] font-medium text-white"
-              style={{ backgroundColor: tagColor(t) }}
+              className="inline-flex items-center rounded-xs px-2 py-0.5 text-[11px] font-mono font-medium uppercase tracking-wider"
+              style={{
+                backgroundColor: tagColorSoft(t),
+                color: tagColor(t),
+              }}
             >
               {tagName(t)}
             </span>
@@ -261,7 +267,7 @@ function IssueDetailDialog({
             </div>
 
             {issue.firstMessageContent ? (
-              <pre className="whitespace-pre-wrap break-words rounded-md bg-muted/40 p-3 text-sm font-mono leading-relaxed">
+              <pre className="agl-codeblock whitespace-pre-wrap break-words">
                 {issue.firstMessageContent}
               </pre>
             ) : (

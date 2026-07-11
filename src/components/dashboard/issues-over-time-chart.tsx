@@ -32,8 +32,8 @@ export function IssuesOverTimeChart({ issues }: IssuesOverTimeChartProps) {
   }
 
   const chartConfig = {
-    cumulative: { label: 'Cumulative Issues', color: 'hsl(142 70% 45%)' },
-    count: { label: 'New / Day', color: 'hsl(280 70% 60%)' },
+    cumulative: { label: 'Cumulative Issues', color: 'var(--agl-accent)' },
+    count: { label: 'New / Day', color: 'var(--agl-pending)' },
   };
 
   return (
@@ -50,15 +50,15 @@ export function IssuesOverTimeChart({ issues }: IssuesOverTimeChartProps) {
             <AreaChart data={data} margin={{ left: 8, right: 8, top: 8, bottom: 0 }}>
               <defs>
                 <linearGradient id="fillCumulative" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="hsl(142 70% 45%)" stopOpacity={0.45} />
-                  <stop offset="95%" stopColor="hsl(142 70% 45%)" stopOpacity={0.05} />
+                  <stop offset="5%" stopColor="var(--agl-accent)" stopOpacity={0.35} />
+                  <stop offset="95%" stopColor="var(--agl-accent)" stopOpacity={0.03} />
                 </linearGradient>
                 <linearGradient id="fillCount" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="hsl(280 70% 60%)" stopOpacity={0.35} />
-                  <stop offset="95%" stopColor="hsl(280 70% 60%)" stopOpacity={0.05} />
+                  <stop offset="5%" stopColor="var(--agl-pending)" stopOpacity={0.25} />
+                  <stop offset="95%" stopColor="var(--agl-pending)" stopOpacity={0.03} />
                 </linearGradient>
               </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
+              <CartesianGrid strokeDasharray="3 3" stroke="var(--agl-border)" vertical={false} />
               <XAxis
                 dataKey="date"
                 tick={{ fontSize: 11 }}
@@ -74,7 +74,7 @@ export function IssuesOverTimeChart({ issues }: IssuesOverTimeChartProps) {
                 type="monotone"
                 dataKey="count"
                 name="New / Day"
-                stroke="hsl(280 70% 60%)"
+                stroke="var(--agl-pending)"
                 strokeWidth={1.5}
                 fill="url(#fillCount)"
               />
@@ -82,7 +82,7 @@ export function IssuesOverTimeChart({ issues }: IssuesOverTimeChartProps) {
                 type="monotone"
                 dataKey="cumulative"
                 name="Cumulative"
-                stroke="hsl(142 70% 45%)"
+                stroke="var(--agl-accent)"
                 strokeWidth={2}
                 fill="url(#fillCumulative)"
               />

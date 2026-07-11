@@ -91,11 +91,11 @@ export default function Home() {
                 <Hash className="h-5 w-5" />
               </div>
               <div className="min-w-0">
-                <h1 className="text-base font-semibold tracking-tight truncate">
+                <h1 className="text-lg font-semibold tracking-tight truncate" style={{ fontFamily: 'var(--font-display)', fontStretch: '85%' }}>
                   Discord Issue Tracker
                 </h1>
-                <p className="text-xs text-muted-foreground truncate">
-                  Channel <span className="font-mono">{channelId}</span>
+                <p className="agl-eyebrow truncate">
+                  Channel <span className="font-mono normal-case tracking-normal">{channelId}</span>
                   {source ? ` · source: ${source}` : ''}
                   {lastFetchedAt ? ` · updated ${new Date(lastFetchedAt).toLocaleString()}` : ''}
                 </p>
@@ -119,7 +119,7 @@ export default function Home() {
       <main className="mx-auto max-w-7xl px-4 py-6 sm:px-6 space-y-6">
         <ConfigPanel />
 
-        {/* KPI cards */}
+        {/* KPI cards — Agentic Labs metric strip style */}
         <section className="grid gap-3 grid-cols-2 md:grid-cols-3 lg:grid-cols-6">
           <KpiCard
             title="Total Issues"
@@ -130,42 +130,42 @@ export default function Home() {
                 : 'all loaded'
             }
             icon={AlertTriangle}
-            accent="text-rose-500"
+            accent="text-error"
           />
           <KpiCard
             title="Unique Users"
             value={uniqueUsers}
             subtitle="distinct reporters"
             icon={Users}
-            accent="text-emerald-500"
+            accent="text-success"
           />
           <KpiCard
             title="Total Messages"
             value={totalMessages.toLocaleString()}
             subtitle={`${avgMsgPerIssue} avg/issue`}
             icon={MessageSquare}
-            accent="text-sky-500"
+            accent="text-accent"
           />
           <KpiCard
             title="Active"
             value={issues.length - archivedCount}
             subtitle="not archived"
             icon={Activity}
-            accent="text-amber-500"
+            accent="text-warning"
           />
           <KpiCard
             title="Archived"
             value={archivedCount}
             subtitle={`${issues.length > 0 ? Math.round((archivedCount / issues.length) * 100) : 0}% of loaded`}
             icon={Archive}
-            accent="text-violet-500"
+            accent="text-pending"
           />
           <KpiCard
             title="Distinct Tags"
             value={tagCounts.length}
             subtitle="forum categories"
             icon={Database}
-            accent="text-cyan-500"
+            accent="text-cat-retrieval"
           />
         </section>
 
@@ -248,9 +248,14 @@ export default function Home() {
           onClearTheme={() => setSelectedTheme(null)}
         />
 
-        <footer className="mt-8 border-t pt-4 text-center text-xs text-muted-foreground">
-          Discord Issue Tracker · Data fetched via Discord's <code>/threads/search</code> and{' '}
-          <code>/post-data</code> APIs · Theme analysis by LLM
+        <footer className="mt-8 border-t pt-4 text-center">
+          <p className="agl-eyebrow">
+            Discord Issue Tracker · Data via Discord&rsquo;s{' '}
+            <code className="font-mono normal-case tracking-normal text-muted-foreground">/threads/search</code>{' '}
+            and{' '}
+            <code className="font-mono normal-case tracking-normal text-muted-foreground">/post-data</code>{' '}
+            APIs · Theme analysis by LLM
+          </p>
         </footer>
       </main>
     </div>

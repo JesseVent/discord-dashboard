@@ -4,19 +4,49 @@ import { cva, type VariantProps } from "class-variance-authority"
 
 import { cn } from "@/lib/utils"
 
+/**
+ * Agentic Labs badge system.
+ * - No border (border-transparent) — color differentiation by background only
+ * - Mono font, uppercase, letter-spacing
+ * - Category variants use the trace-category palette (L=60% across hues, equal APCA)
+ */
 const badgeVariants = cva(
-  "inline-flex items-center justify-center rounded-md border px-2 py-0.5 text-xs font-medium w-fit whitespace-nowrap shrink-0 [&>svg]:size-3 gap-1 [&>svg]:pointer-events-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive transition-[color,box-shadow] overflow-hidden",
+  "inline-flex items-center justify-center rounded-xs px-2 py-0.5 text-xs font-medium w-fit whitespace-nowrap shrink-0 [&>svg]:size-3 gap-1 [&>svg]:pointer-events-none transition-[color,box-shadow] overflow-hidden font-mono uppercase tracking-wider",
   {
     variants: {
       variant: {
+        // Primary: accent blue
         default:
-          "border-transparent bg-primary text-primary-foreground [a&]:hover:bg-primary/90",
+          "bg-primary text-primary-foreground [a&]:hover:bg-primary/90",
+        // Secondary: warm surface
         secondary:
-          "border-transparent bg-secondary text-secondary-foreground [a&]:hover:bg-secondary/90",
+          "bg-surface-2 text-secondary-foreground [a&]:hover:bg-surface-3",
         destructive:
-          "border-transparent bg-destructive text-white [a&]:hover:bg-destructive/90 focus-visible:ring-destructive/20 dark:focus-visible:ring-destructive/40 dark:bg-destructive/60",
+          "bg-error text-white [a&]:hover:bg-error/90",
         outline:
-          "text-foreground [a&]:hover:bg-accent [a&]:hover:text-accent-foreground",
+          "border border-border text-foreground [a&]:hover:bg-accent-soft [a&]:hover:text-accent-foreground",
+        // Agentic Labs category colors (L=60% bg, soft fg)
+        catLlm:
+          "bg-cat-llm/15 text-cat-llm",
+        catAgent:
+          "bg-cat-agent/15 text-cat-agent",
+        catTool:
+          "bg-cat-tool/15 text-cat-tool",
+        catChain:
+          "bg-cat-chain/15 text-cat-chain",
+        catRetrieval:
+          "bg-cat-retrieval/15 text-cat-retrieval",
+        catGuardrail:
+          "bg-cat-guardrail/15 text-cat-guardrail",
+        // Status variants
+        success:
+          "bg-success/15 text-success",
+        warning:
+          "bg-warning/15 text-warning",
+        error:
+          "bg-error/15 text-error",
+        pending:
+          "bg-pending/15 text-pending",
       },
     },
     defaultVariants: {

@@ -1,8 +1,9 @@
 import type { Issue, ThemeCluster } from '@/lib/discord-types';
 
 /**
- * Maps Discord tag IDs (from the Supabase help forum) to human-readable names.
- * These IDs were derived from the sample data. Unknown IDs fall back to a short hash.
+ * Maps Discord tag IDs (from the Supabase help forum) to human-readable names
+ * AND to Agentic Labs category color tokens.
+ * Category colors use the trace-category palette (L=60% across hues, equal APCA).
  */
 export const KNOWN_TAG_NAMES: Record<string, string> = {
   '1006941128441999421': 'Database',
@@ -18,20 +19,76 @@ export const KNOWN_TAG_NAMES: Record<string, string> = {
   '1399740852930089150': 'AI / Vectors',
 };
 
+/**
+ * Maps tag IDs to Agentic Labs category color variable names.
+ * Uses the trace-category palette for equal APCA across hues.
+ */
+export const TAG_CATEGORY_MAP: Record<string, string> = {
+  '1006941128441999421': 'chain',      // Database → green
+  '1006941257274241114': 'agent',      // Auth → blue
+  '1006941275053899887': 'tool',       // Edge Functions → amber
+  '1006941348454207579': 'retrieval',  // Realtime → cyan
+  '1006941367353737366': 'retrieval',  // Storage → cyan
+  '1006941396873257041': 'chain',      // Migrations → green
+  '1006941413101015110': 'llm',        // Dashboard → purple
+  '1050788587593023559': 'guardrail',  // Self-Hosting → red
+  '1200092227200876554': 'guardrail',  // Outage / Status → red
+  '1399429164783898665': 'chain',      // Branching → green
+  '1399740852930089150': 'llm',        // AI / Vectors → purple
+};
+
 export function tagName(tagId: string): string {
   return KNOWN_TAG_NAMES[tagId] ?? `Tag ${tagId.slice(-4)}`;
 }
 
 /**
- * A stable color for a tag ID, derived from a hash.
+ * Returns the Agentic Labs category color CSS variable for a tag ID.
+ * Falls back to a deterministic hash-based OKLCH color for unknown tags.
  */
 export function tagColor(tagId: string): string {
+  const cat = TAG_CATEGORY_MAP[tagId];
+  if (cat) {
+    const varMap: Record<string, string> = {
+      llm: 'var(--agl-cat-llm)',
+      agent: 'var(--agl-cat-agent)',
+      tool: 'var(--agl-cat-tool)',
+      chain: 'var(--agl-cat-chain)',
+      retrieval: 'var(--agl-cat-retrieval)',
+      guardrail: 'var(--agl-cat-guardrail)',
+    };
+    return varMap[cat];
+  }
+  // Fallback: deterministic OKLCH at L=60%
   let h = 0;
   for (let i = 0; i < tagId.length; i++) {
     h = (h * 31 + tagId.charCodeAt(i)) >>> 0;
   }
   const hue = h % 360;
-  return `hsl(${hue} 70% 55%)`;
+  return `oklch(0.60 0.15 ${hue})`;
+}
+
+/**
+ * Returns the Agentic Labs category soft (background) color for a tag ID.
+ */
+export function tagColorSoft(tagId: string): string {
+  const cat = TAG_CATEGORY_MAP[tagId];
+  if (cat) {
+    const varMap: Record<string, string> = {
+      llm: 'var(--agl-cat-llm-soft)',
+      agent: 'var(--agl-cat-agent-soft)',
+      tool: 'var(--agl-cat-tool-soft)',
+      chain: 'var(--agl-cat-chain-soft)',
+      retrieval: 'var(--agl-cat-retrieval-soft)',
+      guardrail: 'var(--agl-cat-guardrail-soft)',
+    };
+    return varMap[cat];
+  }
+  let h = 0;
+  for (let i = 0; i < tagId.length; i++) {
+    h = (h * 31 + tagId.charCodeAt(i)) >>> 0;
+  }
+  const hue = h % 360;
+  return `oklch(0.94 0.035 ${hue})`;
 }
 
 /**

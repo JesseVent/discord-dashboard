@@ -33,7 +33,7 @@ export function TagDistributionChart({ issues, onSelectTag }: TagDistributionCha
   }
 
   const chartConfig = {
-    count: { label: 'Issues', color: 'hsl(142 70% 45%)' },
+    count: { label: 'Issues', color: 'var(--agl-accent)' },
   };
 
   return (

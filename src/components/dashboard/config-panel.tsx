@@ -238,15 +238,15 @@ export function ConfigPanel() {
 
         <CollapsibleContent>
           <CardContent className="space-y-4 pt-0">
-            {/* Env-config banner */}
+            {/* Env-config banner — Agentic Labs Tip callout */}
             {hasEnvToken ? (
-              <div className="flex items-start gap-2 rounded-md border border-emerald-500/30 bg-emerald-500/10 p-3 text-xs">
-                <ShieldCheck className="h-4 w-4 mt-0.5 text-emerald-600 shrink-0" />
+              <div className="agl-callout agl-callout-tip">
+                <ShieldCheck className="h-4 w-4 mt-0.5 text-success shrink-0" />
                 <div className="space-y-0.5">
-                  <p className="font-medium text-emerald-700 dark:text-emerald-400">
+                  <p className="font-medium text-success text-sm">
                     Server-side token configured
                   </p>
-                  <p className="text-emerald-700/80 dark:text-emerald-400/80">
+                  <p className="text-xs text-fg">
                     {hasEnvChannel && envConfig?.envChannelId
                       ? `Using DISCORD_CHANNEL_ID=${envConfig.envChannelId} and DISCORD_AUTH_TOKEN from .env — click “Fetch from Discord” without pasting anything.`
                       : 'Using DISCORD_AUTH_TOKEN from .env. Channel ID below will be used.'}
@@ -263,9 +263,7 @@ export function ConfigPanel() {
                 <Label htmlFor="channelId" className="text-xs flex items-center gap-1.5">
                   Discord Channel ID (forum)
                   {hasEnvChannel && !channelId ? (
-                    <Badge variant="outline" className="text-[9px] text-emerald-600 border-emerald-500/40">
-                      from env
-                    </Badge>
+                    <Badge variant="success" className="text-[9px]">from env</Badge>
                   ) : null}
                 </Label>
                 <Input
@@ -281,9 +279,7 @@ export function ConfigPanel() {
                   <KeyRound className="h-3 w-3" />
                   Discord Authorization token
                   {usingEnvCreds ? (
-                    <Badge variant="outline" className="text-[9px] text-emerald-600 border-emerald-500/40">
-                      from env
-                    </Badge>
+                    <Badge variant="success" className="text-[9px]">from env</Badge>
                   ) : null}
                 </Label>
                 <Input
@@ -319,25 +315,26 @@ export function ConfigPanel() {
             </div>
 
             {progress.stage !== 'idle' && progress.stage !== 'done' && progress.stage !== 'error' ? (
-              <div className="rounded-md border bg-muted/30 p-3 text-sm">
-                <div className="flex items-center gap-2">
-                  <RefreshCw className="h-3.5 w-3.5 animate-spin text-primary" />
-                  <span className="font-medium capitalize">{progress.stage.replace(/-/g, ' ')}</span>
+              <div className="agl-callout agl-callout-note">
+                <RefreshCw className="h-4 w-4 mt-0.5 animate-spin text-accent shrink-0" />
+                <div className="space-y-0.5">
+                  <span className="font-medium text-accent text-sm capitalize font-mono">{progress.stage.replace(/-/g, ' ')}</span>
                   {progress.totalResults > 0 ? (
-                    <span className="text-xs text-muted-foreground tabular-nums">
+                    <span className="ml-2 text-xs text-muted-foreground tabular-nums font-mono">
                       {progress.fetchedCount} / {progress.totalResults}
                     </span>
                   ) : null}
+                  {progress.message ? (
+                    <p className="text-xs text-fg">{progress.message}</p>
+                  ) : null}
                 </div>
-                {progress.message ? (
-                  <p className="mt-1 text-xs text-muted-foreground">{progress.message}</p>
-                ) : null}
               </div>
             ) : null}
 
             {err ? (
-              <div className="rounded-md border border-destructive/50 bg-destructive/10 p-3 text-sm text-destructive">
-                {err}
+              <div className="agl-callout agl-callout-danger">
+                <span className="h-4 w-4 mt-0.5 shrink-0 flex items-center justify-center rounded-full bg-error text-white text-[10px] font-bold">!</span>
+                <p className="text-sm text-fg">{err}</p>
               </div>
             ) : null}
 
