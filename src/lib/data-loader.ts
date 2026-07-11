@@ -211,6 +211,185 @@ export async function getDiscordEnvConfig(): Promise<{
 }
 
 /**
+ * Fetch all messages for a single thread (used for reply/response analysis).
+ * Returns up to `limit` messages, oldest-first.
+ */
+export async function fetchThreadMessages(opts: {
+  threadId: string;
+  channelId?: string;
+  authToken?: string;
+  limit?: number;
+}): Promise<DiscordMessage[]> {
+  const { threadId, channelId, authToken, limit = 100 } = opts;
+  const params = new URLSearchParams({ threadId, limit: String(limit) });
+  if (channelId) params.set('channelId', channelId);
+  if (authToken) params.set('authToken', authToken);
+
+  const res = await fetch(`/api/discord/messages?${params.toString()}`, { cache: 'no-store' });
+  if (!res.ok) {
+    console.warn(`[fetchThreadMessages] ${threadId} failed: ${res.status}`);
+    return [];
+  }
+  const data = await res.json();
+  return (data.messages ?? []) as DiscordMessage[];
+}
+
+/**
+ * Fetch replies for ALL loaded issues in parallel (with concurrency limit).
+ * Updates each issue with: replies, responseTimeMs, responderCount, isAnswered, resolutionStatus.
+ *
+ * `maxConcurrency` controls how many threads to fetch simultaneously (default 6).
+ * `onProgress` is called after each thread completes.
+ */
+export async function fetchRepliesForIssues(opts: {
+  issues: Issue[];
+  channelId?: string;
+  authToken?: string;
+  maxConcurrency?: number;
+  onProgress?: (done: number, total: number) => void;
+}): Promise<Issue[]> {
+  const {
+    issues,
+    channelId,
+    authToken,
+    maxConcurrency = 6,
+    onProgress,
+  } = opts;
+
+  // Only fetch for threads that have >1 message (i.e., they have replies)
+  // or where we don't know (message_count missing). Skip 1-message threads — no replies to fetch.
+  const toFetch = issues.filter((i) => i.messageCount === undefined || i.messageCount > 1);
+  const skipIds = new Set(issues.filter((i) => !toFetch.includes(i)).map((i) => i.id));
+
+  const updated = new Map<string, Issue>();
+  for (const issue of issues) {
+    if (skipIds.has(issue.id)) {
+      // No replies to fetch — mark as unanswered with 0 response time
+      updated.set(issue.id, {
+        ...issue,
+        replies: [],
+        responseTimeMs: null,
+        responderCount: 0,
+        isAnswered: false,
+        resolutionStatus: 'unanswered',
+      });
+    }
+  }
+
+  let done = 0;
+  const total = toFetch.length;
+
+  // Simple concurrency pool
+  const queue = [...toFetch];
+  const workers: Promise<void>[] = [];
+
+  async function worker() {
+    while (queue.length > 0) {
+      const issue = queue.shift();
+      if (!issue) break;
+      try {
+        const messages = await fetchThreadMessages({
+          threadId: issue.id,
+          channelId,
+          authToken,
+          limit: 100,
+        });
+        // Replies = all messages except the first message (matched by id or position)
+        const replies = messages.filter((m) => m.id !== issue.firstMessageId);
+        updated.set(issue.id, computeResponseAnalytics({ ...issue, replies }));
+      } catch (err) {
+        console.warn(`[fetchRepliesForIssues] ${issue.id} failed:`, err);
+        updated.set(issue.id, {
+          ...issue,
+          replies: [],
+          responseTimeMs: null,
+          responderCount: 0,
+          isAnswered: false,
+          resolutionStatus: 'unknown',
+        });
+      } finally {
+        done += 1;
+        onProgress?.(done, total);
+      }
+    }
+  }
+
+  for (let i = 0; i < Math.min(maxConcurrency, toFetch.length); i++) {
+    workers.push(worker());
+  }
+  await Promise.all(workers);
+
+  // Preserve original order
+  return issues.map((issue) => updated.get(issue.id) ?? issue);
+}
+
+/**
+ * Compute response analytics for a single issue given its replies.
+ * - responseTimeMs: time from first message to first reply (from a different user)
+ * - responderCount: distinct users who replied (excluding the issue creator)
+ * - isAnswered: has at least one reply from a different user
+ * - resolutionStatus: heuristic detection
+ */
+export function computeResponseAnalytics(issue: Issue): Issue {
+  const replies = issue.replies ?? [];
+  const firstMsgTime = issue.firstMessageCreatedAt
+    ? new Date(issue.firstMessageCreatedAt).getTime()
+    : null;
+
+  // Find first reply from a DIFFERENT user than the issue creator
+  const firstReply = replies.find(
+    (m) => m.author?.id && m.author.id !== issue.ownerId && m.timestamp,
+  );
+
+  let responseTimeMs: number | null = null;
+  if (firstReply && firstMsgTime) {
+    const replyTime = new Date(firstReply.timestamp).getTime();
+    responseTimeMs = Math.max(0, replyTime - firstMsgTime);
+  }
+
+  // Distinct responders (excluding issue creator)
+  const responderIds = new Set<string>();
+  for (const m of replies) {
+    if (m.author?.id && m.author.id !== issue.ownerId) {
+      responderIds.add(m.author.id);
+    }
+  }
+  const responderCount = responderIds.size;
+  const isAnswered = responderCount > 0;
+
+  // Resolution heuristic: scan reply text for resolution keywords
+  const resolutionKeywords = [
+    'solved', 'fixed', 'resolved', 'thanks', 'thank you', 'that worked',
+    'closing this', 'works now', 'got it working', 'appreciate it',
+    'marked as resolved', 'issue resolved',
+  ];
+  const allReplyText = replies
+    .map((m) => (m.content ?? '').toLowerCase())
+    .join(' \n ');
+  const hasResolutionSignal = resolutionKeywords.some((k) => allReplyText.includes(k));
+
+  let resolutionStatus: Issue['resolutionStatus'] = 'unknown';
+  if (!isAnswered) {
+    resolutionStatus = 'unanswered';
+  } else if (hasResolutionSignal) {
+    resolutionStatus = 'likely-resolved';
+  } else if (replies.length >= 2) {
+    resolutionStatus = 'in-progress';
+  } else {
+    resolutionStatus = 'in-progress';
+  }
+
+  return {
+    ...issue,
+    replies,
+    responseTimeMs,
+    responderCount,
+    isAnswered,
+    resolutionStatus,
+  };
+}
+
+/**
  * Convenience: load sample data into the store on first visit.
  */
 export async function initSampleDataIfEmpty() {

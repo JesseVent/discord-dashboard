@@ -119,6 +119,13 @@ export interface Issue {
   attachmentFilenames: string[];
   // theme tagging (filled by LLM analyzer)
   theme?: string;
+  // replies (populated when user clicks "Fetch Replies" — all messages after the first)
+  replies?: DiscordMessage[];
+  // response analytics (computed from replies)
+  responseTimeMs?: number | null; // time from first message to first reply
+  responderCount?: number; // distinct users who replied (excluding the issue creator)
+  isAnswered?: boolean; // has at least one reply from a different user
+  resolutionStatus?: 'unanswered' | 'in-progress' | 'likely-resolved' | 'unknown';
 }
 
 export interface ThemeCluster {

@@ -29,10 +29,12 @@ import {
   KeyRound,
   ListChecks,
   ShieldCheck,
+  MessageCircleReply,
 } from 'lucide-react';
 import { useDashboardStore } from '@/store/dashboard-store';
 import {
   fetchFromDiscord,
+  fetchRepliesForIssues,
   getDiscordEnvConfig,
   loadSampleData,
   loadFromJsonFile,
@@ -49,6 +51,9 @@ export function ConfigPanel() {
     themeMethod,
     source,
     lastFetchedAt,
+    repliesFetchedAt,
+    fetchingReplies,
+    replyProgress,
     progress,
     envConfig,
     setEnvConfig,
@@ -59,6 +64,9 @@ export function ConfigPanel() {
     setSource,
     setProgress,
     markFetched,
+    setRepliesFetchedAt,
+    setFetchingReplies,
+    setReplyProgress,
     reset,
   } = useDashboardStore();
 
@@ -190,6 +198,29 @@ export function ConfigPanel() {
       setErr(e instanceof Error ? e.message : String(e));
     } finally {
       setBusy(false);
+    }
+  }
+
+  async function handleFetchReplies() {
+    if (issues.length === 0) return;
+    setErr(null);
+    setFetchingReplies(true);
+    setReplyProgress({ done: 0, total: issues.length });
+    try {
+      const updated = await fetchRepliesForIssues({
+        issues,
+        channelId: channelId || undefined,
+        authToken: authToken || undefined,
+        maxConcurrency: 6,
+        onProgress: (done, total) => setReplyProgress({ done, total }),
+      });
+      setIssues(updated);
+      setRepliesFetchedAt(new Date().toISOString());
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : String(e));
+    } finally {
+      setFetchingReplies(false);
+      setReplyProgress(null);
     }
   }
 
@@ -338,6 +369,26 @@ export function ConfigPanel() {
               </div>
             ) : null}
 
+            {fetchingReplies && replyProgress ? (
+              <div className="agl-callout agl-callout-note">
+                <MessageCircleReply className="h-4 w-4 mt-0.5 animate-pulse text-accent shrink-0" />
+                <div className="space-y-1 flex-1">
+                  <div className="flex items-center justify-between">
+                    <span className="font-medium text-accent text-sm font-mono">Fetching replies</span>
+                    <span className="text-xs text-muted-foreground tabular-nums font-mono">
+                      {replyProgress.done} / {replyProgress.total}
+                    </span>
+                  </div>
+                  <div className="h-1.5 rounded-full bg-accent-soft overflow-hidden">
+                    <div
+                      className="h-full bg-accent transition-all duration-200"
+                      style={{ width: `${replyProgress.total > 0 ? (replyProgress.done / replyProgress.total) * 100 : 0}%` }}
+                    />
+                  </div>
+                </div>
+              </div>
+            ) : null}
+
             <div className="flex flex-wrap gap-2">
               <Button onClick={handleFetch} disabled={busy || !canFetchFromDiscord} size="sm">
                 <RefreshCw className={`h-4 w-4 mr-1.5 ${busy ? 'animate-spin' : ''}`} />
@@ -374,6 +425,24 @@ export function ConfigPanel() {
                 <ListChecks className="h-4 w-4 mr-1.5" />
                 Keyword Themes
               </Button>
+
+              <div className="w-px h-6 bg-border mx-1 self-center" />
+
+              <Button
+                onClick={handleFetchReplies}
+                disabled={busy || fetchingReplies || issues.length === 0 || !canFetchFromDiscord}
+                variant="secondary"
+                size="sm"
+                title="Fetch all replies for loaded issues — enables response analytics, top responders, unanswered detection"
+              >
+                <MessageCircleReply className={`h-4 w-4 mr-1.5 ${fetchingReplies ? 'animate-pulse' : ''}`} />
+                {fetchingReplies ? 'Fetching Replies…' : 'Fetch Replies'}
+              </Button>
+              {repliesFetchedAt && !fetchingReplies ? (
+                <span className="text-[10px] text-muted-foreground self-center">
+                  replies loaded {new Date(repliesFetchedAt).toLocaleTimeString()}
+                </span>
+              ) : null}
 
               {issues.length > 0 ? (
                 <Button

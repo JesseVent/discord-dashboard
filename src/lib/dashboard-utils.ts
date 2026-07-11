@@ -284,3 +284,230 @@ export function filterIssues(
     return true;
   });
 }
+
+/* ============================================================
+   REPLY / RESPONSE ANALYTICS
+   ============================================================ */
+
+/**
+ * Format a duration in milliseconds as a human-readable string.
+ * e.g. "3m", "2h 15m", "1d 4h", "45s"
+ */
+export function fmtDuration(ms: number | null | undefined): string {
+  if (ms === null || ms === undefined || ms < 0 || !Number.isFinite(ms)) return '—';
+  const sec = Math.round(ms / 1000);
+  if (sec < 60) return `${sec}s`;
+  const min = Math.round(sec / 60);
+  if (min < 60) return `${min}m`;
+  const hr = Math.floor(min / 60);
+  const remMin = min % 60;
+  if (hr < 24) return remMin > 0 ? `${hr}h ${remMin}m` : `${hr}h`;
+  const day = Math.floor(hr / 24);
+  const remHr = hr % 24;
+  return remHr > 0 ? `${day}d ${remHr}h` : `${day}d`;
+}
+
+/**
+ * Aggregate response analytics across all issues.
+ * Only counts issues where replies have been fetched (issue.replies !== undefined).
+ */
+export function responseAnalytics(issues: Issue[]): {
+  totalWithReplies: number;
+  answeredCount: number;
+  unansweredCount: number;
+  responseRate: number; // 0-1
+  avgResponseTimeMs: number | null;
+  medianResponseTimeMs: number | null;
+  fastResponseCount: number; // responded within 1h
+  likelyResolvedCount: number;
+  inProgressCount: number;
+  totalReplies: number;
+  avgRepliesPerIssue: number;
+} {
+  const withReplies = issues.filter((i) => i.replies !== undefined);
+  const totalWithReplies = withReplies.length;
+  if (totalWithReplies === 0) {
+    return {
+      totalWithReplies: 0,
+      answeredCount: 0,
+      unansweredCount: 0,
+      responseRate: 0,
+      avgResponseTimeMs: null,
+      medianResponseTimeMs: null,
+      fastResponseCount: 0,
+      likelyResolvedCount: 0,
+      inProgressCount: 0,
+      totalReplies: 0,
+      avgRepliesPerIssue: 0,
+    };
+  }
+
+  const answered = withReplies.filter((i) => i.isAnswered);
+  const unanswered = withReplies.filter((i) => !i.isAnswered);
+  const responseTimes = answered
+    .map((i) => i.responseTimeMs)
+    .filter((v): v is number => v !== null && v !== undefined && v > 0)
+    .sort((a, b) => a - b);
+
+  const sumResponseTime = responseTimes.reduce((s, v) => s + v, 0);
+  const avgResponseTimeMs = responseTimes.length > 0 ? sumResponseTime / responseTimes.length : null;
+  const medianResponseTimeMs =
+    responseTimes.length > 0
+      ? responseTimes[Math.floor(responseTimes.length / 2)]
+      : null;
+
+  const fastResponseCount = responseTimes.filter((ms) => ms <= 60 * 60 * 1000).length;
+  const likelyResolvedCount = withReplies.filter((i) => i.resolutionStatus === 'likely-resolved').length;
+  const inProgressCount = withReplies.filter((i) => i.resolutionStatus === 'in-progress').length;
+  const totalReplies = withReplies.reduce((s, i) => s + (i.replies?.length ?? 0), 0);
+
+  return {
+    totalWithReplies,
+    answeredCount: answered.length,
+    unansweredCount: unanswered.length,
+    responseRate: answered.length / totalWithReplies,
+    avgResponseTimeMs,
+    medianResponseTimeMs,
+    fastResponseCount,
+    likelyResolvedCount,
+    inProgressCount,
+    totalReplies,
+    avgRepliesPerIssue: totalReplies / totalWithReplies,
+  };
+}
+
+/**
+ * Top N responders — users who reply to issues (excluding issue creators).
+ * Different from topContributors which counts issue creators.
+ */
+export function topResponders(
+  issues: Issue[],
+  n = 10,
+): Array<{
+  userId: string;
+  username: string;
+  globalName: string | null;
+  replyCount: number;
+  issuesHelped: number;
+}> {
+  const map = new Map<
+    string,
+    {
+      userId: string;
+      username: string;
+      globalName: string | null;
+      replyCount: number;
+      issuesHelped: Set<string>;
+    }
+  >();
+
+  for (const issue of issues) {
+    const replies = issue.replies ?? [];
+    for (const reply of replies) {
+      const author = reply.author;
+      if (!author?.id || author.id === issue.ownerId) continue; // skip issue creator
+      const existing = map.get(author.id);
+      if (existing) {
+        existing.replyCount += 1;
+        existing.issuesHelped.add(issue.id);
+      } else {
+        map.set(author.id, {
+          userId: author.id,
+          username: author.username ?? 'unknown',
+          globalName: author.global_name ?? author.username ?? null,
+          replyCount: 1,
+          issuesHelped: new Set([issue.id]),
+        });
+      }
+    }
+  }
+
+  return Array.from(map.values())
+    .map((r) => ({
+      userId: r.userId,
+      username: r.username,
+      globalName: r.globalName,
+      replyCount: r.replyCount,
+      issuesHelped: r.issuesHelped.size,
+    }))
+    .sort((a, b) => b.replyCount - a.replyCount)
+    .slice(0, n);
+}
+
+/**
+ * Return issues that are unanswered (no replies from other users),
+ * sorted by age (oldest first).
+ */
+export function unansweredIssues(issues: Issue[], n = 10): Issue[] {
+  return issues
+    .filter((i) => i.replies !== undefined && !i.isAnswered)
+    .sort((a, b) => {
+      const aTime = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+      const bTime = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+      return aTime - bTime; // oldest first
+    })
+    .slice(0, n);
+}
+
+/**
+ * Response time distribution histogram (buckets).
+ * Returns counts per bucket for charting.
+ */
+export function responseTimeDistribution(
+  issues: Issue[],
+): Array<{ bucket: string; count: number; bucketMs: number }> {
+  const buckets = [
+    { label: '< 1h', maxMs: 60 * 60 * 1000 },
+    { label: '1–6h', maxMs: 6 * 60 * 60 * 1000 },
+    { label: '6–24h', maxMs: 24 * 60 * 60 * 1000 },
+    { label: '1–3d', maxMs: 3 * 24 * 60 * 60 * 1000 },
+    { label: '3–7d', maxMs: 7 * 24 * 60 * 60 * 1000 },
+    { label: '> 7d', maxMs: Infinity },
+  ];
+
+  const counts = buckets.map((b) => ({ bucket: b.label, count: 0, bucketMs: b.maxMs }));
+  for (const issue of issues) {
+    if (issue.responseTimeMs === null || issue.responseTimeMs === undefined) continue;
+    for (let i = 0; i < buckets.length; i++) {
+      if (issue.responseTimeMs <= buckets[i].maxMs) {
+        counts[i].count += 1;
+        break;
+      }
+    }
+  }
+  return counts;
+}
+
+/**
+ * Resolution status badge variant for a given resolution status.
+ */
+export function resolutionBadgeVariant(
+  status: Issue['resolutionStatus'],
+): 'success' | 'warning' | 'error' | 'secondary' {
+  switch (status) {
+    case 'likely-resolved':
+      return 'success';
+    case 'in-progress':
+      return 'warning';
+    case 'unanswered':
+      return 'error';
+    default:
+      return 'secondary';
+  }
+}
+
+/**
+ * Human-readable label for a resolution status.
+ */
+export function resolutionLabel(status: Issue['resolutionStatus']): string {
+  switch (status) {
+    case 'likely-resolved':
+      return 'Likely Resolved';
+    case 'in-progress':
+      return 'In Progress';
+    case 'unanswered':
+      return 'Unanswered';
+    default:
+      return 'Unknown';
+  }
+}

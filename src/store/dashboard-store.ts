@@ -28,6 +28,9 @@ interface DashboardState {
   lastFetchedAt: string | null;
   hasMore: boolean;
   source: 'sample' | 'discord' | 'upload' | null;
+  repliesFetchedAt: string | null; // timestamp when replies were last fetched
+  fetchingReplies: boolean; // true while reply fetch is in progress
+  replyProgress: { done: number; total: number } | null;
 
   // progress
   progress: FetchProgress;
@@ -40,6 +43,9 @@ interface DashboardState {
   setHasMore: (b: boolean) => void;
   setSource: (s: 'sample' | 'discord' | 'upload' | null) => void;
   markFetched: () => void;
+  setRepliesFetchedAt: (ts: string | null) => void;
+  setFetchingReplies: (b: boolean) => void;
+  setReplyProgress: (p: { done: number; total: number } | null) => void;
   reset: () => void;
 }
 
@@ -64,6 +70,9 @@ export const useDashboardStore = create<DashboardState>()(
       lastFetchedAt: null,
       hasMore: false,
       source: null,
+      repliesFetchedAt: null,
+      fetchingReplies: false,
+      replyProgress: null,
 
       progress: {
         stage: 'idle',
@@ -82,6 +91,9 @@ export const useDashboardStore = create<DashboardState>()(
       setSource: (s) => set({ source: s }),
       markFetched: () =>
         set({ lastFetchedAt: new Date().toISOString(), progress: { stage: 'done', fetchedCount: 0, totalResults: 0, message: '' } }),
+      setRepliesFetchedAt: (ts) => set({ repliesFetchedAt: ts }),
+      setFetchingReplies: (b) => set({ fetchingReplies: b }),
+      setReplyProgress: (p) => set({ replyProgress: p }),
       reset: () =>
         set({
           issues: [],
@@ -91,6 +103,9 @@ export const useDashboardStore = create<DashboardState>()(
           hasMore: false,
           lastFetchedAt: null,
           source: null,
+          repliesFetchedAt: null,
+          fetchingReplies: false,
+          replyProgress: null,
           progress: { stage: 'idle', fetchedCount: 0, totalResults: 0, message: '' },
         }),
     }),
@@ -106,6 +121,7 @@ export const useDashboardStore = create<DashboardState>()(
         hasMore: s.hasMore,
         lastFetchedAt: s.lastFetchedAt,
         source: s.source,
+        repliesFetchedAt: s.repliesFetchedAt,
       }),
     },
   ),

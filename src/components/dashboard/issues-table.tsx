@@ -28,9 +28,19 @@ import {
   DialogFooter,
 } from '@/components/ui/dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { MessageSquare, Users, ExternalLink, Paperclip, Lock, Archive } from 'lucide-react';
-import type { Issue } from '@/lib/discord-types';
-import { fmtRelative, fmtDate, tagName, tagColor, tagColorSoft } from '@/lib/dashboard-utils';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { MessageSquare, Users, ExternalLink, Paperclip, Lock, Archive, Clock, CheckCircle2, CircleDot, AlertCircle } from 'lucide-react';
+import type { Issue, DiscordMessage } from '@/lib/discord-types';
+import {
+  fmtRelative,
+  fmtDate,
+  fmtDuration,
+  tagName,
+  tagColor,
+  tagColorSoft,
+  resolutionBadgeVariant,
+  resolutionLabel,
+} from '@/lib/dashboard-utils';
 import { threadUrl } from '@/lib/discord-api';
 
 interface IssuesTableProps {
@@ -107,10 +117,11 @@ export function IssuesTable({
             <Table>
               <TableHeader className="sticky top-0 bg-surface-2 z-10">
                 <TableRow>
-                  <TableHead className="w-[40%]">Issue</TableHead>
+                  <TableHead className="w-[35%]">Issue</TableHead>
                   <TableHead>Tags</TableHead>
-                  <TableHead className="text-right">Msgs</TableHead>
-                  <TableHead className="text-right">Members</TableHead>
+                  <TableHead className="text-right">Replies</TableHead>
+                  <TableHead>Response</TableHead>
+                  <TableHead>Status</TableHead>
                   <TableHead>Reporter</TableHead>
                   <TableHead>Created</TableHead>
                 </TableRow>
@@ -160,10 +171,37 @@ export function IssuesTable({
                       </div>
                     </TableCell>
                     <TableCell className="text-right font-mono tabular-nums text-sm">
-                      {issue.messageCount}
+                      {issue.replies !== undefined ? (
+                        <span className={issue.replies.length > 0 ? 'text-fg' : 'text-muted-foreground'}>
+                          {issue.replies.length}
+                        </span>
+                      ) : (
+                        <span className="text-muted-foreground">—</span>
+                      )}
                     </TableCell>
-                    <TableCell className="text-right font-mono tabular-nums text-sm">
-                      {issue.memberCount}
+                    <TableCell className="text-xs whitespace-nowrap font-mono">
+                      {issue.responseTimeMs !== null && issue.responseTimeMs !== undefined ? (
+                        <span className="inline-flex items-center gap-1">
+                          <Clock className="h-3 w-3 text-muted-foreground" />
+                          {fmtDuration(issue.responseTimeMs)}
+                        </span>
+                      ) : issue.replies !== undefined ? (
+                        <span className="text-muted-foreground">no reply</span>
+                      ) : (
+                        <span className="text-muted-foreground">—</span>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      {issue.resolutionStatus && issue.resolutionStatus !== 'unknown' ? (
+                        <Badge variant={resolutionBadgeVariant(issue.resolutionStatus)} className="text-[10px]">
+                          {issue.resolutionStatus === 'likely-resolved' && <CheckCircle2 className="h-3 w-3" />}
+                          {issue.resolutionStatus === 'in-progress' && <CircleDot className="h-3 w-3" />}
+                          {issue.resolutionStatus === 'unanswered' && <AlertCircle className="h-3 w-3" />}
+                          {resolutionLabel(issue.resolutionStatus)}
+                        </Badge>
+                      ) : (
+                        <span className="text-[10px] text-muted-foreground">—</span>
+                      )}
                     </TableCell>
                     <TableCell className="text-sm">
                       {issue.ownerGlobalName ?? issue.ownerUsername}
@@ -245,6 +283,19 @@ function IssueDetailDialog({
           <Badge variant="secondary" className="text-[11px]">
             <Users className="h-3 w-3 mr-1" /> {issue.memberCount} members
           </Badge>
+          {issue.resolutionStatus && issue.resolutionStatus !== 'unknown' ? (
+            <Badge variant={resolutionBadgeVariant(issue.resolutionStatus)} className="text-[11px]">
+              {issue.resolutionStatus === 'likely-resolved' && <CheckCircle2 className="h-3 w-3 mr-1" />}
+              {issue.resolutionStatus === 'in-progress' && <CircleDot className="h-3 w-3 mr-1" />}
+              {issue.resolutionStatus === 'unanswered' && <AlertCircle className="h-3 w-3 mr-1" />}
+              {resolutionLabel(issue.resolutionStatus)}
+            </Badge>
+          ) : null}
+          {issue.responseTimeMs !== null && issue.responseTimeMs !== undefined ? (
+            <Badge variant="secondary" className="text-[11px]">
+              <Clock className="h-3 w-3 mr-1" /> first reply in {fmtDuration(issue.responseTimeMs)}
+            </Badge>
+          ) : null}
           {issue.hasAttachment ? (
             <Badge variant="secondary" className="text-[11px]">
               <Paperclip className="h-3 w-3 mr-1" /> {issue.attachmentFilenames.length} attachment
@@ -254,33 +305,66 @@ function IssueDetailDialog({
         </div>
 
         <ScrollArea className="flex-1 -mx-6 px-6">
-          <div className="space-y-3">
-            <div className="flex items-center gap-2 text-xs text-muted-foreground">
-              <span>Reported by</span>
-              <span className="font-medium text-foreground">
-                {issue.ownerGlobalName ?? issue.ownerUsername}
-              </span>
-              <span>·</span>
-              <span className="font-mono">@{issue.ownerUsername}</span>
-              <span>·</span>
-              <span className="font-mono text-[10px]">{issue.ownerId}</span>
+          <div className="space-y-4">
+            {/* Original post (first message) */}
+            <div>
+              <div className="flex items-center gap-2 text-xs text-muted-foreground mb-2">
+                <span className="agl-eyebrow">Original Post</span>
+                <span>·</span>
+                <span className="font-medium text-foreground">
+                  {issue.ownerGlobalName ?? issue.ownerUsername}
+                </span>
+                <span className="font-mono">@{issue.ownerUsername}</span>
+              </div>
+              {issue.firstMessageContent ? (
+                <pre className="agl-codeblock whitespace-pre-wrap break-words">
+                  {issue.firstMessageContent}
+                </pre>
+              ) : (
+                <p className="text-sm italic text-muted-foreground">
+                  No first-message content available.
+                </p>
+              )}
             </div>
 
-            {issue.firstMessageContent ? (
-              <pre className="agl-codeblock whitespace-pre-wrap break-words">
-                {issue.firstMessageContent}
-              </pre>
-            ) : (
-              <p className="text-sm italic text-muted-foreground">
-                No first-message content available. Use “Fetch Details” to retrieve it.
-              </p>
-            )}
-
-            {issue.attachmentFilenames.length > 0 ? (
-              <div className="text-xs text-muted-foreground">
-                Attachments: {issue.attachmentFilenames.join(', ')}
+            {/* Replies (conversation thread) */}
+            {issue.replies && issue.replies.length > 0 ? (
+              <div>
+                <div className="agl-eyebrow mb-3">
+                  {issue.replies.length} {issue.replies.length === 1 ? 'Reply' : 'Replies'}
+                </div>
+                <div className="space-y-3">
+                  {issue.replies.map((reply, idx) => (
+                    <ReplyRow
+                      key={reply.id ?? idx}
+                      reply={reply}
+                      issueOwnerId={issue.ownerId}
+                      isFirstReply={idx === 0}
+                    />
+                  ))}
+                </div>
               </div>
-            ) : null}
+            ) : issue.replies !== undefined ? (
+              <div className="agl-callout agl-callout-warning">
+                <AlertCircle className="h-4 w-4 mt-0.5 text-warning shrink-0" />
+                <div>
+                  <p className="font-medium text-warning text-sm">No replies yet</p>
+                  <p className="text-xs text-fg mt-0.5">
+                    This issue has not received a response from the community.
+                  </p>
+                </div>
+              </div>
+            ) : (
+              <div className="agl-callout agl-callout-note">
+                <MessageSquare className="h-4 w-4 mt-0.5 text-accent shrink-0" />
+                <div>
+                  <p className="font-medium text-accent text-sm">Replies not loaded</p>
+                  <p className="text-xs text-fg mt-0.5">
+                    Click "Fetch Replies" in the Data Source panel to load the full conversation.
+                  </p>
+                </div>
+              </div>
+            )}
           </div>
         </ScrollArea>
 
@@ -293,5 +377,68 @@ function IssueDetailDialog({
         </DialogFooter>
       </DialogContent>
     </Dialog>
+  );
+}
+
+/**
+ * Render a single reply as a chat-style row with avatar, author, timestamp, and content.
+ * Issue creator's replies are badged so you can see when the OP chimes back in.
+ */
+function ReplyRow({
+  reply,
+  issueOwnerId,
+  isFirstReply,
+}: {
+  reply: DiscordMessage;
+  issueOwnerId: string;
+  isFirstReply: boolean;
+}) {
+  const author = reply.author;
+  const displayName = author?.global_name ?? author?.username ?? 'unknown';
+  const username = author?.username ?? 'unknown';
+  const isOp = author?.id === issueOwnerId;
+  const initials = displayName.replace(/[^a-zA-Z0-9 ]/g, '').split(/\s+/).filter(Boolean).slice(0, 2).map((p) => p[0]).join('').toUpperCase() || '?';
+
+  return (
+    <div className={`flex gap-3 rounded-md p-3 ${isFirstReply ? 'bg-accent-soft ring-1 ring-accent/20' : 'bg-surface-2'}`}>
+      <Avatar className="h-8 w-8 shrink-0">
+        <AvatarFallback className={`text-xs ${isOp ? 'bg-accent text-accent-fg' : 'bg-surface-3'}`}>
+          {initials}
+        </AvatarFallback>
+      </Avatar>
+      <div className="min-w-0 flex-1">
+        <div className="flex items-center gap-2 mb-1 flex-wrap">
+          <span className="text-sm font-medium">{displayName}</span>
+          {isOp ? (
+            <span className="rounded-xs bg-accent text-accent-fg px-1.5 py-0.5 text-[9px] font-mono font-medium uppercase tracking-wider">
+              OP
+            </span>
+          ) : null}
+          {isFirstReply ? (
+            <span className="rounded-xs bg-success-soft text-success px-1.5 py-0.5 text-[9px] font-mono font-medium uppercase tracking-wider">
+              First Reply
+            </span>
+          ) : null}
+          <span className="text-[11px] text-muted-foreground font-mono">@{username}</span>
+          <span className="text-[11px] text-muted-foreground">·</span>
+          <span className="text-[11px] text-muted-foreground font-mono">
+            {fmtRelative(reply.timestamp)}
+          </span>
+        </div>
+        {reply.content ? (
+          <pre className="whitespace-pre-wrap break-words text-sm font-sans leading-relaxed bg-transparent p-0 m-0">
+            {reply.content}
+          </pre>
+        ) : (
+          <p className="text-xs italic text-muted-foreground">(empty message — may be an attachment or embed)</p>
+        )}
+        {reply.attachments && reply.attachments.length > 0 ? (
+          <div className="mt-2 flex items-center gap-1 text-[11px] text-muted-foreground">
+            <Paperclip className="h-3 w-3" />
+            {reply.attachments.length} attachment{reply.attachments.length === 1 ? '' : 's'}
+          </div>
+        ) : null}
+      </div>
+    </div>
   );
 }

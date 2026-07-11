@@ -9,19 +9,30 @@ import {
   Activity,
   Hash,
   Database,
+  Clock,
+  CheckCircle2,
+  AlertCircle,
+  MessageCircleReply,
+  Zap,
 } from 'lucide-react';
 import { useDashboardStore } from '@/store/dashboard-store';
 import {
   filterIssues,
   issuesByTag,
   topIssuesByMessages,
+  responseAnalytics,
+  fmtDuration,
 } from '@/lib/dashboard-utils';
 import { initSampleDataIfEmpty } from '@/lib/data-loader';
+import type { Issue } from '@/lib/discord-types';
 import { KpiCard } from '@/components/dashboard/kpi-card';
 import { IssuesOverTimeChart } from '@/components/dashboard/issues-over-time-chart';
 import { TagDistributionChart } from '@/components/dashboard/tag-distribution-chart';
 import { ThemesPanel } from '@/components/dashboard/themes-panel';
 import { TopContributors } from '@/components/dashboard/top-contributors';
+import { TopResponders } from '@/components/dashboard/top-responders';
+import { ResponseTimeChart } from '@/components/dashboard/response-time-chart';
+import { UnansweredIssues } from '@/components/dashboard/unanswered-issues';
 import { IssuesTable } from '@/components/dashboard/issues-table';
 import { ConfigPanel } from '@/components/dashboard/config-panel';
 import { FilterBar } from '@/components/dashboard/filter-bar';
@@ -37,6 +48,7 @@ export default function Home() {
     channelId,
     progress,
     lastFetchedAt,
+    repliesFetchedAt,
   } = useDashboardStore();
 
   const [selectedTagIds, setSelectedTagIds] = useState<string[]>([]);
@@ -66,6 +78,11 @@ export default function Home() {
   const avgMsgPerIssue = issues.length > 0 ? Math.round(totalMessages / issues.length) : 0;
 
   const tagCounts = useMemo(() => issuesByTag(issues), [issues]);
+
+  // Response analytics (only meaningful after "Fetch Replies" has been clicked)
+  const replyAnalytics = useMemo(() => responseAnalytics(issues), [issues]);
+  const hasReplies = replyAnalytics.totalWithReplies > 0;
+  const [selectedIssueForDetail, setSelectedIssueForDetail] = useState<Issue | null>(null);
 
   const filteredIssues = useMemo(
     () =>
@@ -169,6 +186,65 @@ export default function Home() {
           />
         </section>
 
+        {/* Response Analytics KPI strip — only shown after "Fetch Replies" has been clicked */}
+        {hasReplies ? (
+          <section className="space-y-3">
+            <div className="flex items-center gap-2">
+              <MessageCircleReply className="h-4 w-4 text-cat-agent" />
+              <h2 className="agl-eyebrow">Response Analytics</h2>
+              {repliesFetchedAt ? (
+                <span className="text-[10px] text-muted-foreground">
+                  · loaded {new Date(repliesFetchedAt).toLocaleTimeString()}
+                </span>
+              ) : null}
+            </div>
+            <div className="grid gap-3 grid-cols-2 md:grid-cols-3 lg:grid-cols-6">
+              <KpiCard
+                title="Response Rate"
+                value={`${Math.round(replyAnalytics.responseRate * 100)}%`}
+                subtitle={`${replyAnalytics.answeredCount} of ${replyAnalytics.totalWithReplies} answered`}
+                icon={MessageCircleReply}
+                accent="text-cat-agent"
+              />
+              <KpiCard
+                title="Avg Response"
+                value={fmtDuration(replyAnalytics.avgResponseTimeMs)}
+                subtitle="time to first reply"
+                icon={Clock}
+                accent="text-cat-chain"
+              />
+              <KpiCard
+                title="Median Response"
+                value={fmtDuration(replyAnalytics.medianResponseTimeMs)}
+                subtitle="middle value"
+                icon={Clock}
+                accent="text-cat-retrieval"
+              />
+              <KpiCard
+                title="Fast Responses"
+                value={replyAnalytics.fastResponseCount}
+                subtitle="answered < 1h"
+                icon={Zap}
+                accent="text-success"
+              />
+              <KpiCard
+                title="Likely Resolved"
+                value={replyAnalytics.likelyResolvedCount}
+                subtitle={`${replyAnalytics.totalWithReplies > 0 ? Math.round((replyAnalytics.likelyResolvedCount / replyAnalytics.totalWithReplies) * 100) : 0}% of loaded`}
+                icon={CheckCircle2}
+                accent="text-success"
+              />
+              <KpiCard
+                title="Unanswered"
+                value={replyAnalytics.unansweredCount}
+                subtitle={`${replyAnalytics.totalWithReplies > 0 ? Math.round((replyAnalytics.unansweredCount / replyAnalytics.totalWithReplies) * 100) : 0}% of loaded`}
+                icon={AlertCircle}
+                accent="text-error"
+              />
+            </div>
+          </section>
+        ) : null}
+
         {/* Charts row */}
         <section className="grid gap-4 lg:grid-cols-2">
           <IssuesOverTimeChart issues={issues} />
@@ -182,6 +258,18 @@ export default function Home() {
           />
         </section>
 
+        {/* Response analytics charts row — only shown after replies are loaded */}
+        {hasReplies ? (
+          <section className="grid gap-4 lg:grid-cols-2">
+            <ResponseTimeChart issues={issues} />
+            <UnansweredIssues
+              issues={issues}
+              channelId={channelId}
+              onSelectIssue={setSelectedIssueForDetail}
+            />
+          </section>
+        ) : null}
+
         {/* Themes + Contributors row */}
         <section className="grid gap-4 lg:grid-cols-3">
           <div className="lg:col-span-2">
@@ -193,8 +281,20 @@ export default function Home() {
               isAnalyzing={isAnalyzing}
             />
           </div>
-          <TopContributors issues={issues} />
+          {hasReplies ? (
+            <TopResponders issues={issues} />
+          ) : (
+            <TopContributors issues={issues} />
+          )}
         </section>
+
+        {/* When replies are loaded, show contributors AND responders side by side */}
+        {hasReplies ? (
+          <section className="grid gap-4 lg:grid-cols-2">
+            <TopContributors issues={issues} />
+            <TopResponders issues={issues} />
+          </section>
+        ) : null}
 
         {/* Filter bar */}
         <section className="rounded-lg border bg-card p-3">
