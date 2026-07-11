@@ -27,10 +27,15 @@ interface DashboardState {
   themeMethod: 'llm' | 'fallback' | null;
   lastFetchedAt: string | null;
   hasMore: boolean;
-  source: 'sample' | 'discord' | 'upload' | null;
+  source: 'sample' | 'discord' | 'upload' | 'database' | null;
   repliesFetchedAt: string | null; // timestamp when replies were last fetched
   fetchingReplies: boolean; // true while reply fetch is in progress
   replyProgress: { done: number; total: number } | null;
+  sentimentFetchedAt: string | null;
+  analyzingSentiment: boolean;
+  duplicatesFetchedAt: string | null;
+  detectingDuplicates: boolean;
+  duplicateClusters: Array<{ name: string; description: string; issueIds: string[] }>;
 
   // progress
   progress: FetchProgress;
@@ -41,11 +46,16 @@ interface DashboardState {
   setThemes: (themes: ThemeCluster[], method?: 'llm' | 'fallback') => void;
   setTotalResults: (n: number) => void;
   setHasMore: (b: boolean) => void;
-  setSource: (s: 'sample' | 'discord' | 'upload' | null) => void;
+  setSource: (s: 'sample' | 'discord' | 'upload' | 'database' | null) => void;
   markFetched: () => void;
   setRepliesFetchedAt: (ts: string | null) => void;
   setFetchingReplies: (b: boolean) => void;
   setReplyProgress: (p: { done: number; total: number } | null) => void;
+  setSentimentFetchedAt: (ts: string | null) => void;
+  setAnalyzingSentiment: (b: boolean) => void;
+  setDuplicatesFetchedAt: (ts: string | null) => void;
+  setDetectingDuplicates: (b: boolean) => void;
+  setDuplicateClusters: (c: Array<{ name: string; description: string; issueIds: string[] }>) => void;
   reset: () => void;
 }
 
@@ -73,6 +83,11 @@ export const useDashboardStore = create<DashboardState>()(
       repliesFetchedAt: null,
       fetchingReplies: false,
       replyProgress: null,
+      sentimentFetchedAt: null,
+      analyzingSentiment: false,
+      duplicatesFetchedAt: null,
+      detectingDuplicates: false,
+      duplicateClusters: [],
 
       progress: {
         stage: 'idle',
@@ -94,6 +109,11 @@ export const useDashboardStore = create<DashboardState>()(
       setRepliesFetchedAt: (ts) => set({ repliesFetchedAt: ts }),
       setFetchingReplies: (b) => set({ fetchingReplies: b }),
       setReplyProgress: (p) => set({ replyProgress: p }),
+      setSentimentFetchedAt: (ts) => set({ sentimentFetchedAt: ts }),
+      setAnalyzingSentiment: (b) => set({ analyzingSentiment: b }),
+      setDuplicatesFetchedAt: (ts) => set({ duplicatesFetchedAt: ts }),
+      setDetectingDuplicates: (b) => set({ detectingDuplicates: b }),
+      setDuplicateClusters: (c) => set({ duplicateClusters: c }),
       reset: () =>
         set({
           issues: [],
@@ -106,6 +126,11 @@ export const useDashboardStore = create<DashboardState>()(
           repliesFetchedAt: null,
           fetchingReplies: false,
           replyProgress: null,
+          sentimentFetchedAt: null,
+          analyzingSentiment: false,
+          duplicatesFetchedAt: null,
+          detectingDuplicates: false,
+          duplicateClusters: [],
           progress: { stage: 'idle', fetchedCount: 0, totalResults: 0, message: '' },
         }),
     }),
@@ -122,6 +147,9 @@ export const useDashboardStore = create<DashboardState>()(
         lastFetchedAt: s.lastFetchedAt,
         source: s.source,
         repliesFetchedAt: s.repliesFetchedAt,
+        sentimentFetchedAt: s.sentimentFetchedAt,
+        duplicatesFetchedAt: s.duplicatesFetchedAt,
+        duplicateClusters: s.duplicateClusters,
       }),
     },
   ),

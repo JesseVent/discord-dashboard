@@ -126,6 +126,12 @@ export interface Issue {
   responderCount?: number; // distinct users who replied (excluding the issue creator)
   isAnswered?: boolean; // has at least one reply from a different user
   resolutionStatus?: 'unanswered' | 'in-progress' | 'likely-resolved' | 'unknown';
+  // sentiment (populated by LLM sentiment analysis)
+  sentiment?: 'frustrated' | 'neutral' | 'positive' | 'resolved' | 'unknown';
+  sentimentScore?: number; // -1.0 to 1.0
+  sentimentSummary?: string;
+  // duplicate detection (populated by LLM duplicate clustering)
+  duplicateClusterId?: string;
 }
 
 export interface ThemeCluster {

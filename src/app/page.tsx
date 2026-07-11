@@ -36,6 +36,10 @@ import { UnansweredIssues } from '@/components/dashboard/unanswered-issues';
 import { IssuesTable } from '@/components/dashboard/issues-table';
 import { ConfigPanel } from '@/components/dashboard/config-panel';
 import { FilterBar } from '@/components/dashboard/filter-bar';
+import { SentimentPanel } from '@/components/dashboard/sentiment-panel';
+import { DuplicateClusters } from '@/components/dashboard/duplicate-clusters';
+import { TimeOfWeekHeatmap } from '@/components/dashboard/time-of-week-heatmap';
+import { EscalationWatchlist } from '@/components/dashboard/escalation-watchlist';
 import { Badge } from '@/components/ui/badge';
 
 export default function Home() {
@@ -49,6 +53,9 @@ export default function Home() {
     progress,
     lastFetchedAt,
     repliesFetchedAt,
+    sentimentFetchedAt,
+    duplicatesFetchedAt,
+    duplicateClusters,
   } = useDashboardStore();
 
   const [selectedTagIds, setSelectedTagIds] = useState<string[]>([]);
@@ -294,6 +301,39 @@ export default function Home() {
             <TopContributors issues={issues} />
             <TopResponders issues={issues} />
           </section>
+        ) : null}
+
+        {/* Time-of-week heatmap — always shown if there are timestamped issues */}
+        <TimeOfWeekHeatmap issues={issues} />
+
+        {/* Sentiment + Duplicates row — shown when sentiment or duplicate data is loaded */}
+        {sentimentFetchedAt || duplicatesFetchedAt ? (
+          <section className="grid gap-4 lg:grid-cols-2">
+            {sentimentFetchedAt ? (
+              <SentimentPanel
+                issues={issues}
+                channelId={channelId}
+                onSelectIssue={setSelectedIssueForDetail}
+              />
+            ) : null}
+            {duplicatesFetchedAt ? (
+              <DuplicateClusters
+                issues={issues}
+                clusters={duplicateClusters}
+                channelId={channelId}
+                onSelectIssue={setSelectedIssueForDetail}
+              />
+            ) : null}
+          </section>
+        ) : null}
+
+        {/* Escalation watchlist — shown when replies are loaded */}
+        {hasReplies ? (
+          <EscalationWatchlist
+            issues={issues}
+            channelId={channelId}
+            onSelectIssue={setSelectedIssueForDetail}
+          />
         ) : null}
 
         {/* Filter bar */}

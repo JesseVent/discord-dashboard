@@ -211,6 +211,97 @@ export async function getDiscordEnvConfig(): Promise<{
 }
 
 /**
+ * Persist fetched issues + replies to SQLite via /api/db/sync.
+ * Failures are logged but non-fatal — the dashboard still works in-memory.
+ */
+export async function persistToDb(opts: {
+  issues: Issue[];
+  channelId: string;
+  guildId?: string;
+}): Promise<{ ok: boolean; issueCount: number; replyCount: number }> {
+  try {
+    const res = await fetch('/api/db/sync', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({
+        issues: opts.issues,
+        channelId: opts.channelId,
+        guildId: opts.guildId ?? '839993398554656828',
+      }),
+    });
+    if (!res.ok) {
+      console.warn('[persistToDb] failed:', res.status);
+      return { ok: false, issueCount: 0, replyCount: 0 };
+    }
+    const data = await res.json();
+    return { ok: true, issueCount: data.issueCount ?? 0, replyCount: data.replyCount ?? 0 };
+  } catch (err) {
+    console.warn('[persistToDb] error:', err);
+    return { ok: false, issueCount: 0, replyCount: 0 };
+  }
+}
+
+/**
+ * Load all persisted issues + replies from SQLite.
+ * Used on dashboard mount to hydrate without re-fetching from Discord.
+ */
+export async function loadFromDb(opts: {
+  channelId: string;
+  limit?: number;
+}): Promise<{
+  issues: Issue[];
+  totalResults: number;
+  hasReplies: boolean;
+} | null> {
+  try {
+    const params = new URLSearchParams({ channelId: opts.channelId, limit: String(opts.limit ?? 200) });
+    const res = await fetch(`/api/db/load?${params.toString()}`, { cache: 'no-store' });
+    if (!res.ok) return null;
+    const data = await res.json();
+    if (!data.issues || data.issues.length === 0) return null;
+    return {
+      issues: data.issues as Issue[],
+      totalResults: data.totalResults ?? data.issues.length,
+      hasReplies: data.hasReplies ?? false,
+    };
+  } catch (err) {
+    console.warn('[loadFromDb] error:', err);
+    return null;
+  }
+}
+
+/**
+ * Run LLM sentiment analysis on the current issues.
+ * Returns sentiment + score + summary per issue.
+ */
+export async function runSentimentAnalysis(
+  issues: Issue[],
+): Promise<Map<string, { sentiment: Issue['sentiment']; score: number; summary: string }>> {
+  const result = new Map<string, { sentiment: Issue['sentiment']; score: number; summary: string }>();
+  if (issues.length === 0) return result;
+
+  try {
+    const res = await fetch('/api/analyze-sentiment', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ issues }),
+    });
+    if (!res.ok) throw new Error(`analyze-sentiment failed: ${res.status}`);
+    const data = await res.json();
+    for (const r of data.results ?? []) {
+      result.set(r.id, {
+        sentiment: r.sentiment as Issue['sentiment'],
+        score: r.score as number,
+        summary: r.summary as string,
+      });
+    }
+  } catch (err) {
+    console.warn('[runSentimentAnalysis] failed:', err);
+  }
+  return result;
+}
+
+/**
  * Fetch all messages for a single thread (used for reply/response analysis).
  * Returns up to `limit` messages, oldest-first.
  */
@@ -390,18 +481,49 @@ export function computeResponseAnalytics(issue: Issue): Issue {
 }
 
 /**
- * Convenience: load sample data into the store on first visit.
+ * Initialize the dashboard on mount.
+ * Priority: localStorage (persisted Zustand) > SQLite DB > sample data.
+ * If sample data is loaded, it's also persisted to DB so the user sees
+ * the same data on next visit.
  */
 export async function initSampleDataIfEmpty() {
   const store = useDashboardStore.getState();
-  if (store.issues.length > 0) return;
+  if (store.issues.length > 0) return; // already loaded (from localStorage)
+
   try {
+    // 1. Try loading from DB first
+    const channelId = store.channelId || '1006358244786196510';
+    store.setProgress({ stage: 'fetching-threads', fetchedCount: 0, totalResults: 0, message: 'Loading from database…' });
+    const dbData = await loadFromDb({ channelId });
+    if (dbData && dbData.issues.length > 0) {
+      store.setIssues(dbData.issues);
+      store.setTotalResults(dbData.totalResults);
+      store.setHasMore(false);
+      store.setSource('database');
+      if (dbData.hasReplies) {
+        store.setRepliesFetchedAt(new Date().toISOString());
+      }
+      // Run theme analysis (cached if available, else LLM)
+      store.setProgress({ stage: 'analyzing-themes', message: 'Analyzing themes…' });
+      const themes = await runThemeAnalysis(dbData.issues);
+      store.setThemes(themes);
+      store.markFetched();
+      return;
+    }
+
+    // 2. Fall back to sample data + persist to DB
     store.setProgress({ stage: 'fetching-threads', fetchedCount: 0, totalResults: 0, message: 'Loading sample data…' });
     const { issues, totalResults, hasMore } = await loadSampleData();
     store.setIssues(issues);
     store.setTotalResults(totalResults);
     store.setHasMore(hasMore);
     store.setSource('sample');
+
+    // Persist to DB in the background (non-blocking)
+    persistToDb({ issues, channelId }).catch((err) =>
+      console.warn('[initSampleDataIfEmpty] persist failed:', err),
+    );
+
     store.setProgress({ stage: 'analyzing-themes', message: 'Analyzing themes…' });
     const themes = await runThemeAnalysis(issues);
     store.setThemes(themes);

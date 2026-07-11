@@ -30,6 +30,11 @@ import {
   ListChecks,
   ShieldCheck,
   MessageCircleReply,
+  Brain,
+  Layers,
+  Download,
+  FileJson,
+  FileText,
 } from 'lucide-react';
 import { useDashboardStore } from '@/store/dashboard-store';
 import {
@@ -38,8 +43,13 @@ import {
   getDiscordEnvConfig,
   loadSampleData,
   loadFromJsonFile,
+  persistToDb,
   runThemeAnalysis,
+  runSentimentAnalysis,
 } from '@/lib/data-loader';
+import { exportIssuesToCsv, exportIssuesToJson, exportSummaryToMarkdown } from '@/lib/export-utils';
+import { responseAnalytics } from '@/lib/dashboard-utils';
+import type { DuplicateClusterData } from '@/components/dashboard/duplicate-clusters';
 
 export function ConfigPanel() {
   const {
@@ -67,6 +77,16 @@ export function ConfigPanel() {
     setRepliesFetchedAt,
     setFetchingReplies,
     setReplyProgress,
+    sentimentFetchedAt,
+    analyzingSentiment,
+    setSentimentFetchedAt,
+    setAnalyzingSentiment,
+    duplicatesFetchedAt,
+    detectingDuplicates,
+    setDuplicatesFetchedAt,
+    setDetectingDuplicates,
+    duplicateClusters,
+    setDuplicateClusters,
     reset,
   } = useDashboardStore();
 
@@ -85,6 +105,7 @@ export function ConfigPanel() {
   const hasEnvChannel = !!envConfig?.hasEnvChannelId;
   const canFetchFromDiscord = !!authToken || hasEnvToken;
   const usingEnvCreds = !authToken && hasEnvToken;
+  const replyAnalytics = responseAnalytics(issues);
 
   async function handleFetch() {
     setErr(null);
@@ -109,6 +130,10 @@ export function ConfigPanel() {
       setProgress({ stage: 'analyzing-themes', message: 'Analyzing themes with LLM…' });
       const newThemes = await runThemeAnalysis(newIssues, 'llm');
       setThemes(newThemes, 'llm');
+      // Persist to SQLite so reloads don't need to re-fetch from Discord
+      persistToDb({ issues: newIssues, channelId }).catch((err) =>
+        console.warn('[handleFetch] persist failed:', err),
+      );
       markFetched();
     } catch (e) {
       setErr(e instanceof Error ? e.message : String(e));
@@ -132,6 +157,10 @@ export function ConfigPanel() {
       setProgress({ stage: 'analyzing-themes', message: 'Analyzing themes with LLM…' });
       const newThemes = await runThemeAnalysis(newIssues, 'llm');
       setThemes(newThemes, 'llm');
+      // Persist sample data to DB so reloads are instant
+      persistToDb({ issues: newIssues, channelId }).catch((err) =>
+        console.warn('[handleSample] persist failed:', err),
+      );
       markFetched();
     } catch (e) {
       setErr(e instanceof Error ? e.message : String(e));
@@ -157,6 +186,10 @@ export function ConfigPanel() {
       setProgress({ stage: 'analyzing-themes', message: 'Analyzing themes with LLM…' });
       const newThemes = await runThemeAnalysis(newIssues, 'llm');
       setThemes(newThemes, 'llm');
+      // Persist uploaded data to DB
+      persistToDb({ issues: newIssues, channelId }).catch((err) =>
+        console.warn('[handleUpload] persist failed:', err),
+      );
       markFetched();
     } catch (err) {
       setErr(err instanceof Error ? err.message : String(err));
@@ -216,11 +249,67 @@ export function ConfigPanel() {
       });
       setIssues(updated);
       setRepliesFetchedAt(new Date().toISOString());
+      // Persist replies to DB
+      persistToDb({ issues: updated, channelId }).catch((err) =>
+        console.warn('[handleFetchReplies] persist failed:', err),
+      );
     } catch (e) {
       setErr(e instanceof Error ? e.message : String(e));
     } finally {
       setFetchingReplies(false);
       setReplyProgress(null);
+    }
+  }
+
+  async function handleAnalyzeSentiment() {
+    if (issues.length === 0) return;
+    setErr(null);
+    setAnalyzingSentiment(true);
+    try {
+      const results = await runSentimentAnalysis(issues);
+      // Merge sentiment into issues
+      const updated = issues.map((issue) => {
+        const r = results.get(issue.id);
+        if (!r) return issue;
+        return {
+          ...issue,
+          sentiment: r.sentiment,
+          sentimentScore: r.score,
+          sentimentSummary: r.summary,
+        };
+      });
+      setIssues(updated);
+      setSentimentFetchedAt(new Date().toISOString());
+      // Persist to DB
+      persistToDb({ issues: updated, channelId }).catch((err) =>
+        console.warn('[handleAnalyzeSentiment] persist failed:', err),
+      );
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : String(e));
+    } finally {
+      setAnalyzingSentiment(false);
+    }
+  }
+
+  async function handleDetectDuplicates() {
+    if (issues.length === 0) return;
+    setErr(null);
+    setDetectingDuplicates(true);
+    try {
+      const res = await fetch('/api/detect-duplicates', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ issues }),
+      });
+      if (!res.ok) throw new Error(`detect-duplicates failed: ${res.status}`);
+      const data = await res.json();
+      const clusters: DuplicateClusterData[] = data.clusters ?? [];
+      setDuplicateClusters(clusters);
+      setDuplicatesFetchedAt(new Date().toISOString());
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : String(e));
+    } finally {
+      setDetectingDuplicates(false);
     }
   }
 
@@ -443,6 +532,74 @@ export function ConfigPanel() {
                   replies loaded {new Date(repliesFetchedAt).toLocaleTimeString()}
                 </span>
               ) : null}
+
+              <div className="w-px h-6 bg-border mx-1 self-center" />
+
+              {/* LLM analysis actions */}
+              <Button
+                onClick={handleAnalyzeSentiment}
+                disabled={busy || analyzingSentiment || issues.length === 0}
+                variant="outline"
+                size="sm"
+                title="LLM scores sentiment (frustrated/neutral/positive/resolved) for each issue"
+              >
+                <Brain className={`h-4 w-4 mr-1.5 ${analyzingSentiment ? 'animate-pulse' : ''}`} />
+                {analyzingSentiment ? 'Scoring…' : 'Sentiment'}
+              </Button>
+              <Button
+                onClick={handleDetectDuplicates}
+                disabled={busy || detectingDuplicates || issues.length === 0}
+                variant="outline"
+                size="sm"
+                title="LLM clusters semantically similar issues — spot recurring bugs"
+              >
+                <Layers className={`h-4 w-4 mr-1.5 ${detectingDuplicates ? 'animate-pulse' : ''}`} />
+                {detectingDuplicates ? 'Clustering…' : 'Duplicates'}
+              </Button>
+
+              <div className="w-px h-6 bg-border mx-1 self-center" />
+
+              {/* Export actions */}
+              <Button
+                onClick={() => exportIssuesToCsv(issues)}
+                disabled={issues.length === 0}
+                variant="ghost"
+                size="sm"
+                title="Export loaded issues as CSV"
+              >
+                <Download className="h-4 w-4 mr-1.5" />
+                CSV
+              </Button>
+              <Button
+                onClick={() => exportIssuesToJson(issues)}
+                disabled={issues.length === 0}
+                variant="ghost"
+                size="sm"
+                title="Export loaded issues (with replies) as JSON"
+              >
+                <FileJson className="h-4 w-4 mr-1.5" />
+                JSON
+              </Button>
+              <Button
+                onClick={() =>
+                  exportSummaryToMarkdown({
+                    issues,
+                    totalResults,
+                    channelId,
+                    themes: themes.map((t) => ({ theme: t.theme, count: t.count, description: t.description })),
+                    responseRate: replyAnalytics?.responseRate,
+                    avgResponseTimeMs: replyAnalytics?.avgResponseTimeMs,
+                    duplicateClusters,
+                  })
+                }
+                disabled={issues.length === 0}
+                variant="ghost"
+                size="sm"
+                title="Export a summary report as Markdown"
+              >
+                <FileText className="h-4 w-4 mr-1.5" />
+                Report
+              </Button>
 
               {issues.length > 0 ? (
                 <Button
