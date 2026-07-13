@@ -223,6 +223,8 @@ export function topContributors(
 
 /**
  * Search/filter issues by keyword.
+ *
+ * All filter dimensions combine with AND. Empty/missing filters are no-ops.
  */
 export function filterIssues(
   issues: Issue[],
@@ -230,6 +232,12 @@ export function filterIssues(
     query?: string;
     tagIds?: string[];
     archivedOnly?: boolean | null;
+    statuses?: ReadonlySet<Issue['resolutionStatus']> | null;
+    sentiments?: ReadonlySet<NonNullable<Issue['sentiment']>> | null;
+    hasReplies?: boolean | null;
+    minMessageCount?: number | null;
+    hasAttachment?: boolean | null;
+    duplicateClusterOnly?: boolean | null;
     dateFrom?: string | null;
     dateTo?: string | null;
     theme?: string | null;
@@ -238,6 +246,9 @@ export function filterIssues(
 ): Issue[] {
   const q = (opts.query ?? '').trim().toLowerCase();
   const tagSet = new Set(opts.tagIds ?? []);
+  const statusSet = opts.statuses ?? null;
+  const sentimentSet = opts.sentiments ?? null;
+  const minMsgs = opts.minMessageCount ?? null;
   const themeMap = new Map<string, Set<string>>();
   if (opts.theme && opts.themes) {
     for (const t of opts.themes) {
@@ -250,6 +261,33 @@ export function filterIssues(
     if (opts.archivedOnly === false && issue.archived) return false;
 
     if (tagSet.size > 0 && !issue.appliedTags.some((t) => tagSet.has(t))) return false;
+
+    if (statusSet && statusSet.size > 0) {
+      const s = issue.resolutionStatus ?? 'unknown';
+      if (!statusSet.has(s)) return false;
+    }
+
+    if (sentimentSet && sentimentSet.size > 0) {
+      const s = issue.sentiment ?? 'unknown';
+      if (!sentimentSet.has(s as NonNullable<Issue['sentiment']>)) return false;
+    }
+
+    // hasReplies: true → issue.replies loaded AND has > 0 entries;
+    //            false → issue.replies loaded AND empty (unanswered);
+    //            null → either loaded or not (no filter).
+    if (opts.hasReplies === true) {
+      if (!issue.replies || issue.replies.length === 0) return false;
+    } else if (opts.hasReplies === false) {
+      if (issue.replies === undefined) return false; // not loaded yet — don't show under "no replies"
+      if (issue.replies.length > 0) return false;
+    }
+
+    if (minMsgs != null && (issue.messageCount ?? 0) < minMsgs) return false;
+
+    if (opts.hasAttachment === true && !issue.hasAttachment) return false;
+    if (opts.hasAttachment === false && issue.hasAttachment) return false;
+
+    if (opts.duplicateClusterOnly === true && !issue.duplicateClusterId) return false;
 
     if (opts.dateFrom) {
       const d = new Date(issue.createdAt);

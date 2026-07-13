@@ -1,7 +1,9 @@
 'use client';
 
 import type { DiscordMessage, Issue, ThemeCluster } from '@/lib/discord-types';
-import { normalizeIssue } from '@/lib/discord-api';
+import { normalizeIssue, computeResponseAnalytics } from '@/lib/discord-api';
+
+export { computeResponseAnalytics };
 import { fallbackThemes } from '@/lib/fallback-themes';
 import { useDashboardStore } from '@/store/dashboard-store';
 
@@ -254,7 +256,7 @@ export async function loadFromDb(opts: {
   hasReplies: boolean;
 } | null> {
   try {
-    const params = new URLSearchParams({ channelId: opts.channelId, limit: String(opts.limit ?? 200) });
+    const params = new URLSearchParams({ channelId: opts.channelId, limit: String(opts.limit ?? 10000) });
     const res = await fetch(`/api/db/load?${params.toString()}`, { cache: 'no-store' });
     if (!res.ok) return null;
     const data = await res.json();
@@ -412,72 +414,6 @@ export async function fetchRepliesForIssues(opts: {
 
   // Preserve original order
   return issues.map((issue) => updated.get(issue.id) ?? issue);
-}
-
-/**
- * Compute response analytics for a single issue given its replies.
- * - responseTimeMs: time from first message to first reply (from a different user)
- * - responderCount: distinct users who replied (excluding the issue creator)
- * - isAnswered: has at least one reply from a different user
- * - resolutionStatus: heuristic detection
- */
-export function computeResponseAnalytics(issue: Issue): Issue {
-  const replies = issue.replies ?? [];
-  const firstMsgTime = issue.firstMessageCreatedAt
-    ? new Date(issue.firstMessageCreatedAt).getTime()
-    : null;
-
-  // Find first reply from a DIFFERENT user than the issue creator
-  const firstReply = replies.find(
-    (m) => m.author?.id && m.author.id !== issue.ownerId && m.timestamp,
-  );
-
-  let responseTimeMs: number | null = null;
-  if (firstReply && firstMsgTime) {
-    const replyTime = new Date(firstReply.timestamp).getTime();
-    responseTimeMs = Math.max(0, replyTime - firstMsgTime);
-  }
-
-  // Distinct responders (excluding issue creator)
-  const responderIds = new Set<string>();
-  for (const m of replies) {
-    if (m.author?.id && m.author.id !== issue.ownerId) {
-      responderIds.add(m.author.id);
-    }
-  }
-  const responderCount = responderIds.size;
-  const isAnswered = responderCount > 0;
-
-  // Resolution heuristic: scan reply text for resolution keywords
-  const resolutionKeywords = [
-    'solved', 'fixed', 'resolved', 'thanks', 'thank you', 'that worked',
-    'closing this', 'works now', 'got it working', 'appreciate it',
-    'marked as resolved', 'issue resolved',
-  ];
-  const allReplyText = replies
-    .map((m) => (m.content ?? '').toLowerCase())
-    .join(' \n ');
-  const hasResolutionSignal = resolutionKeywords.some((k) => allReplyText.includes(k));
-
-  let resolutionStatus: Issue['resolutionStatus'] = 'unknown';
-  if (!isAnswered) {
-    resolutionStatus = 'unanswered';
-  } else if (hasResolutionSignal) {
-    resolutionStatus = 'likely-resolved';
-  } else if (replies.length >= 2) {
-    resolutionStatus = 'in-progress';
-  } else {
-    resolutionStatus = 'in-progress';
-  }
-
-  return {
-    ...issue,
-    replies,
-    responseTimeMs,
-    responderCount,
-    isAnswered,
-    resolutionStatus,
-  };
 }
 
 /**

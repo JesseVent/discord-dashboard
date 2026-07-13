@@ -10,7 +10,6 @@ import {
 } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import {
   Table,
   TableBody,
@@ -58,20 +57,10 @@ export function IssuesTable({
   selectedTheme,
   onClearTheme,
 }: IssuesTableProps) {
-  const [search, setSearch] = useState('');
   const [selected, setSelected] = useState<Issue | null>(null);
 
-  const filtered = search
-    ? issues.filter((i) => {
-        const q = search.toLowerCase();
-        return (
-          i.name.toLowerCase().includes(q) ||
-          i.ownerUsername.toLowerCase().includes(q) ||
-          (i.ownerGlobalName ?? '').toLowerCase().includes(q) ||
-          i.firstMessageContent.toLowerCase().includes(q)
-        );
-      })
-    : issues;
+  // The page-level FilterBar owns search + every other dimension; we just render.
+  const filtered = issues;
 
   return (
     <Card>
@@ -99,12 +88,6 @@ export function IssuesTable({
             </CardTitle>
             <CardDescription>Click any row to see the full issue content</CardDescription>
           </div>
-          <Input
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search issues, users, content…"
-            className="sm:w-72"
-          />
         </div>
       </CardHeader>
       <CardContent>

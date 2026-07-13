@@ -35,7 +35,11 @@ import { ResponseTimeChart } from '@/components/dashboard/response-time-chart';
 import { UnansweredIssues } from '@/components/dashboard/unanswered-issues';
 import { IssuesTable } from '@/components/dashboard/issues-table';
 import { ConfigPanel } from '@/components/dashboard/config-panel';
-import { FilterBar } from '@/components/dashboard/filter-bar';
+import {
+  FilterBar,
+  type DashboardFilters,
+  EMPTY_FILTERS,
+} from '@/components/dashboard/filter-bar';
 import { SentimentPanel } from '@/components/dashboard/sentiment-panel';
 import { DuplicateClusters } from '@/components/dashboard/duplicate-clusters';
 import { TimeOfWeekHeatmap } from '@/components/dashboard/time-of-week-heatmap';
@@ -60,6 +64,7 @@ export default function Home() {
 
   const [selectedTagIds, setSelectedTagIds] = useState<string[]>([]);
   const [selectedTheme, setSelectedTheme] = useState<string | null>(null);
+  const [filters, setFilters] = useState<DashboardFilters>(EMPTY_FILTERS);
 
   // Auto-load sample data on first visit (only client-side, only if empty)
   useEffect(() => {
@@ -89,16 +94,24 @@ export default function Home() {
   // Response analytics (only meaningful after "Fetch Replies" has been clicked)
   const replyAnalytics = useMemo(() => responseAnalytics(issues), [issues]);
   const hasReplies = replyAnalytics.totalWithReplies > 0;
+  const hasSentimentData = issues.some((i) => i.sentiment && i.sentiment !== 'unknown');
+  const hasDuplicateData = issues.some((i) => !!i.duplicateClusterId);
   const [selectedIssueForDetail, setSelectedIssueForDetail] = useState<Issue | null>(null);
 
+  // Compose legacy tagIds/theme with the unified filter panel
+  const effectiveFilters = useMemo<DashboardFilters>(
+    () => ({
+      ...filters,
+      tagIds: selectedTagIds,
+      theme: selectedTheme,
+      themes,
+    }),
+    [filters, selectedTagIds, selectedTheme, themes],
+  );
+
   const filteredIssues = useMemo(
-    () =>
-      filterIssues(issues, {
-        tagIds: selectedTagIds,
-        theme: selectedTheme,
-        themes,
-      }),
-    [issues, selectedTagIds, selectedTheme, themes],
+    () => filterIssues(issues, effectiveFilters),
+    [issues, effectiveFilters],
   );
 
   const topIssues = useMemo(() => topIssuesByMessages(filteredIssues, 5), [filteredIssues]);
@@ -340,7 +353,18 @@ export default function Home() {
         <section className="rounded-lg border bg-card p-3">
           <FilterBar
             issues={issues}
-            selectedTagIds={selectedTagIds}
+            filters={filters}
+            onChange={setFilters}
+            onClear={() => {
+              setFilters(EMPTY_FILTERS);
+              setSelectedTagIds([]);
+              setSelectedTheme(null);
+            }}
+            hasSentimentData={hasSentimentData}
+            hasDuplicateData={hasDuplicateData}
+            hasRepliesLoaded={hasReplies}
+            totalLoaded={issues.length}
+            filteredCount={filteredIssues.length}
             onToggleTag={(tagId) =>
               setSelectedTagIds((prev) =>
                 prev.includes(tagId) ? prev.filter((t) => t !== tagId) : [...prev, tagId],
