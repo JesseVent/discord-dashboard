@@ -2,6 +2,7 @@
   "name": "nextjs_tailwind_shadcn_ts",
   "version": "0.2.0",
   "private": true,
+  "packageManager": "bun@1.3.3",
   "scripts": {
     "dev": "next dev -p 3000 2>&1 | tee dev.log",
     "build": "next build && cp -r .next/static .next/standalone/.next/ && cp -r public .next/standalone/",
@@ -47,6 +48,7 @@
     "@radix-ui/react-toggle-group": "^1.1.10",
     "@radix-ui/react-tooltip": "^1.2.7",
     "@reactuses/core": "^6.0.5",
+    "@supabase/supabase-js": "^2.110.3",
     "@tanstack/react-query": "^5.82.0",
     "@tanstack/react-table": "^8.21.3",
     "class-variance-authority": "^0.7.1",
