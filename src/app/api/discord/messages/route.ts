@@ -1,11 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { resolveDiscordCreds } from '@/lib/discord-config';
-import type { DiscordMessage } from '@/lib/discord-types';
+import { fetchThreadMessagesRaw } from '@/lib/discord-api';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
-
-const DISCORD_API = 'https://discord.com/api/v9';
 
 /**
  * GET /api/discord/messages?threadId=...&limit=100
@@ -38,52 +36,12 @@ export async function GET(req: NextRequest) {
       );
     }
 
-    const messages: DiscordMessage[] = [];
-    let before: string | undefined;
-
-    // Paginate: Discord returns up to 100 messages per call, newest first.
-    // We fetch until we hit `limit` or run out.
-    while (messages.length < limit) {
-      const url = new URL(`${DISCORD_API}/channels/${threadId}/messages`);
-      url.searchParams.set('limit', String(Math.min(100, limit - messages.length)));
-      if (before) url.searchParams.set('before', before);
-
-      const res = await fetch(url, {
-        headers: { authorization: authToken, accept: '*/*' },
-        cache: 'no-store',
-      });
-
-      if (!res.ok) {
-        const text = await res.text().catch(() => '');
-        // 403/404 = thread inaccessible; 429 = rate limited
-        if (res.status === 403 || res.status === 404) {
-          return NextResponse.json(
-            { error: `Cannot read thread ${threadId}: ${res.status}` },
-            { status: 200 }, // return 200 with error so client can continue
-          );
-        }
-        return NextResponse.json(
-          { error: `Discord messages failed: ${res.status} ${text.slice(0, 200)}` },
-          { status: res.status === 429 ? 429 : 502 },
-        );
-      }
-
-      const batch = (await res.json()) as DiscordMessage[];
-      if (!Array.isArray(batch) || batch.length === 0) break;
-
-      messages.push(...batch);
-      before = batch[batch.length - 1].id;
-
-      if (batch.length < 100) break; // no more pages
-    }
-
-    // Reverse so oldest-first (Discord returns newest-first)
-    messages.reverse();
-
+    const messages = await fetchThreadMessagesRaw({ threadId, authToken, limit });
     return NextResponse.json({ messages, threadId });
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
+    const status = msg.includes('429') ? 429 : 502;
     console.error('[/api/discord/messages]', msg);
-    return NextResponse.json({ error: msg }, { status: 500 });
+    return NextResponse.json({ error: msg }, { status });
   }
 }

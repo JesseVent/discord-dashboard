@@ -4,27 +4,47 @@
 @custom-variant dark (&:is(.dark *));
 
 /* ============================================================
-   AGENTIC LABS DESIGN SYSTEM — Tailwind v4 theme mapping
-   ============================================================
-   Colors: OKLCH, APCA-calibrated
-   - Surfaces: warm neutral (Stone) stack, differentiate by lightness only — NO borders on cards
-   - Foreground/borders: Slate cool neutral scale
-   - Accent: Blue-600 (OKLCH L=55% C=28 H=220°)
-   - Status: fixed L=55%, hue varies (Success H=160, Warning H=65, Error H=25, Pending H=295)
-   - Categories: fixed L=60% across hues (LLM, Agent, Tool, Chain, Retrieval, Guardrail)
-
-   Typography:
-   - Display: Martian Grotesk, font-stretch 85%, weight 600
-   - Body: Inter, 16.5px, weight 400
-   - Mono: JetBrains Mono (stand-in for Martian Mono), 13.75px
-
-   Spacing: 4px base unit (space-1=4 … space-9=96)
-   Radius: xs=4 sm=8 md=12 lg=16 xl=24 2xl=36 full=9999
-   Shadows: hairline(1px inset) sm(ambient) md(lift) lg(dialog) glow(focus ring)
-   Motion: cubic-bezier(0.22,1,0.36,1) — fast=120ms base=200ms slow=360ms
+   1. WEBFONTS — Loaded from /public/fonts/
    ============================================================ */
+@font-face {
+  font-family: "Martian Grotesk";
+  src: url("/fonts/MartianGrotesk-VFVF.woff2") format("woff2-variations"),
+       url("/fonts/MartianGrotesk-VFVF.ttf") format("truetype-variations");
+  font-weight: 100 900;
+  font-stretch: 50% 200%;
+  font-style: normal;
+  font-display: swap;
+}
 
-@theme inline {
+@font-face {
+  font-family: "Inter Variable";
+  src: url("/fonts/InterVariable.woff2") format("woff2");
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "JetBrains Mono";
+  src: url("/fonts/JetBrainsMono.ttf") format("truetype-variations");
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Martian Mono";
+  src: url("/fonts/MartianMono-VariableFont_wdth_wght.ttf") format("truetype-variations");
+  font-weight: 100 800;
+  font-stretch: 75% 112.5%;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* ============================================================
+   2. TAILWIND v4 THEME MAPPING
+   ============================================================ */
+@theme {
   --color-background: var(--agl-bg);
   --color-foreground: var(--agl-fg);
   --color-card: var(--agl-surface);
@@ -32,26 +52,26 @@
   --color-popover: var(--agl-surface);
   --color-popover-foreground: var(--agl-fg);
   --color-primary: var(--agl-accent);
-  --color-primary-foreground: var(--agl-accent-fg);
+  --color-primary-foreground: var(--agl-on-accent);
   --color-secondary: var(--agl-surface-2);
   --color-secondary-foreground: var(--agl-fg);
   --color-muted: var(--agl-surface-2);
-  --color-muted-foreground: var(--agl-muted-fg);
+  --color-muted-foreground: var(--agl-fg-muted);
   --color-accent: var(--agl-accent-soft);
   --color-accent-foreground: var(--agl-accent);
   --color-destructive: var(--agl-error);
   --color-destructive-foreground: oklch(0.98 0 0);
   --color-border: var(--agl-border);
-  --color-input: var(--agl-input-border);
+  --color-input: var(--agl-border-subtle);
   --color-ring: var(--agl-accent);
 
-  /* Agentic Labs surface scale (no-border card differentiation) */
+  /* Agentic Labs surface scale */
   --color-surface: var(--agl-surface);
   --color-surface-2: var(--agl-surface-2);
   --color-surface-3: var(--agl-surface-3);
   --color-accent-soft: var(--agl-accent-soft);
-  --color-accent-strong: var(--agl-accent-strong);
-  --color-fg-strong: var(--agl-fg-strong);
+  --color-accent-strong: var(--agl-accent-hover);
+  --color-fg-strong: var(--agl-fg);
   --color-fg-subtle: var(--agl-fg-subtle);
 
   /* Status colors */
@@ -68,16 +88,16 @@
   --color-cat-retrieval: var(--agl-cat-retrieval);
   --color-cat-guardrail: var(--agl-cat-guardrail);
 
-  /* Chart colors — use category palette for consistency */
+  /* Chart colors */
   --color-chart-1: var(--agl-accent);
   --color-chart-2: var(--agl-success);
   --color-chart-3: var(--agl-pending);
   --color-chart-4: var(--agl-warning);
   --color-chart-5: var(--agl-error);
 
-  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
-  --font-display: var(--font-display), var(--font-inter), ui-sans-serif, system-ui, sans-serif;
-  --font-mono: var(--font-mono), ui-monospace, monospace;
+  --font-sans: "Inter Variable", "Inter", ui-sans-serif, system-ui, -apple-system, sans-serif;
+  --font-display: "Martian Grotesk", "Martian Grotesk Ultra", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "Martian Mono", "JetBrains Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
 
   --radius-xs: 4px;
   --radius-sm: 8px;
@@ -85,112 +105,255 @@
   --radius-lg: 16px;
   --radius-xl: 24px;
   --radius-2xl: 36px;
-
-  /* Sidebar compat (unused but required by shadcn sidebar) */
-  --color-sidebar: var(--agl-surface);
-  --color-sidebar-foreground: var(--agl-fg);
-  --color-sidebar-primary: var(--agl-accent);
-  --color-sidebar-primary-foreground: var(--agl-accent-fg);
-  --color-sidebar-accent: var(--agl-accent-soft);
-  --color-sidebar-accent-foreground: var(--agl-accent);
-  --color-sidebar-border: var(--agl-border);
-  --color-sidebar-ring: var(--agl-accent);
 }
 
+/* ============================================================
+   3. TOKENS & VARIABLES (Light theme — default)
+   ============================================================ */
 :root {
-  /* ---- Warm neutral surfaces (Stone) ---- */
-  --agl-bg: oklch(0.98 0.004 75);          /* warm off-white, Stone-50 */
-  --agl-surface: oklch(1 0 0);             /* pure white card surface */
-  --agl-surface-2: oklch(0.965 0.004 75);  /* warm light gray, Stone-100 */
-  --agl-surface-3: oklch(0.94 0.005 75);   /* warm gray, Stone-200 */
-  --agl-inverse: oklch(0.15 0.01 250);     /* dark inverse */
+  /* ---- Type families ---- */
+  --font-display: "Martian Grotesk", "Martian Grotesk Ultra", ui-sans-serif, system-ui, sans-serif;
+  --font-mono:    "Martian Mono", "JetBrains Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  --font-sans:    "Inter Variable", "Inter", ui-sans-serif, system-ui, -apple-system, sans-serif;
 
-  /* ---- Slate neutrals (foreground + borders) ---- */
-  --agl-fg: oklch(0.22 0.02 250);          /* Slate-900 — main text */
-  --agl-fg-strong: oklch(0.15 0.02 250);   /* Slate-950 — headings */
-  --agl-muted-fg: oklch(0.52 0.02 250);    /* Slate-500 — captions/meta */
-  --agl-fg-subtle: oklch(0.62 0.015 250);  /* Slate-400 — very subtle */
-  --agl-border: oklch(0.90 0.008 250);     /* Slate-200 — minimal borders */
-  --agl-border-strong: oklch(0.82 0.01 250); /* Slate-300 */
-  --agl-input-border: oklch(0.88 0.008 250);
+  /* ---- Type scale (px) ----
+     Prefix with --agl-text-* so Tailwind v4 doesn't auto-override standard utility classes */
+  --agl-text-2xs: 11px;
+  --agl-text-xs:  12px;
+  --agl-text-sm:  13.75px;
+  --agl-text-md:  16.5px;
+  --agl-text-lg:  22px;
+  --agl-text-xl:  44px;
+  --agl-text-2xl: 66px;
+  --agl-text-3xl: 96px;
 
-  /* ---- Accent (Blue-600) ---- */
-  --agl-accent: oklch(0.55 0.22 255);          /* Blue-600 */
-  --agl-accent-fg: oklch(0.98 0.01 255);       /* white-on-blue */
-  --agl-accent-soft: oklch(0.95 0.03 255);     /* Blue-50 — hover/soft bg */
-  --agl-accent-soft-hover: oklch(0.92 0.04 255);
-  --agl-accent-strong: oklch(0.45 0.25 255);   /* Blue-700 */
+  --leading-tight:  1.05;
+  --leading-snug:   1.2;
+  --leading-normal: 1.45;
+  --leading-relaxed: 1.6;
 
-  /* ---- Status colors (L=55%, hue varies) ---- */
-  --agl-success: oklch(0.55 0.15 160);   /* green */
-  --agl-success-soft: oklch(0.95 0.03 160);
-  --agl-warning: oklch(0.60 0.15 65);    /* amber (slightly lighter for readability) */
-  --agl-warning-soft: oklch(0.95 0.04 65);
-  --agl-error: oklch(0.55 0.20 25);      /* red */
-  --agl-error-soft: oklch(0.95 0.03 25);
-  --agl-pending: oklch(0.55 0.18 295);   /* purple */
-  --agl-pending-soft: oklch(0.95 0.03 295);
+  --tracking-tight: -0.02em;
+  --tracking-snug:  -0.012em;
+  --tracking-mono:  0;
+  --tracking-caps:   0.06em;
 
-  /* ---- Trace categories (L=60% across hues) ---- */
-  --agl-cat-llm: oklch(0.60 0.18 295);       /* purple */
-  --agl-cat-llm-soft: oklch(0.94 0.04 295);
-  --agl-cat-agent: oklch(0.60 0.18 255);     /* blue */
-  --agl-cat-agent-soft: oklch(0.94 0.04 255);
-  --agl-cat-tool: oklch(0.60 0.16 65);       /* amber */
-  --agl-cat-tool-soft: oklch(0.94 0.04 65);
-  --agl-cat-chain: oklch(0.60 0.15 160);     /* green */
-  --agl-cat-chain-soft: oklch(0.94 0.04 160);
-  --agl-cat-retrieval: oklch(0.60 0.13 195); /* cyan */
-  --agl-cat-retrieval-soft: oklch(0.94 0.035 195);
-  --agl-cat-guardrail: oklch(0.60 0.18 25);  /* red */
-  --agl-cat-guardrail-soft: oklch(0.94 0.035 25);
+  --weight-regular: 400;
+  --weight-medium:  500;
+  --weight-semibold: 600;
+  --weight-bold:    700;
 
-  /* ---- Shadows ---- */
-  --agl-shadow-hairline: inset 0 0 0 1px oklch(0.90 0.008 250 / 0.6);
-  --agl-shadow-sm: 0 1px 2px oklch(0.20 0.02 250 / 0.04), 0 1px 1px oklch(0.20 0.02 250 / 0.03);
-  --agl-shadow-md: 0 4px 12px oklch(0.20 0.02 250 / 0.06), 0 1px 3px oklch(0.20 0.02 250 / 0.04);
-  --agl-shadow-lg: 0 16px 48px oklch(0.20 0.02 250 / 0.10), 0 4px 12px oklch(0.20 0.02 250 / 0.05);
-  --agl-shadow-glow: 0 0 0 3px oklch(0.55 0.22 255 / 0.15);
+  /* ---- Spacing ---- */
+  --space-0:  0;
+  --space-1:  4px;
+  --space-2:  8px;
+  --space-3:  12px;
+  --space-4:  16px;
+  --space-5:  24px;
+  --space-6:  36px;
+  --space-7:  48px;
+  --space-8:  60px;
+  --space-9:  96px;
+
+  /* ---- Radius ---- */
+  --radius-xs: 4px;
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 24px;
+  --radius-2xl: 36px;
+  --radius-full: 9999px;
+
+  /* ---- Elevation / shadow ---- */
+  --shadow-hairline: inset 0 0 0 1px var(--agl-border);
+  --shadow-sm: 0 1px 2px oklch(0 0 0 / 0.04), inset 0 0 0 1px var(--agl-border);
+  --shadow-md: 0 4px 14px -4px oklch(0 0 0 / 0.08), 0 1px 2px oklch(0 0 0 / 0.04);
+  --shadow-lg: 0 18px 40px -16px oklch(0 0 0 / 0.18), 0 4px 14px -4px oklch(0 0 0 / 0.06);
+  --shadow-glow: 0 0 0 3px color-mix(in oklch, var(--agl-accent) 28%, transparent);
 
   /* ---- Motion ---- */
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+  --dur-fast: 120ms;
+  --dur-base: 200ms;
+  --dur-slow: 360ms;
+
+  /* ---- Harmony palette (subset, OKLCH from @evilmartians/harmony) ---- */
+  --slate-50:  oklch(98.4% 0.003 247.858);
+  --slate-100: oklch(96.8% 0.007 247.896);
+  --slate-200: oklch(92.9% 0.013 255.508);
+  --slate-300: oklch(86.9% 0.022 252.894);
+  --slate-400: oklch(70.4% 0.040 256.788);
+  --slate-500: oklch(55.4% 0.046 257.417);
+  --slate-600: oklch(44.6% 0.043 257.281);
+  --slate-700: oklch(37.2% 0.044 257.287);
+  --slate-800: oklch(27.9% 0.041 260.031);
+  --slate-900: oklch(20.8% 0.042 265.755);
+  --slate-950: oklch(12.9% 0.042 264.695);
+
+  --stone-50:  oklch(98.5% 0.001 106.423);
+  --stone-100: oklch(97.0% 0.001 106.424);
+  --stone-150: oklch(95.0% 0.003 80.000);
+  --stone-200: oklch(92.3% 0.003 48.717);
+  --stone-300: oklch(86.9% 0.005 56.366);
+  --stone-400: oklch(70.9% 0.010 56.259);
+  --stone-500: oklch(55.3% 0.013 58.071);
+  --stone-700: oklch(37.4% 0.010 67.558);
+  --stone-900: oklch(21.6% 0.006 56.043);
+  --stone-950: oklch(14.7% 0.004 49.250);
+
+  --blue-50:   oklch(97.0% 0.014 254.604);
+  --blue-100:  oklch(93.2% 0.032 255.585);
+  --blue-200:  oklch(88.2% 0.059 254.128);
+  --blue-300:  oklch(80.9% 0.105 251.813);
+  --blue-400:  oklch(70.7% 0.165 254.624);
+  --blue-500:  oklch(62.3% 0.214 259.815);
+  --blue-600:  oklch(54.6% 0.245 262.881);
+  --blue-700:  oklch(48.8% 0.243 264.376);
+  --blue-800:  oklch(42.4% 0.199 265.638);
+  --blue-900:  oklch(37.9% 0.146 265.522);
+  --blue-950:  oklch(28.2% 0.091 267.935);
+
+  --emerald-50:  oklch(97.9% 0.021 166.113);
+  --emerald-100: oklch(95.0% 0.052 163.051);
+  --emerald-500: oklch(69.6% 0.170 162.480);
+  --emerald-700: oklch(50.8% 0.118 165.612);
+
+  --amber-50:   oklch(98.7% 0.022  95.277);
+  --amber-100:  oklch(96.2% 0.059  95.617);
+  --amber-500:  oklch(76.9% 0.188  70.080);
+  --amber-700:  oklch(55.5% 0.163  48.998);
+
+  --red-50:   oklch(97.1% 0.013 17.380);
+  --red-100:  oklch(93.6% 0.032 17.717);
+  --red-500:  oklch(63.7% 0.237 25.331);
+  --red-700:  oklch(50.5% 0.213 27.518);
+
+  --violet-50:   oklch(96.9% 0.016 293.756);
+  --violet-100:  oklch(94.3% 0.029 294.588);
+  --violet-400:  oklch(70.2% 0.183 293.541);
+  --violet-500:  oklch(60.6% 0.250 292.717);
+  --violet-700:  oklch(49.1% 0.270 292.581);
+
+  /* ---- Semantic tokens (light theme — default) ---- */
+  --agl-bg:         #ffffff;
+  --agl-surface:    var(--slate-100);
+  --agl-surface-2:  var(--slate-200);
+  --agl-surface-3:  var(--slate-300);
+  --agl-overlay:    oklch(100% 0 0 / 0.82);
+
+  --agl-fg:         var(--slate-900);
+  --agl-fg-strong:  var(--slate-950);
+  --agl-muted-fg:   var(--slate-600);
+  --agl-fg-subtle:  var(--slate-500);
+  --agl-fg-faint:   var(--slate-400);
+  --agl-fg-inverse: #ffffff;
+
+  --agl-accent:     oklch(58% 0.16 163);
+  --agl-accent-hover: oklch(48% 0.14 163);
+  --agl-accent-soft: color-mix(in oklch, oklch(58% 0.16 163) 14%, transparent);
+  --agl-accent-soft-hover: color-mix(in oklch, oklch(58% 0.16 163) 22%, transparent);
+  --agl-on-accent:  #ffffff;
+
+  --agl-border:        color-mix(in oklch, var(--slate-500) 16%, transparent);
+  --agl-border-subtle: color-mix(in oklch, var(--slate-500) 8%, transparent);
+  --agl-border-strong: color-mix(in oklch, var(--slate-500) 28%, transparent);
+
+  /* ---- Status tokens ---- */
+  --agl-success:        oklch(55% 0.135 160);
+  --agl-success-muted:  oklch(94% 0.045 160);
+  --agl-success-strong: oklch(42% 0.115 160);
+  --agl-success-soft:   oklch(94% 0.045 160);
+
+  --agl-warning:        oklch(55% 0.145 65);
+  --agl-warning-muted:  oklch(94% 0.045 65);
+  --agl-warning-strong: oklch(42% 0.115 65);
+  --agl-warning-soft:   oklch(94% 0.045 65);
+
+  --agl-error:          oklch(55% 0.205 25);
+  --agl-error-muted:    oklch(94% 0.045 25);
+  --agl-error-strong:   oklch(42% 0.175 25);
+  --agl-error-soft:     oklch(94% 0.045 25);
+
+  --agl-pending:        oklch(55% 0.180 295);
+  --agl-pending-muted:  oklch(94% 0.045 295);
+  --agl-pending-strong: oklch(42% 0.180 295);
+  --agl-pending-soft:   oklch(94% 0.045 295);
+
+  /* ---- Trace categories ---- */
+  --agl-cat-llm:          oklch(60% 0.22 295);
+  --agl-cat-agent:        oklch(60% 0.22 268);
+  --agl-cat-tool:         oklch(60% 0.18 50);
+  --agl-cat-chain:        oklch(60% 0.13 182);
+  --agl-cat-retrieval:    oklch(60% 0.15 215);
+  --agl-cat-guardrail:    oklch(60% 0.22 25);
+
+  /* ---- Viz sequences ---- */
+  --agl-cat-1: var(--agl-cat-agent);      /* blue */
+  --agl-cat-2: var(--agl-cat-llm);        /* violet */
+  --agl-cat-3: var(--agl-cat-tool);       /* orange */
+  --agl-cat-4: var(--agl-cat-retrieval);  /* cyan */
+  --agl-cat-5: var(--agl-cat-chain);      /* teal */
+  --agl-cat-6: var(--agl-cat-embedding);  /* green */
+
+  --agl-chart-grid:  color-mix(in oklch, var(--agl-fg-subtle) 16%, transparent);
+  --agl-chart-track: var(--agl-surface-2);
+  --agl-chart-axis:  var(--agl-fg-subtle);
+
+  /* ---- Shadows & Transitions ---- */
+  --agl-shadow-hairline: inset 0 0 0 1px var(--agl-border);
+  --agl-shadow-sm: 0 1px 2px oklch(0 0 0 / 0.04), inset 0 0 0 1px var(--agl-border);
+  --agl-shadow-md: 0 4px 14px -4px oklch(0 0 0 / 0.08), 0 1px 2px oklch(0 0 0 / 0.04);
+  --agl-shadow-lg: 0 18px 40px -16px oklch(0 0 0 / 0.18), 0 4px 14px -4px oklch(0 0 0 / 0.06);
+  --agl-shadow-glow: 0 0 0 3px oklch(0.55 0.22 255 / 0.15);
+
   --agl-ease: cubic-bezier(0.22, 1, 0.36, 1);
   --agl-duration-fast: 120ms;
   --agl-duration-base: 200ms;
   --agl-duration-slow: 360ms;
 
-  /* ---- Radius (md=12px is default) ---- */
   --radius: 12px;
 }
 
-.dark {
-  --agl-bg: oklch(0.16 0.01 250);
-  --agl-surface: oklch(0.20 0.01 250);
-  --agl-surface-2: oklch(0.24 0.01 250);
-  --agl-surface-3: oklch(0.28 0.012 250);
-  --agl-inverse: oklch(0.96 0.004 75);
+/* ============================================================
+   4. DARK THEME OVERRIDES
+   ============================================================ */
+.dark,
+.theme-dark,
+[data-theme="dark"] {
+  color-scheme: dark;
 
-  --agl-fg: oklch(0.92 0.005 250);
-  --agl-fg-strong: oklch(0.98 0.004 250);
-  --agl-muted-fg: oklch(0.65 0.01 250);
-  --agl-fg-subtle: oklch(0.50 0.01 250);
-  --agl-border: oklch(1 0 0 / 8%);
-  --agl-border-strong: oklch(1 0 0 / 14%);
-  --agl-input-border: oklch(1 0 0 / 12%);
+  --agl-bg:         var(--slate-950);
+  --agl-surface:    var(--slate-900);
+  --agl-surface-2:  var(--slate-800);
+  --agl-surface-3:  var(--slate-700);
+  --agl-overlay:    oklch(12.9% 0.042 264.695 / 0.86);
 
-  --agl-accent: oklch(0.65 0.20 255);
-  --agl-accent-fg: oklch(0.15 0.02 250);
-  --agl-accent-soft: oklch(0.30 0.05 255);
-  --agl-accent-soft-hover: oklch(0.35 0.06 255);
-  --agl-accent-strong: oklch(0.70 0.18 255);
+  --agl-fg:         var(--slate-100);
+  --agl-fg-strong:  var(--slate-50);
+  --agl-muted-fg:   var(--slate-400);
+  --agl-fg-subtle:  var(--slate-500);
+  --agl-fg-faint:   var(--slate-600);
+  --agl-fg-inverse: var(--slate-950);
 
-  --agl-success: oklch(0.65 0.15 160);
-  --agl-success-soft: oklch(0.30 0.05 160);
-  --agl-warning: oklch(0.70 0.15 65);
-  --agl-warning-soft: oklch(0.30 0.05 65);
-  --agl-error: oklch(0.65 0.20 25);
-  --agl-error-soft: oklch(0.30 0.06 25);
-  --agl-pending: oklch(0.65 0.18 295);
-  --agl-pending-soft: oklch(0.30 0.05 295);
+  --agl-accent:     oklch(76.5% 0.177 163.223);
+  --agl-accent-hover: oklch(82% 0.14 163.223);
+  --agl-accent-soft: color-mix(in oklch, oklch(76.5% 0.177 163.223) 18%, transparent);
+  --agl-accent-soft-hover: color-mix(in oklch, oklch(76.5% 0.177 163.223) 28%, transparent);
+  --agl-on-accent:  var(--slate-950);
+
+  --agl-border:        color-mix(in oklch, var(--slate-300) 14%, transparent);
+  --agl-border-subtle: color-mix(in oklch, var(--slate-300) 7%, transparent);
+  --agl-border-strong: color-mix(in oklch, var(--slate-300) 24%, transparent);
+
+  --agl-success-muted:  color-mix(in oklch, var(--emerald-500) 14%, transparent);
+  --agl-warning-muted:  color-mix(in oklch, var(--amber-500)   14%, transparent);
+  --agl-error-muted:    color-mix(in oklch, var(--red-500)     14%, transparent);
+  --agl-pending-muted:  color-mix(in oklch, var(--violet-500)  16%, transparent);
+
+  --agl-success-soft:   color-mix(in oklch, var(--emerald-500) 14%, transparent);
+  --agl-warning-soft:   color-mix(in oklch, var(--amber-500)   14%, transparent);
+  --agl-error-soft:     color-mix(in oklch, var(--red-500)     14%, transparent);
+  --agl-pending-soft:   color-mix(in oklch, var(--violet-500)  16%, transparent);
 
   --agl-cat-llm: oklch(0.68 0.16 295);
   --agl-cat-llm-soft: oklch(0.30 0.05 295);
@@ -212,6 +375,9 @@
   --agl-shadow-glow: 0 0 0 3px oklch(0.65 0.20 255 / 0.25);
 }
 
+/* ============================================================
+   5. BASE ELEMENT STYLES & LAYERS
+   ============================================================ */
 @layer base {
   * {
     border-color: var(--agl-border);
@@ -220,13 +386,12 @@
     background: var(--agl-bg);
     color: var(--agl-fg);
     font-family: var(--font-sans);
-    font-size: 16.5px;
+    font-size: var(--agl-text-md);
     line-height: 1.55;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
 
-  /* Headings use Martian Grotesk with condensed stretch */
   h1, h2, h3, h4, h5, h6 {
     font-family: var(--font-display);
     font-stretch: 85%;
@@ -235,20 +400,22 @@
     color: var(--agl-fg-strong);
   }
 
-  /* Monospace for eyebrows, badges, code, metric numbers */
+  h1 { font-size: var(--agl-text-2xl); }
+  h2 { font-size: var(--agl-text-xl); }
+  h3 { font-size: var(--agl-text-lg); }
+  h4 { font-size: var(--agl-text-md); }
+
   code, pre, kbd, samp {
     font-family: var(--font-mono);
     font-size: 0.85em;
   }
 
-  /* Focus ring = Agentic Labs glow */
   *:focus-visible {
     outline: 2px solid var(--agl-accent);
     outline-offset: 2px;
     border-radius: var(--radius-sm);
   }
 
-  /* Selection */
   ::selection {
     background: oklch(0.55 0.22 255 / 0.15);
     color: var(--agl-fg-strong);
@@ -256,12 +423,10 @@
 }
 
 /* ============================================================
-   AGENTIC LABS COMPONENT UTILITIES
+   6. COMPONENT OVERRIDES
    ============================================================ */
-
 @layer components {
-  /* Cards: NO borders — differentiate by surface + subtle shadow.
-     Use .agl-card for the standard card surface. */
+  /* Cards: Flat surface blocks, borderless by default */
   .agl-card {
     background: var(--agl-surface);
     border-radius: var(--radius-md);
@@ -277,17 +442,15 @@
     border-radius: var(--radius-md);
   }
 
-  /* Eyebrow text — mono, uppercase, small, muted */
   .agl-eyebrow {
     font-family: var(--font-mono);
-    font-size: 11px;
+    font-size: var(--agl-text-xs);
     font-weight: 500;
     text-transform: uppercase;
     letter-spacing: 0.06em;
     color: var(--agl-muted-fg);
   }
 
-  /* Metric number — mono, tabular, large */
   .agl-metric {
     font-family: var(--font-mono);
     font-variant-numeric: tabular-nums;
@@ -295,7 +458,7 @@
     letter-spacing: -0.02em;
   }
 
-  /* Metric strip — unified by 0.5px hairline wrapper */
+  /* Metric strip: unified by 0.5px hairline wrapper */
   .agl-metric-strip {
     background: var(--agl-surface);
     border-radius: var(--radius-md);
@@ -312,10 +475,9 @@
     border-left-color: oklch(1 0 0 / 6%);
   }
 
-  /* Category badge — equal APCA across hues, L=60% bg with L=95% text */
   .agl-badge {
     font-family: var(--font-mono);
-    font-size: 11px;
+    font-size: var(--agl-text-2xs);
     font-weight: 500;
     text-transform: uppercase;
     letter-spacing: 0.05em;
@@ -327,7 +489,6 @@
     line-height: 1.4;
   }
 
-  /* Callout — docs surface (Note, Tip, Warning, Danger) */
   .agl-callout {
     border-radius: var(--radius-md);
     padding: 12px 16px;
@@ -352,19 +513,17 @@
     border-left: 3px solid var(--agl-error);
   }
 
-  /* Code block — dark surface */
   .agl-codeblock {
     background: oklch(0.18 0.01 250);
     color: oklch(0.88 0.005 250);
     border-radius: var(--radius-md);
     padding: 16px 20px;
     font-family: var(--font-mono);
-    font-size: 13.75px;
+    font-size: var(--agl-text-sm);
     line-height: 1.6;
     overflow-x: auto;
   }
 
-  /* Smooth transition utility */
   .agl-transition {
     transition-property: all;
     transition-duration: var(--agl-duration-base);
@@ -373,7 +532,7 @@
 }
 
 /* ============================================================
-   SCROLLBAR — subtle, matches warm neutral aesthetic
+   7. SCROLLBARS & RECHARTS TOOLTIPS
    ============================================================ */
 ::-webkit-scrollbar {
   width: 10px;
@@ -401,7 +560,6 @@
   background-clip: content-box;
 }
 
-/* Recharts tooltip — match Agentic Labs surface */
 .recharts-tooltip-wrapper .recharts-default-tooltip {
   background: var(--agl-surface) !important;
   border: none !important;
@@ -411,12 +569,12 @@
 }
 .recharts-tooltip-wrapper .recharts-tooltip-label {
   font-family: var(--font-mono) !important;
-  font-size: 11px !important;
+  font-size: var(--agl-text-2xs) !important;
   color: var(--agl-muted-fg) !important;
   margin-bottom: 4px !important;
 }
 .recharts-tooltip-wrapper .recharts-tooltip-item {
   font-family: var(--font-mono) !important;
-  font-size: 13px !important;
+  font-size: var(--agl-text-sm) !important;
   color: var(--agl-fg) !important;
 }

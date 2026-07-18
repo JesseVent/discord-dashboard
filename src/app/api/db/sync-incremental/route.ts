@@ -71,53 +71,61 @@ export async function POST(req: NextRequest) {
     let pagesScanned = 0;
     let threadsScanned = 0;
     let stoppedEarly = false;
-    let offset = 0;
 
-    while (pagesScanned < MAX_PAGES) {
-      const page = await withBackoff(() =>
-        searchThreads({ channelId, authToken, offset, limit: PAGE_SIZE }),
-      );
-      pagesScanned += 1;
-      const threads = page.threads ?? [];
-      if (threads.length === 0) break;
-      threadsScanned += threads.length;
+    for (const archived of [false, true]) {
+      let offset = 0;
+      let pagesScannedForType = 0;
 
-      const pageFirstMessages = new Map<string, DiscordMessage>();
-      for (const fm of page.first_messages ?? []) {
-        if (fm?.channel_id) pageFirstMessages.set(fm.channel_id, fm);
-      }
+      while (pagesScanned < MAX_PAGES && pagesScannedForType < MAX_PAGES) {
+        const page = await withBackoff(() =>
+          searchThreads({ channelId, authToken, offset, limit: PAGE_SIZE, archived }),
+        );
+        pagesScanned += 1;
+        pagesScannedForType += 1;
+        const threads = page.threads ?? [];
+        if (threads.length === 0) break;
+        threadsScanned += threads.length;
 
-      const ids = threads.map((t) => t.id);
-      const { data: existingRows, error } = await supabaseAdmin
-        .from('issues')
-        .select('id, message_count, archived, locked')
-        .in('id', ids);
-      if (error) throw new Error(`issues lookup failed: ${error.message}`);
-      const existingById = new Map((existingRows ?? []).map((r: any) => [r.id, r]));
-
-      let pageHasChanges = false;
-      for (const t of threads) {
-        const existing = existingById.get(t.id);
-        const isNew = !existing;
-        const changed =
-          isNew ||
-          existing.message_count !== (t.message_count ?? 0) ||
-          existing.archived !== (t.thread_metadata?.archived ?? false) ||
-          existing.locked !== (t.thread_metadata?.locked ?? false);
-        if (changed) {
-          pageHasChanges = true;
-          changedThreads.push(t);
-          const fm = pageFirstMessages.get(t.id);
-          if (fm) changedFirstMessages.set(t.id, fm);
+        const pageFirstMessages = new Map<string, DiscordMessage>();
+        for (const fm of page.first_messages ?? []) {
+          if (fm?.channel_id) pageFirstMessages.set(fm.channel_id, fm);
         }
-      }
 
-      if (!pageHasChanges) break; // caught up — everything older is unchanged too
-      if (!page.has_more) break;
-      offset += PAGE_SIZE;
-      await sleep(200);
+        const ids = threads.map((t) => t.id);
+        const { data: existingRows, error } = await supabaseAdmin
+          .from('issues')
+          .select('id, message_count, archived, locked')
+          .in('id', ids);
+        if (error) throw new Error(`issues lookup failed: ${error.message}`);
+        const existingById = new Map((existingRows ?? []).map((r: any) => [r.id, r]));
+
+        let pageHasChanges = false;
+        for (const t of threads) {
+          const existing = existingById.get(t.id);
+          const isNew = !existing;
+          const changed =
+            isNew ||
+            existing.message_count !== (t.message_count ?? 0) ||
+            existing.archived !== (t.thread_metadata?.archived ?? false) ||
+            existing.locked !== (t.thread_metadata?.locked ?? false);
+          if (changed) {
+            pageHasChanges = true;
+            changedThreads.push(t);
+            const fm = pageFirstMessages.get(t.id);
+            if (fm) changedFirstMessages.set(t.id, fm);
+          }
+        }
+
+        if (!pageHasChanges) break; // caught up — everything older is unchanged too
+        if (!page.has_more) break;
+        offset += PAGE_SIZE;
+        await sleep(200);
+      }
+      if (pagesScanned >= MAX_PAGES) {
+        stoppedEarly = true;
+        break;
+      }
     }
-    if (pagesScanned >= MAX_PAGES) stoppedEarly = true;
 
     if (changedThreads.length === 0) {
       return NextResponse.json({ ok: true, pagesScanned, threadsScanned, newOrChanged: 0, repliesRefreshed: 0, stoppedEarly });

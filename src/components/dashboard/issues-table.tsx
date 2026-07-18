@@ -58,9 +58,15 @@ export function IssuesTable({
   onClearTheme,
 }: IssuesTableProps) {
   const [selected, setSelected] = useState<Issue | null>(null);
+  const [page, setPage] = useState(0);
+  const pageSize = 20;
 
   // The page-level FilterBar owns search + every other dimension; we just render.
   const filtered = issues;
+  const pageCount = Math.max(1, Math.ceil(filtered.length / pageSize));
+  
+  // Slice issues for the current page
+  const paginatedIssues = filtered.slice(page * pageSize, (page + 1) * pageSize);
 
   return (
     <Card>
@@ -110,7 +116,7 @@ export function IssuesTable({
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filtered.map((issue) => (
+                {paginatedIssues.map((issue) => (
                   <TableRow
                     key={issue.id}
                     onClick={() => setSelected(issue)}
@@ -199,6 +205,34 @@ export function IssuesTable({
           </ScrollArea>
         )}
       </CardContent>
+      {filtered.length > 0 && (
+        <div className="flex items-center justify-between border-t p-3">
+          <div className="text-xs text-muted-foreground">
+            Showing {page * pageSize + 1} to {Math.min((page + 1) * pageSize, filtered.length)} of {filtered.length} issues
+          </div>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setPage((p) => Math.max(0, p - 1))}
+              disabled={page === 0}
+            >
+              Previous
+            </Button>
+            <div className="text-xs font-medium px-2">
+              Page {page + 1} of {pageCount}
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setPage((p) => Math.min(pageCount - 1, p + 1))}
+              disabled={page === pageCount - 1}
+            >
+              Next
+            </Button>
+          </div>
+        </div>
+      )}
 
       <IssueDetailDialog
         issue={selected}

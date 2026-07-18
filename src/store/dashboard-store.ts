@@ -139,7 +139,6 @@ export const useDashboardStore = create<DashboardState>()(
       partialize: (s) => ({
         channelId: s.channelId,
         authToken: s.authToken,
-        issues: s.issues,
         themes: s.themes,
         themeMethod: s.themeMethod,
         totalResults: s.totalResults,

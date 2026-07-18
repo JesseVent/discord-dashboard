@@ -101,32 +101,61 @@ export async function fetchFromDiscord(opts: {
   const firstMessages = new Map<string, DiscordMessage>();
   let totalResults = 0;
   let hasMore = false;
-  let offset = 0;
 
-  // 1) paginate threads/search
-  while (true) {
-    onProgress?.('fetching-threads', allThreads.length, totalResults, `Fetching threads (offset ${offset})…`);
+  // 1) paginate active threads first
+  let activeHasMore = true;
+  let activeOffset = 0;
+  let activeTotal = 0;
+  while (allThreads.length < maxThreads && activeHasMore) {
+    onProgress?.('fetching-threads', allThreads.length, totalResults, `Fetching active threads (offset ${activeOffset})…`);
     const res = await fetch('/api/discord/search', {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ channelId, authToken, archived: true, limit: pageSize, offset }),
+      body: JSON.stringify({ channelId, authToken, archived: false, limit: pageSize, offset: activeOffset }),
     });
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));
-      throw new Error(err.error ?? `Discord search failed: ${res.status}`);
+      throw new Error(err.error ?? `Discord active threads search failed: ${res.status}`);
     }
     const page = await res.json();
-    totalResults = page.total_results ?? totalResults;
-    hasMore = page.has_more ?? false;
+    activeTotal = page.total_results ?? 0;
+    activeHasMore = page.has_more ?? false;
     for (const t of page.threads ?? []) allThreads.push(t);
     for (const fm of page.first_messages ?? []) {
       if (fm?.channel_id) firstMessages.set(fm.channel_id, fm);
     }
     onProgress?.('fetching-threads', allThreads.length, totalResults);
-    if (!page.has_more) break;
-    if (allThreads.length >= maxThreads) break;
-    offset += pageSize;
+    activeOffset += pageSize;
   }
+
+  // 2) paginate archived threads if maxThreads not reached yet
+  let archivedHasMore = true;
+  let archivedOffset = 0;
+  let archivedTotal = 0;
+  while (allThreads.length < maxThreads && archivedHasMore) {
+    onProgress?.('fetching-threads', allThreads.length, totalResults, `Fetching archived threads (offset ${archivedOffset})…`);
+    const res = await fetch('/api/discord/search', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ channelId, authToken, archived: true, limit: pageSize, offset: archivedOffset }),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error ?? `Discord archived threads search failed: ${res.status}`);
+    }
+    const page = await res.json();
+    archivedTotal = page.total_results ?? 0;
+    archivedHasMore = page.has_more ?? false;
+    for (const t of page.threads ?? []) allThreads.push(t);
+    for (const fm of page.first_messages ?? []) {
+      if (fm?.channel_id) firstMessages.set(fm.channel_id, fm);
+    }
+    onProgress?.('fetching-threads', allThreads.length, totalResults);
+    archivedOffset += pageSize;
+  }
+
+  totalResults = activeTotal + archivedTotal;
+  hasMore = activeHasMore || archivedHasMore;
 
   // 2) fetch missing first_messages via post-data (10 IDs per call)
   if (fetchMissingDetails) {
@@ -256,7 +285,7 @@ export async function loadFromDb(opts: {
   hasReplies: boolean;
 } | null> {
   try {
-    const params = new URLSearchParams({ channelId: opts.channelId, limit: String(opts.limit ?? 10000) });
+    const params = new URLSearchParams({ channelId: opts.channelId, limit: String(opts.limit ?? 50000) });
     const res = await fetch(`/api/db/load?${params.toString()}`, { cache: 'no-store' });
     if (!res.ok) return null;
     const data = await res.json();

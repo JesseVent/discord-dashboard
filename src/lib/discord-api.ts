@@ -233,3 +233,97 @@ export function threadUrl(opts: {
 }): string {
   return `https://discord.com/channels/${opts.guildId}/${opts.channelId}/${opts.threadId}`;
 }
+
+/**
+ * Fetch all messages in a thread (paginated internally), oldest-first.
+ * Server-side only — same call the /api/discord/messages route proxies.
+ */
+export async function fetchThreadMessagesRaw(opts: {
+  threadId: string;
+  authToken: string;
+  limit?: number;
+}): Promise<DiscordMessage[]> {
+  const { threadId, authToken, limit = 100 } = opts;
+  const messages: DiscordMessage[] = [];
+  let before: string | undefined;
+
+  while (messages.length < limit) {
+    const url = new URL(`${DISCORD_API}/channels/${threadId}/messages`);
+    url.searchParams.set('limit', String(Math.min(100, limit - messages.length)));
+    if (before) url.searchParams.set('before', before);
+
+    const res = await fetch(url, {
+      headers: { authorization: authToken, accept: '*/*' },
+      cache: 'no-store',
+    });
+
+    if (!res.ok) {
+      const text = await res.text().catch(() => '');
+      if (res.status === 403 || res.status === 404) return []; // thread inaccessible
+      throw new Error(`Discord messages failed: ${res.status} ${text.slice(0, 200)}`);
+    }
+
+    const batch = (await res.json()) as DiscordMessage[];
+    if (!Array.isArray(batch) || batch.length === 0) break;
+
+    messages.push(...batch);
+    before = batch[batch.length - 1].id;
+    if (batch.length < 100) break;
+  }
+
+  messages.reverse(); // Discord returns newest-first
+  return messages;
+}
+
+export function computeResponseAnalytics(issue: Issue): Issue {
+  const replies = issue.replies ?? [];
+  const otherReplies = replies.filter((r) => r.author?.id !== issue.ownerId);
+  const isAnswered = otherReplies.length > 0;
+
+  let responseTimeMs: number | null = null;
+  let responderCount = 0;
+  let resolutionStatus: Issue['resolutionStatus'] = 'unanswered';
+
+  if (isAnswered) {
+    const threadTime = issue.firstMessageCreatedAt
+      ? new Date(issue.firstMessageCreatedAt).getTime()
+      : (issue.createdAt ? new Date(issue.createdAt).getTime() : null);
+
+    const sortedReplies = [...otherReplies].sort(
+      (a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
+    );
+
+    if (threadTime && sortedReplies.length > 0) {
+      responseTimeMs = new Date(sortedReplies[0].timestamp).getTime() - threadTime;
+      // Handle edge cases where reply is somehow backdated or clocked earlier
+      if (responseTimeMs < 0) responseTimeMs = 0;
+    }
+
+    const responders = new Set(otherReplies.map((r) => r.author?.id).filter(Boolean));
+    responderCount = responders.size;
+
+    const hasResolutionKeyword = replies.some((r) => {
+      const text = (r.content ?? '').toLowerCase();
+      return (
+        text.includes('thank') ||
+        text.includes('solved') ||
+        text.includes('resolved') ||
+        text.includes('fixed it') ||
+        text.includes('worked') ||
+        text.includes('works now') ||
+        text.includes('perfect')
+      );
+    });
+
+    resolutionStatus = hasResolutionKeyword ? 'likely-resolved' : 'in-progress';
+  }
+
+  return {
+    ...issue,
+    replies,
+    responseTimeMs,
+    responderCount,
+    isAnswered,
+    resolutionStatus,
+  };
+}

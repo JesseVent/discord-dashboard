@@ -65,10 +65,18 @@ export default function Home() {
   const [selectedTagIds, setSelectedTagIds] = useState<string[]>([]);
   const [selectedTheme, setSelectedTheme] = useState<string | null>(null);
   const [filters, setFilters] = useState<DashboardFilters>(EMPTY_FILTERS);
+  const [serverMetrics, setServerMetrics] = useState<any>(null);
 
   // Auto-load sample data on first visit (only client-side, only if empty)
   useEffect(() => {
     initSampleDataIfEmpty();
+    // Fetch server-side KPIs
+    fetch('/api/dashboard/metrics')
+      .then(res => res.json())
+      .then(data => {
+        if (!data.error) setServerMetrics(data);
+      })
+      .catch(err => console.error('Failed to load server metrics:', err));
   }, []);
 
   const uniqueUsers = useMemo(() => {
@@ -117,6 +125,33 @@ export default function Home() {
   const topIssues = useMemo(() => topIssuesByMessages(filteredIssues, 5), [filteredIssues]);
 
   const isAnalyzing = progress.stage === 'analyzing-themes' || (issues.length > 0 && themes.length === 0);
+  const isLoading = issues.length === 0 && progress.stage !== 'idle' && progress.stage !== 'done' && progress.stage !== 'error';
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-background flex flex-col items-center justify-center p-6 text-center">
+        <div className="flex flex-col items-center gap-6 max-w-sm">
+          <div className="relative flex h-14 w-14 items-center justify-center">
+            <div className="absolute inset-0 rounded-full border-2 border-primary/20 border-t-primary animate-spin" />
+            <img src="/supabase-logo.svg" className="h-7 w-7" alt="Supabase Logo" />
+          </div>
+          <div className="space-y-2">
+            <h1 className="text-xl font-semibold tracking-tight" style={{ fontFamily: 'var(--font-display)', fontStretch: '85%' }}>
+              Loading Dashboard Data
+            </h1>
+            <p className="agl-eyebrow text-xs">
+              {progress.stage.replace(/-/g, ' ')}
+            </p>
+            {progress.message ? (
+              <p className="text-sm text-muted-foreground mt-1">
+                {progress.message}
+              </p>
+            ) : null}
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background text-foreground">
@@ -124,12 +159,12 @@ export default function Home() {
         <div className="mx-auto max-w-7xl px-4 py-3 sm:px-6">
           <div className="flex items-center justify-between gap-4">
             <div className="flex items-center gap-3 min-w-0">
-              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary text-primary-foreground shrink-0">
-                <Hash className="h-5 w-5" />
+              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-surface border shrink-0">
+                <img src="/supabase-logo.svg" className="h-5 w-5" alt="Supabase Logo" />
               </div>
               <div className="min-w-0">
                 <h1 className="text-lg font-semibold tracking-tight truncate" style={{ fontFamily: 'var(--font-display)', fontStretch: '85%' }}>
-                  Discord Issue Tracker
+                  Supabase Community Tracker
                 </h1>
                 <p className="agl-eyebrow truncate">
                   Channel <span className="font-mono normal-case tracking-normal">{channelId}</span>
@@ -160,12 +195,8 @@ export default function Home() {
         <section className="grid gap-3 grid-cols-2 md:grid-cols-3 lg:grid-cols-6">
           <KpiCard
             title="Total Issues"
-            value={totalResults > 0 ? totalResults.toLocaleString() : issues.length}
-            subtitle={
-              totalResults > issues.length
-                ? `${issues.length} loaded locally`
-                : 'all loaded'
-            }
+            value={serverMetrics?.kpis?.totalIssues?.toLocaleString() ?? (totalResults > 0 ? totalResults.toLocaleString() : issues.length)}
+            subtitle={serverMetrics ? 'server aggregated' : (totalResults > issues.length ? `${issues.length} loaded locally` : 'all loaded')}
             icon={AlertTriangle}
             accent="text-error"
           />
@@ -178,8 +209,8 @@ export default function Home() {
           />
           <KpiCard
             title="Total Messages"
-            value={totalMessages.toLocaleString()}
-            subtitle={`${avgMsgPerIssue} avg/issue`}
+            value={serverMetrics?.kpis?.totalMessages?.toLocaleString() ?? totalMessages.toLocaleString()}
+            subtitle={serverMetrics ? 'server aggregated' : `${avgMsgPerIssue} avg/issue`}
             icon={MessageSquare}
             accent="text-accent"
           />
@@ -414,7 +445,7 @@ export default function Home() {
 
         <footer className="mt-8 border-t pt-4 text-center">
           <p className="agl-eyebrow">
-            Discord Issue Tracker · Data via Discord&rsquo;s{' '}
+            Supabase Community Tracker · Data via Discord&rsquo;s{' '}
             <code className="font-mono normal-case tracking-normal text-muted-foreground">/threads/search</code>{' '}
             and{' '}
             <code className="font-mono normal-case tracking-normal text-muted-foreground">/post-data</code>{' '}

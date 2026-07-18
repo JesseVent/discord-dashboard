@@ -78,44 +78,49 @@ export function TimeOfWeekHeatmap({ issues }: TimeOfWeekHeatmapProps) {
       </CardHeader>
       <CardContent>
         <div className="overflow-x-auto">
-          <div className="inline-block min-w-full">
+          <div className="min-w-[640px] w-full">
             {/* Hour labels (top) */}
-            <div className="flex gap-px ml-10 mb-1">
-              {HOURS.map((h) => (
-                <div
-                  key={h}
-                  className="w-5 text-center text-[9px] font-mono text-muted-foreground"
-                >
-                  {h % 3 === 0 ? h : ''}
-                </div>
-              ))}
+            <div className="flex items-center mb-1">
+              <div className="w-9" /> {/* Spacer aligning with Day labels */}
+              <div className="flex-1 flex gap-px">
+                {HOURS.map((h) => (
+                  <div
+                    key={h}
+                    className="flex-1 text-center text-[9px] font-mono text-muted-foreground"
+                  >
+                    {h % 3 === 0 ? h : ''}
+                  </div>
+                ))}
+              </div>
             </div>
             {/* Grid rows */}
             {DAYS.map((day, dayIdx) => (
-              <div key={day} className="flex items-center gap-px mb-px">
+              <div key={day} className="flex items-center mb-px">
                 <div className="w-9 text-right pr-2 text-[10px] font-mono font-medium text-muted-foreground">
                   {day}
                 </div>
-                {HOURS.map((h) => {
-                  const count = grid[dayIdx][h];
-                  return (
-                    <div
-                      key={h}
-                      className="w-5 h-5 rounded-xs flex items-center justify-center text-[8px] font-mono font-medium transition-colors hover:ring-1 hover:ring-accent"
-                      style={{
-                        backgroundColor: colorFor(count),
-                        color: textColorFor(count),
-                      }}
-                      title={`${day} ${h}:00 — ${count} ${count === 1 ? 'issue' : 'issues'}`}
-                    >
-                      {count > 0 ? count : ''}
-                    </div>
-                  );
-                })}
+                <div className="flex-1 flex gap-px">
+                  {HOURS.map((h) => {
+                    const count = grid[dayIdx][h];
+                    return (
+                      <div
+                        key={h}
+                        className="flex-1 h-6 rounded-xs flex items-center justify-center text-[9px] font-mono font-medium transition-colors hover:ring-1 hover:ring-accent"
+                        style={{
+                          backgroundColor: colorFor(count),
+                          color: textColorFor(count),
+                        }}
+                        title={`${day} ${h}:00 — ${count} ${count === 1 ? 'issue' : 'issues'}`}
+                      >
+                        {count > 0 ? count : ''}
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
             ))}
             {/* Legend */}
-            <div className="flex items-center gap-2 mt-3 ml-10">
+            <div className="flex items-center gap-2 mt-3 ml-9">
               <span className="text-[10px] text-muted-foreground font-mono">Less</span>
               <div className="flex gap-px">
                 {[0, 0.2, 0.4, 0.6, 0.8, 1].map((intensity, i) => (
