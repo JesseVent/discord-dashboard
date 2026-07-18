@@ -12,10 +12,20 @@ import { cumulativeIssuesByDay } from '@/lib/dashboard-utils';
 
 interface IssuesOverTimeChartProps {
   issues: Issue[];
+  serverDailyStats?: any[];
 }
 
-export function IssuesOverTimeChart({ issues }: IssuesOverTimeChartProps) {
-  const data = cumulativeIssuesByDay(issues);
+export function IssuesOverTimeChart({ issues, serverDailyStats }: IssuesOverTimeChartProps) {
+  let data;
+  if (serverDailyStats && serverDailyStats.length > 0) {
+    let running = 0;
+    data = serverDailyStats.map(d => {
+      running += Number(d.issue_count) || 0;
+      return { date: d.date, count: Number(d.issue_count) || 0, cumulative: running };
+    });
+  } else {
+    data = cumulativeIssuesByDay(issues);
+  }
 
   if (data.length === 0) {
     return (

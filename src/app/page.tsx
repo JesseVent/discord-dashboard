@@ -100,9 +100,11 @@ export default function Home() {
 
   const tagCounts = useMemo(() => issuesByTag(issues), [issues]);
 
-  // Response analytics (only meaningful after "Fetch Replies" has been clicked)
+  // Response analytics (only meaningful after "Fetch Replies" has been clicked, or if we have server metrics)
   const replyAnalytics = useMemo(() => responseAnalytics(issues), [issues]);
-  const hasReplies = replyAnalytics.totalWithReplies > 0;
+  const hasLocalReplies = replyAnalytics.totalWithReplies > 0;
+  const hasServerMetrics = !!serverMetrics?.kpis;
+  const hasReplies = hasLocalReplies || hasServerMetrics;
   const hasSentimentData = issues.some((i) => i.sentiment && i.sentiment !== 'unknown');
   const hasDuplicateData = issues.some((i) => !!i.duplicateClusterId);
   const [selectedIssueForDetail, setSelectedIssueForDetail] = useState<Issue | null>(null);
@@ -154,6 +156,13 @@ export default function Home() {
     );
   }
 
+  const kpis = serverMetrics?.kpis;
+  const resolvedCount = kpis ? kpis.resolvedIssues : replyAnalytics.likelyResolvedCount;
+  const totalWithRepliesCount = kpis ? kpis.totalIssues : replyAnalytics.totalWithReplies;
+  const answeredCount = kpis ? kpis.answeredIssues : replyAnalytics.answeredCount;
+  const unansweredCount = kpis ? (kpis.totalIssues - kpis.answeredIssues) : replyAnalytics.unansweredCount;
+  const responseRate = totalWithRepliesCount > 0 ? (answeredCount / totalWithRepliesCount) : 0;
+
   return (
     <div className="min-h-screen bg-background text-foreground">
       <header className="sticky top-0 z-30 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -196,8 +205,8 @@ export default function Home() {
         <section className="grid gap-3 grid-cols-2 md:grid-cols-3 lg:grid-cols-6">
           <KpiCard
             title="Total Issues"
-            value={serverMetrics?.kpis?.totalIssues?.toLocaleString() ?? (totalResults > 0 ? totalResults.toLocaleString() : issues.length)}
-            subtitle={serverMetrics ? 'server aggregated' : (totalResults > issues.length ? `${issues.length} loaded locally` : 'all loaded')}
+            value={kpis?.totalIssues?.toLocaleString() ?? (totalResults > 0 ? totalResults.toLocaleString() : issues.length)}
+            subtitle={kpis ? 'server aggregated' : (totalResults > issues.length ? `${issues.length} loaded locally` : 'all loaded')}
             icon={AlertTriangle}
             accent="text-error"
           />
@@ -210,8 +219,8 @@ export default function Home() {
           />
           <KpiCard
             title="Total Messages"
-            value={serverMetrics?.kpis?.totalMessages?.toLocaleString() ?? totalMessages.toLocaleString()}
-            subtitle={serverMetrics ? 'server aggregated' : `${avgMsgPerIssue} avg/issue`}
+            value={kpis?.totalMessages?.toLocaleString() ?? totalMessages.toLocaleString()}
+            subtitle={kpis ? 'server aggregated' : `${avgMsgPerIssue} avg/issue`}
             icon={MessageSquare}
             accent="text-accent"
           />
@@ -238,29 +247,34 @@ export default function Home() {
           />
         </section>
 
-        {/* Response Analytics KPI strip — only shown after "Fetch Replies" has been clicked */}
+        {/* Response Analytics KPI strip */}
         {hasReplies ? (
           <section className="space-y-3">
             <div className="flex items-center gap-2">
               <MessageCircleReply className="h-4 w-4 text-cat-agent" />
               <h2 className="agl-eyebrow">Response Analytics</h2>
-              {repliesFetchedAt ? (
+              {repliesFetchedAt && !hasServerMetrics ? (
                 <span className="text-[10px] text-muted-foreground">
                   · loaded {new Date(repliesFetchedAt).toLocaleTimeString()}
+                </span>
+              ) : null}
+              {hasServerMetrics ? (
+                <span className="text-[10px] text-muted-foreground">
+                  · server aggregated
                 </span>
               ) : null}
             </div>
             <div className="grid gap-3 grid-cols-2 md:grid-cols-3 lg:grid-cols-6">
               <KpiCard
                 title="Response Rate"
-                value={`${Math.round(replyAnalytics.responseRate * 100)}%`}
-                subtitle={`${replyAnalytics.answeredCount} of ${replyAnalytics.totalWithReplies} answered`}
+                value={`${Math.round(responseRate * 100)}%`}
+                subtitle={`${answeredCount.toLocaleString()} of ${totalWithRepliesCount.toLocaleString()} answered`}
                 icon={MessageCircleReply}
                 accent="text-cat-agent"
               />
               <KpiCard
                 title="Avg Response"
-                value={fmtDuration(replyAnalytics.avgResponseTimeMs)}
+                value={fmtDuration(kpis?.avgResponseTimeMs ?? replyAnalytics.avgResponseTimeMs)}
                 subtitle="time to first reply"
                 icon={Clock}
                 accent="text-cat-chain"
@@ -268,28 +282,28 @@ export default function Home() {
               <KpiCard
                 title="Median Response"
                 value={fmtDuration(replyAnalytics.medianResponseTimeMs)}
-                subtitle="middle value"
+                subtitle="client sample (last 1000)"
                 icon={Clock}
                 accent="text-cat-retrieval"
               />
               <KpiCard
                 title="Fast Responses"
                 value={replyAnalytics.fastResponseCount}
-                subtitle="answered < 1h"
+                subtitle="client sample (last 1000)"
                 icon={Zap}
                 accent="text-success"
               />
               <KpiCard
                 title="Likely Resolved"
-                value={replyAnalytics.likelyResolvedCount}
-                subtitle={`${replyAnalytics.totalWithReplies > 0 ? Math.round((replyAnalytics.likelyResolvedCount / replyAnalytics.totalWithReplies) * 100) : 0}% of loaded`}
+                value={resolvedCount.toLocaleString()}
+                subtitle={`${totalWithRepliesCount > 0 ? Math.round((resolvedCount / totalWithRepliesCount) * 100) : 0}% of total`}
                 icon={CheckCircle2}
                 accent="text-success"
               />
               <KpiCard
                 title="Unanswered"
-                value={replyAnalytics.unansweredCount}
-                subtitle={`${replyAnalytics.totalWithReplies > 0 ? Math.round((replyAnalytics.unansweredCount / replyAnalytics.totalWithReplies) * 100) : 0}% of loaded`}
+                value={unansweredCount.toLocaleString()}
+                subtitle={`${totalWithRepliesCount > 0 ? Math.round((unansweredCount / totalWithRepliesCount) * 100) : 0}% of total`}
                 icon={AlertCircle}
                 accent="text-error"
               />
@@ -299,7 +313,7 @@ export default function Home() {
 
         {/* Charts row */}
         <section className="grid gap-4 lg:grid-cols-2">
-          <IssuesOverTimeChart issues={issues} />
+          <IssuesOverTimeChart issues={issues} serverDailyStats={serverMetrics?.dailyStats} />
           <TagDistributionChart
             issues={issues}
             onSelectTag={(tagId) =>
@@ -334,7 +348,7 @@ export default function Home() {
             />
           </div>
           {hasReplies ? (
-            <TopResponders issues={issues} />
+            <TopResponders issues={issues} serverResponders={serverMetrics?.topResponders} />
           ) : (
             <TopContributors issues={issues} />
           )}
@@ -344,7 +358,7 @@ export default function Home() {
         {hasReplies ? (
           <section className="grid gap-4 lg:grid-cols-2">
             <TopContributors issues={issues} />
-            <TopResponders issues={issues} />
+            <TopResponders issues={issues} serverResponders={serverMetrics?.topResponders} />
           </section>
         ) : null}
 

@@ -9,6 +9,7 @@ import { topResponders } from '@/lib/dashboard-utils';
 
 interface TopRespondersProps {
   issues: Issue[];
+  serverResponders?: any[];
 }
 
 function initials(name: string): string {
@@ -20,11 +21,22 @@ function initials(name: string): string {
 
 /**
  * Top Responders — users who reply to issues (helpers), not issue creators.
- * Only populated when replies have been fetched.
+ * Only populated when replies have been fetched or serverMetrics provided.
  */
-export function TopResponders({ issues }: TopRespondersProps) {
-  const hasReplies = issues.some((i) => i.replies !== undefined);
-  const responders = topResponders(issues, 8);
+export function TopResponders({ issues, serverResponders }: TopRespondersProps) {
+  const hasLocalReplies = issues.some((i) => i.replies !== undefined);
+  const hasServerResponders = serverResponders && serverResponders.length > 0;
+  const hasReplies = hasLocalReplies || hasServerResponders;
+  
+  const responders = hasServerResponders 
+    ? serverResponders.map(r => ({
+        userId: r.author_id,
+        username: r.author_username,
+        globalName: r.author_global_name,
+        replyCount: Number(r.reply_count),
+        issuesHelped: Number(r.issues_helped)
+      }))
+    : topResponders(issues, 8);
 
   return (
     <Card>
