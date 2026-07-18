@@ -457,7 +457,7 @@ export async function initSampleDataIfEmpty() {
 
   try {
     // 1. Try loading from DB first
-    const channelId = store.channelId || '1006358244786196510';
+    const channelId = store.channelId || process.env.NEXT_PUBLIC_DISCORD_CHANNEL_ID || '';
     store.setProgress({ stage: 'fetching-threads', fetchedCount: 0, totalResults: 0, message: 'Loading from database…' });
     const dbData = await loadFromDb({ channelId });
     if (dbData && dbData.issues.length > 0) {

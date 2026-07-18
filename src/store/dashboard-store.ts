@@ -62,7 +62,7 @@ interface DashboardState {
 export const useDashboardStore = create<DashboardState>()(
   persist(
     (set) => ({
-      channelId: '1006358244786196510',
+      channelId: process.env.NEXT_PUBLIC_DISCORD_CHANNEL_ID || '',
       authToken: '',
       setConfig: (cfg) =>
         set((s) => ({

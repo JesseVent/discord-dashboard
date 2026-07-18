@@ -390,7 +390,7 @@ export function ConfigPanel() {
                   id="channelId"
                   value={channelId}
                   onChange={(e) => setConfig({ channelId: e.target.value })}
-                  placeholder={envConfig?.envChannelId ?? '1006358244786196510'}
+                  placeholder={envConfig?.envChannelId ?? 'e.g. 1006358244786196510'}
                   className="font-mono text-sm"
                 />
               </div>
