@@ -139,9 +139,17 @@ def main():
     # Lazy-load heavy deps so --help is fast.
     from sentence_transformers import SentenceTransformer
     print(f"[embed_bulk] loading model {args.model}...")
-    device = "cpu" if args.cpu else None
+    # Auto-detect hangs on MPS sometimes; resolve explicitly.
+    if args.cpu:
+        device = "cpu"
+    else:
+        try:
+            import torch
+            device = "mps" if torch.backends.mps.is_available() else "cuda" if torch.cuda.is_available() else "cpu"
+        except ImportError:
+            device = "cpu"
+    print(f"[embed_bulk] device={device}")
     model = SentenceTransformer(args.model, device=device)
-    print(f"[embed_bulk] device={model.device}")
     if model.get_sentence_embedding_dimension() != VECTOR_DIM:
         print(f"WARNING: model dim {model.get_sentence_embedding_dimension()} != {VECTOR_DIM}", file=sys.stderr)
 

@@ -20,6 +20,8 @@ export async function GET() {
     const totalMessages = Number(metrics.total_messages) || 0;
     const resolvedIssues = Number(metrics.resolved_issues) || 0;
     const avgResponseTimeMs = Number(metrics.avg_response_time_ms) || 0;
+    const medianResponseTimeMs = Number(metrics.median_response_time_ms) || 0;
+    const fastResponseCount = Number(metrics.fast_response_count) || 0;
     const uniqueUsers = Number(metrics.unique_users) || 0;
     const archivedIssues = Number(metrics.archived_issues) || 0;
 
@@ -30,6 +32,8 @@ export async function GET() {
         totalMessages,
         resolvedIssues,
         avgResponseTimeMs,
+        medianResponseTimeMs,
+        fastResponseCount,
         uniqueUsers,
         archivedIssues,
       },

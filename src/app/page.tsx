@@ -281,15 +281,15 @@ export default function Home() {
               />
               <KpiCard
                 title="Median Response"
-                value={fmtDuration(replyAnalytics.medianResponseTimeMs)}
-                subtitle="client sample (last 1000)"
+                value={fmtDuration(kpis?.medianResponseTimeMs ?? replyAnalytics.medianResponseTimeMs)}
+                subtitle={kpis ? 'middle value (server)' : 'client sample (last 1000)'}
                 icon={Clock}
                 accent="text-cat-retrieval"
               />
               <KpiCard
                 title="Fast Responses"
-                value={replyAnalytics.fastResponseCount}
-                subtitle="client sample (last 1000)"
+                value={(kpis?.fastResponseCount ?? replyAnalytics.fastResponseCount).toLocaleString()}
+                subtitle={kpis ? 'answered < 1h (server)' : 'client sample (last 1000)'}
                 icon={Zap}
                 accent="text-success"
               />
