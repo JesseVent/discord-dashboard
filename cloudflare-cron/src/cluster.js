@@ -1,14 +1,19 @@
-// Clustering — for a set of issue IDs, build the similarity graph
+// Clustering — for a set of issues, build the similarity graph
 // and return connected components.
+//
+// Cost note: re-embeds each issue via Workers AI. Fine for incremental
+// clustering of a few hundred items per run; for the initial 40k use
+// `scripts/cluster_bulk.py` (local sentence-transformers + Vectorize REST).
+
+import { buildEmbedText } from "./embed.js";
 
 const DEFAULT_THRESHOLD = 0.86; // cosine similarity; tweak via env if needed
 const DEFAULT_TOP_K = 5;
 
 export async function clusterIssues(env, issues, { topK = DEFAULT_TOP_K, threshold = DEFAULT_THRESHOLD } = {}) {
-  // 1. For each issue, get its top-K nearest neighbors via Vectorize.
   const neighborLists = [];
   for (const issue of issues) {
-    const text = buildTextFromIssue(issue);
+    const text = buildEmbedText(issue);
     if (!text.trim()) continue;
     const vector = await embedText(env, text);
     const matches = await env.VECTORIZE.query(vector, { topK: topK + 1, returnMetadata: true });
@@ -18,7 +23,6 @@ export async function clusterIssues(env, issues, { topK = DEFAULT_TOP_K, thresho
     neighborLists.push({ anchor: issue.id, neighbors });
   }
 
-  // 2. Build undirected edge map.
   const edges = {};
   for (const { anchor, neighbors } of neighborLists) {
     if (!neighbors.length) continue;
@@ -29,16 +33,7 @@ export async function clusterIssues(env, issues, { topK = DEFAULT_TOP_K, thresho
     }
   }
 
-  // 3. Union-find → connected components (drop singletons).
   return connectedComponents(edges);
-}
-
-function buildTextFromIssue(issue) {
-  const name = issue.name ?? "";
-  const body = issue.first_message_content ?? "";
-  let tags = "";
-  if (Array.isArray(issue.applied_tags)) tags = issue.applied_tags.join(" ");
-  return [name, body, tags ? `Tags: ${tags}` : ""].filter(Boolean).join("\n\n").slice(0, 8000);
 }
 
 async function embedText(env, text) {

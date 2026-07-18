@@ -57,13 +57,16 @@ Expect ~30 min for ~40k issues on a laptop. Skips empty issues (no name + no fir
 
 ### 4. Trigger initial clustering
 
-After the bulk embed finishes, kick off clustering (handle `/cluster` does 500/cycle):
+After the bulk embed finishes, run the bulk cluster pass locally (much faster than hammering `/cluster` 80×):
 
 ```sh
-curl -X POST -H "Authorization: Bearer $CRON_SECRET" https://<worker-url>/cluster
+cd /Users/jvent/Dev/discord-dashboard
+PYTORCH_MPS_HIGH_WATERMARK_RATIO=0.0 python scripts/cluster_bulk.py
 ```
 
-Or wait for the next daily cron at 03:15 UTC.
+(~55 min for 40k — encodes locally, queries Vectorize, writes clusters + `duplicate_cluster_id`.)
+
+For incremental clustering of new issues, the daily cron at `15 3 * * *` runs `clusterIssues()` over unclustered issues via Workers AI. Manual trigger: `curl -X POST -H "Authorization: Bearer $CRON_SECRET" https://<worker-url>/cluster`.
 
 ## Architecture notes
 

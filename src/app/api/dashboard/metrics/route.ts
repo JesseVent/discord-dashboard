@@ -13,6 +13,10 @@ export async function GET() {
       supabaseAdmin.from('top_responders_view').select('*').limit(20)
     ]);
 
+    if (kpiRes.error) throw new Error(`Global metrics error: ${kpiRes.error.message}`);
+    if (dailyStatsRes.error) throw new Error(`Daily stats error: ${dailyStatsRes.error.message}`);
+    if (respondersRes.error) throw new Error(`Top responders error: ${respondersRes.error.message}`);
+
     // Calculate aggregated KPIs quickly on the edge
     const metrics = kpiRes.data || {};
     const totalIssues = Number(metrics.total_issues) || 0;

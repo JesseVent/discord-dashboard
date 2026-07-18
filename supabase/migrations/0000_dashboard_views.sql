@@ -94,3 +94,13 @@ SELECT
   SUM(CASE WHEN archived = true THEN 1 ELSE 0 END) AS archived_issues
 FROM discord.issues
 GROUP BY channel_id;
+
+-- ============================================================
+-- PERMISSIONS
+-- ============================================================
+-- Ensure the service_role and other standard Supabase roles can read these views
+GRANT USAGE ON SCHEMA discord TO service_role, anon, authenticated;
+GRANT SELECT ON discord.dashboard_issues_light TO service_role, anon, authenticated;
+GRANT SELECT ON discord.dashboard_daily_stats TO service_role, anon, authenticated;
+GRANT SELECT ON discord.top_responders_view TO service_role, anon, authenticated;
+GRANT SELECT ON discord.dashboard_global_metrics TO service_role, anon, authenticated;
