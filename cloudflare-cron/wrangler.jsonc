@@ -2,11 +2,24 @@
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "dashboard-sync-cron",
   "main": "src/index.js",
-  "compatibility_date": "2024-04-01",
+  "compatibility_date": "2024-04-03",
   "triggers": {
-    "crons": ["0 * * * *"] // Runs at minute 0 of every hour
+    "crons": [
+      "0 * * * *",   // hourly: ping sync endpoint
+      "15 3 * * *"   // daily 03:15 UTC: run clustering
+    ]
   },
   "vars": {
-    "TARGET_URL": "https://discord.supabasehire.me/api/cron/sync"
-  }
+    "TARGET_URL": "https://discord.supabasehire.me/api/cron/sync",
+    "SUPABASE_URL": "https://gpfuhxmtidkynxhmfphg.supabase.co"
+  },
+  "ai": {
+    "binding": "AI"
+  },
+  "vectorize": [
+    {
+      "binding": "VECTORIZE",
+      "index_name": "discord-issues-index"
+    }
+  ]
 }

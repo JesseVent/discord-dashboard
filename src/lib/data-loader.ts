@@ -285,7 +285,7 @@ export async function loadFromDb(opts: {
   hasReplies: boolean;
 } | null> {
   try {
-    const params = new URLSearchParams({ channelId: opts.channelId, limit: String(opts.limit ?? 50000) });
+    const params = new URLSearchParams({ channelId: opts.channelId, limit: String(opts.limit ?? 1000) });
     const res = await fetch(`/api/db/load?${params.toString()}`, { cache: 'no-store' });
     if (!res.ok) return null;
     const data = await res.json();

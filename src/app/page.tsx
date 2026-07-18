@@ -80,22 +80,23 @@ export default function Home() {
   }, []);
 
   const uniqueUsers = useMemo(() => {
+    if (serverMetrics?.kpis?.uniqueUsers != null) return serverMetrics.kpis.uniqueUsers;
     const set = new Set<string>();
     for (const i of issues) if (i.ownerId) set.add(i.ownerId);
     return set.size;
-  }, [issues]);
+  }, [issues, serverMetrics]);
 
-  const totalMessages = useMemo(
-    () => issues.reduce((sum, i) => sum + (i.totalMessageSent || i.messageCount || 0), 0),
-    [issues],
-  );
+  const totalMessages = useMemo(() => {
+    if (serverMetrics?.kpis?.totalMessages != null) return serverMetrics.kpis.totalMessages;
+    return issues.reduce((sum, i) => sum + (i.totalMessageSent || i.messageCount || 0), 0);
+  }, [issues, serverMetrics]);
 
-  const archivedCount = useMemo(
-    () => issues.filter((i) => i.archived).length,
-    [issues],
-  );
+  const archivedCount = useMemo(() => {
+    if (serverMetrics?.kpis?.archivedIssues != null) return serverMetrics.kpis.archivedIssues;
+    return issues.filter((i) => i.archived).length;
+  }, [issues, serverMetrics]);
 
-  const avgMsgPerIssue = issues.length > 0 ? Math.round(totalMessages / issues.length) : 0;
+  const avgMsgPerIssue = totalResults > 0 ? Math.round(totalMessages / totalResults) : 0;
 
   const tagCounts = useMemo(() => issuesByTag(issues), [issues]);
 
