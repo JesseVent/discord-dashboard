@@ -9,7 +9,7 @@ interface KpiCardProps {
   subtitle?: string;
   icon: LucideIcon;
   accent?: string; // tailwind text color class for the icon
-  delta?: { value: string; direction: 'up' | 'down' | 'neutral' };
+  delta?: { value: string; direction: 'up' | 'down' | 'neutral'; status?: 'success' | 'error' | 'neutral' };
 }
 
 /**
@@ -29,14 +29,14 @@ export function KpiCard({ title, value, subtitle, icon: Icon, accent, delta }: K
       <div className="agl-metric text-2xl sm:text-3xl text-fg-strong">
         {value}
       </div>
-      <div className="flex items-center gap-2 text-xs text-muted-foreground">
+      <div className="flex items-center gap-2 text-xs text-muted-foreground flex-wrap">
         {delta ? (
           <span
             className={cn(
-              'inline-flex items-center gap-0.5 font-mono font-medium tabular-nums',
-              delta.direction === 'up' && 'text-success',
-              delta.direction === 'down' && 'text-error',
-              delta.direction === 'neutral' && 'text-muted-foreground',
+              'inline-flex items-center gap-0.5 font-mono font-medium tabular-nums shrink-0',
+              (delta.status === 'success' || (!delta.status && delta.direction === 'up')) && 'text-success',
+              (delta.status === 'error' || (!delta.status && delta.direction === 'down')) && 'text-error',
+              (delta.status === 'neutral' || (!delta.status && delta.direction === 'neutral')) && 'text-muted-foreground',
             )}
           >
             {delta.direction === 'up' ? '↑' : delta.direction === 'down' ? '↓' : '→'}

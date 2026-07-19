@@ -476,13 +476,17 @@ export function topResponders(
  * Return issues that are unanswered (no replies from other users),
  * sorted by age (oldest first).
  */
-export function unansweredIssues(issues: Issue[], n = 10): Issue[] {
+export function unansweredIssues(
+  issues: Issue[],
+  n = 10,
+  sortBy: 'newest' | 'oldest' = 'newest'
+): Issue[] {
   return issues
     .filter((i) => i.replies !== undefined && !i.isAnswered)
     .sort((a, b) => {
       const aTime = a.createdAt ? new Date(a.createdAt).getTime() : 0;
       const bTime = b.createdAt ? new Date(b.createdAt).getTime() : 0;
-      return aTime - bTime; // oldest first
+      return sortBy === 'newest' ? bTime - aTime : aTime - bTime;
     })
     .slice(0, n);
 }
@@ -548,4 +552,133 @@ export function resolutionLabel(status: Issue['resolutionStatus']): string {
     default:
       return 'Unknown';
   }
+}
+
+export interface WeeklyTrend {
+  value: string;
+  direction: 'up' | 'down' | 'neutral';
+  status: 'success' | 'error' | 'neutral';
+}
+
+export interface WeeklyTrends {
+  issuesCreated: WeeklyTrend;
+  uniqueUsers: WeeklyTrend;
+  totalMessages: WeeklyTrend;
+  activeIssues: WeeklyTrend;
+  responseRate: WeeklyTrend;
+  avgResponseTime: WeeklyTrend;
+  unanswered: WeeklyTrend;
+}
+
+export function calculateWeeklyTrends(issues: Issue[]): WeeklyTrends {
+  const issueTimes = issues
+    .map((i) => (i.createdAt ? new Date(i.createdAt).getTime() : 0))
+    .filter((t) => t > 0);
+  const maxTime = issueTimes.length > 0 ? Math.max(...issueTimes) : Date.now();
+
+  const oneDay = 24 * 60 * 60 * 1000;
+  const currentStart = maxTime - 7 * oneDay;
+  const previousStart = maxTime - 14 * oneDay;
+
+  const currentIssues = issues.filter((i) => {
+    const t = i.createdAt ? new Date(i.createdAt).getTime() : 0;
+    return t >= currentStart && t <= maxTime;
+  });
+
+  const previousIssues = issues.filter((i) => {
+    const t = i.createdAt ? new Date(i.createdAt).getTime() : 0;
+    return t >= previousStart && t < currentStart;
+  });
+
+  const getDelta = (curr: number, prev: number, higherIsBetter = true) => {
+    if (prev === 0 && curr === 0) {
+      return { value: '0%', direction: 'neutral' as const, status: 'neutral' as const };
+    }
+    if (prev === 0) {
+      return {
+        value: `+${curr}`,
+        direction: 'up' as const,
+        status: higherIsBetter ? ('success' as const) : ('error' as const),
+      };
+    }
+    const pct = ((curr - prev) / prev) * 100;
+    const absPct = Math.abs(pct).toFixed(0);
+    const sign = pct > 0 ? '+' : pct < 0 ? '-' : '';
+    const direction = pct > 0 ? ('up' as const) : pct < 0 ? ('down' as const) : ('neutral' as const);
+    
+    let status: 'success' | 'error' | 'neutral' = 'neutral';
+    if (pct > 0) {
+      status = higherIsBetter ? 'success' : 'error';
+    } else if (pct < 0) {
+      status = higherIsBetter ? 'error' : 'success';
+    }
+    
+    return {
+      value: `${sign}${absPct}%`,
+      direction,
+      status,
+    };
+  };
+
+  // 1. Issues Created
+  const issuesCreated = getDelta(currentIssues.length, previousIssues.length, true);
+
+  // 2. Unique Users (distinct ownerIds)
+  const currUsers = new Set(currentIssues.map((i) => i.ownerId).filter(Boolean)).size;
+  const prevUsers = new Set(previousIssues.map((i) => i.ownerId).filter(Boolean)).size;
+  const uniqueUsers = getDelta(currUsers, prevUsers, true);
+
+  // 3. Total Messages
+  const currMsgs = currentIssues.reduce((sum, i) => sum + (i.messageCount || 0), 0);
+  const prevMsgs = previousIssues.reduce((sum, i) => sum + (i.messageCount || 0), 0);
+  const totalMessages = getDelta(currMsgs, prevMsgs, true);
+
+  // 4. Active Issues
+  const currActive = currentIssues.filter((i) => !i.archived).length;
+  const prevActive = previousIssues.filter((i) => !i.archived).length;
+  const activeIssues = getDelta(currActive, prevActive, true);
+
+  // 5. Response Rate
+  const currRRCount = currentIssues.filter((i) => i.replies !== undefined).length;
+  const currRRAny = currentIssues.filter((i) => i.replies !== undefined && i.isAnswered).length;
+  const prevRRCount = previousIssues.filter((i) => i.replies !== undefined).length;
+  const prevRRAny = previousIssues.filter((i) => i.replies !== undefined && i.isAnswered).length;
+
+  let responseRate: WeeklyTrend;
+  if (currRRCount === 0 || prevRRCount === 0) {
+    responseRate = { value: '0%', direction: 'neutral', status: 'neutral' };
+  } else {
+    const currRate = (currRRAny / currRRCount) * 100;
+    const prevRate = (prevRRAny / prevRRCount) * 100;
+    const diff = currRate - prevRate;
+    const absDiff = Math.abs(diff).toFixed(0);
+    const sign = diff > 0 ? '+' : diff < 0 ? '-' : '';
+    responseRate = {
+      value: `${sign}${absDiff}%`,
+      direction: diff > 0 ? 'up' : diff < 0 ? 'down' : 'neutral',
+      status: diff > 0 ? 'success' : diff < 0 ? 'error' : 'neutral',
+    };
+  }
+
+  // 6. Avg Response Time
+  const currTimes = currentIssues.map((i) => i.responseTimeMs).filter((t) => t != null && t > 0) as number[];
+  const prevTimes = previousIssues.map((i) => i.responseTimeMs).filter((t) => t != null && t > 0) as number[];
+  const currAvg = currTimes.length > 0 ? currTimes.reduce((a, b) => a + b, 0) / currTimes.length : 0;
+  const prevAvg = prevTimes.length > 0 ? prevTimes.reduce((a, b) => a + b, 0) / prevTimes.length : 0;
+  const avgResponseTime = getDelta(currAvg, prevAvg, false);
+
+  // 7. Unanswered
+  const currUnanswered = currentIssues.filter((i) => i.replies !== undefined && !i.isAnswered).length;
+  const prevUnanswered = previousIssues.filter((i) => i.replies !== undefined && !i.isAnswered).length;
+  const unanswered = getDelta(currUnanswered, prevUnanswered, false);
+
+  return {
+    issuesCreated,
+    uniqueUsers,
+    totalMessages,
+    activeIssues,
+    responseRate,
+    avgResponseTime,
+    unanswered,
+  };
 }

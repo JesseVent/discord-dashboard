@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Card,
   CardContent,
@@ -40,7 +40,9 @@ import {
   resolutionBadgeVariant,
   resolutionLabel,
 } from '@/lib/dashboard-utils';
-import { threadUrl } from '@/lib/discord-api';
+import { threadUrl, computeResponseAnalytics } from '@/lib/discord-api';
+import { fetchThreadMessages } from '@/lib/data-loader';
+import { useDashboardStore } from '@/store/dashboard-store';
 
 interface IssuesTableProps {
   issues: Issue[];
@@ -244,7 +246,7 @@ export function IssuesTable({
   );
 }
 
-function IssueDetailDialog({
+export function IssueDetailDialog({
   issue,
   guildId,
   channelId,
@@ -255,15 +257,61 @@ function IssueDetailDialog({
   channelId?: string;
   onClose: () => void;
 }) {
+  const { issues, setIssues, authToken, channelId: storeChannelId } = useDashboardStore();
+  const [loadingReplies, setLoadingReplies] = useState(false);
+
+  const activeChannelId = channelId || storeChannelId;
+
+  useEffect(() => {
+    if (!issue || issue.replies !== undefined || loadingReplies) return;
+
+    if (issue.messageCount === 1) {
+      const updatedIssue: Issue = {
+        ...issue,
+        replies: [],
+        responseTimeMs: null,
+        responderCount: 0,
+        isAnswered: false,
+        resolutionStatus: 'unanswered',
+      };
+      
+      const newIssues = issues.map((i) => (i.id === issue.id ? updatedIssue : i));
+      Promise.resolve().then(() => {
+        setIssues(newIssues);
+      });
+      return;
+    }
+
+    Promise.resolve().then(() => {
+      setLoadingReplies(true);
+    });
+
+    fetchThreadMessages({
+      threadId: issue.id,
+      channelId: activeChannelId,
+      authToken,
+      limit: 100,
+    })
+      .then((messages) => {
+        const replies = messages.filter((m) => m.id !== issue.firstMessageId);
+        const updatedIssue = computeResponseAnalytics({ ...issue, replies });
+        const newIssues = issues.map((i) => (i.id === issue.id ? updatedIssue : i));
+        setIssues(newIssues);
+      })
+      .catch((err) => {
+        console.error('Failed to fetch replies on demand:', err);
+      })
+      .finally(() => {
+        setLoadingReplies(false);
+      });
+  }, [issue?.id, issue?.replies, issues, setIssues, authToken, activeChannelId, loadingReplies]);
+
   if (!issue) return null;
-  const link =
-    channelId ?
-      threadUrl({ guildId, channelId, threadId: issue.id })
-    : `https://discord.com/channels/${guildId}`;
+  const link = threadUrl({ guildId, channelId: activeChannelId, threadId: issue.id });
 
   return (
     <Dialog open={!!issue} onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="max-w-3xl max-h-[85vh] overflow-hidden flex flex-col">
+      <DialogContent className="max-w-5xl max-h-[90vh] overflow-hidden flex flex-col">
         <DialogHeader>
           <DialogTitle className="pr-8 text-lg leading-snug">{issue.name}</DialogTitle>
           <DialogDescription>
@@ -321,8 +369,8 @@ function IssueDetailDialog({
           ) : null}
         </div>
 
-        <ScrollArea className="flex-1 -mx-6 px-6">
-          <div className="space-y-4">
+        <div className="flex-1 overflow-y-auto px-6 -mx-6 pr-4 space-y-4">
+          <div className="space-y-4 my-2">
             {/* Original post (first message) */}
             <div>
               <div className="flex items-center gap-2 text-xs text-muted-foreground mb-2">
@@ -345,7 +393,12 @@ function IssueDetailDialog({
             </div>
 
             {/* Replies (conversation thread) */}
-            {issue.replies && issue.replies.length > 0 ? (
+            {loadingReplies ? (
+              <div className="flex items-center justify-center p-8 gap-2 bg-surface-2 rounded-md">
+                <div className="h-4 w-4 rounded-full border-2 border-primary/20 border-t-primary animate-spin" />
+                <span className="text-xs text-muted-foreground">Loading replies on demand...</span>
+              </div>
+            ) : issue.replies && issue.replies.length > 0 ? (
               <div>
                 <div className="agl-eyebrow mb-3">
                   {issue.replies.length} {issue.replies.length === 1 ? 'Reply' : 'Replies'}
@@ -377,13 +430,13 @@ function IssueDetailDialog({
                 <div>
                   <p className="font-medium text-accent text-sm">Replies not loaded</p>
                   <p className="text-xs text-fg mt-0.5">
-                    Click "Fetch Replies" in the Data Source panel to load the full conversation.
+                    Replies not loaded.
                   </p>
                 </div>
               </div>
             )}
           </div>
-        </ScrollArea>
+        </div>
 
         <DialogFooter className="mt-2">
           <Button asChild variant="default" size="sm">

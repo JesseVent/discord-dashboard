@@ -22,6 +22,7 @@ import {
   topIssuesByMessages,
   responseAnalytics,
   fmtDuration,
+  calculateWeeklyTrends,
 } from '@/lib/dashboard-utils';
 import { initSampleDataIfEmpty } from '@/lib/data-loader';
 import type { Issue } from '@/lib/discord-types';
@@ -33,8 +34,9 @@ import { TopContributors } from '@/components/dashboard/top-contributors';
 import { TopResponders } from '@/components/dashboard/top-responders';
 import { ResponseTimeChart } from '@/components/dashboard/response-time-chart';
 import { UnansweredIssues } from '@/components/dashboard/unanswered-issues';
-import { IssuesTable } from '@/components/dashboard/issues-table';
+import { IssuesTable, IssueDetailDialog } from '@/components/dashboard/issues-table';
 import { ConfigPanel } from '@/components/dashboard/config-panel';
+import { threadUrl } from '@/lib/discord-api';
 import {
   FilterBar,
   type DashboardFilters,
@@ -96,9 +98,26 @@ export default function Home() {
     return issues.filter((i) => i.archived).length;
   }, [issues, serverMetrics]);
 
+  const activeCount = useMemo(() => {
+    if (serverMetrics?.kpis) {
+      return serverMetrics.kpis.totalIssues - serverMetrics.kpis.archivedIssues;
+    }
+    return issues.length - archivedCount;
+  }, [issues.length, archivedCount, serverMetrics]);
+
+  const archivedPercentText = useMemo(() => {
+    if (serverMetrics?.kpis) {
+      const total = serverMetrics.kpis.totalIssues;
+      return total > 0 ? `${Math.round((serverMetrics.kpis.archivedIssues / total) * 100)}% of total` : '0% of total';
+    }
+    return issues.length > 0 ? `${Math.round((archivedCount / issues.length) * 100)}% of loaded` : '0% of loaded';
+  }, [issues.length, archivedCount, serverMetrics]);
+
   const avgMsgPerIssue = totalResults > 0 ? Math.round(totalMessages / totalResults) : 0;
 
   const tagCounts = useMemo(() => issuesByTag(issues), [issues]);
+
+  const weeklyTrends = useMemo(() => calculateWeeklyTrends(issues), [issues]);
 
   // Response analytics (only meaningful after "Fetch Replies" has been clicked, or if we have server metrics)
   const replyAnalytics = useMemo(() => responseAnalytics(issues), [issues]);
@@ -209,6 +228,7 @@ export default function Home() {
             subtitle={kpis ? 'server aggregated' : (totalResults > issues.length ? `${issues.length} loaded locally` : 'all loaded')}
             icon={AlertTriangle}
             accent="text-error"
+            delta={weeklyTrends.issuesCreated}
           />
           <KpiCard
             title="Unique Users"
@@ -216,6 +236,7 @@ export default function Home() {
             subtitle="distinct reporters"
             icon={Users}
             accent="text-success"
+            delta={weeklyTrends.uniqueUsers}
           />
           <KpiCard
             title="Total Messages"
@@ -223,18 +244,20 @@ export default function Home() {
             subtitle={kpis ? 'server aggregated' : `${avgMsgPerIssue} avg/issue`}
             icon={MessageSquare}
             accent="text-accent"
+            delta={weeklyTrends.totalMessages}
           />
           <KpiCard
             title="Active"
-            value={issues.length - archivedCount}
+            value={activeCount}
             subtitle="not archived"
             icon={Activity}
             accent="text-warning"
+            delta={weeklyTrends.activeIssues}
           />
           <KpiCard
             title="Archived"
             value={archivedCount}
-            subtitle={`${issues.length > 0 ? Math.round((archivedCount / issues.length) * 100) : 0}% of loaded`}
+            subtitle={archivedPercentText}
             icon={Archive}
             accent="text-pending"
           />
@@ -271,6 +294,7 @@ export default function Home() {
                 subtitle={`${answeredCount.toLocaleString()} of ${totalWithRepliesCount.toLocaleString()} answered`}
                 icon={MessageCircleReply}
                 accent="text-cat-agent"
+                delta={weeklyTrends.responseRate}
               />
               <KpiCard
                 title="Avg Response"
@@ -278,6 +302,7 @@ export default function Home() {
                 subtitle="time to first reply"
                 icon={Clock}
                 accent="text-cat-chain"
+                delta={weeklyTrends.avgResponseTime}
               />
               <KpiCard
                 title="Median Response"
@@ -306,6 +331,7 @@ export default function Home() {
                 subtitle={`${totalWithRepliesCount > 0 ? Math.round((unansweredCount / totalWithRepliesCount) * 100) : 0}% of total`}
                 icon={AlertCircle}
                 accent="text-error"
+                delta={weeklyTrends.unanswered}
               />
             </div>
           </section>
@@ -324,18 +350,6 @@ export default function Home() {
           />
         </section>
 
-        {/* Response analytics charts row — only shown after replies are loaded */}
-        {hasReplies ? (
-          <section className="grid gap-4 lg:grid-cols-2">
-            <ResponseTimeChart issues={issues} />
-            <UnansweredIssues
-              issues={issues}
-              channelId={channelId}
-              onSelectIssue={setSelectedIssueForDetail}
-            />
-          </section>
-        ) : null}
-
         {/* Themes + Contributors row */}
         <section className="grid gap-4 lg:grid-cols-3">
           <div className="lg:col-span-2">
@@ -347,17 +361,18 @@ export default function Home() {
               isAnalyzing={isAnalyzing}
             />
           </div>
-          {hasReplies ? (
-            <TopResponders issues={issues} serverResponders={serverMetrics?.topResponders} />
-          ) : (
-            <TopContributors issues={issues} />
-          )}
+          <TopContributors issues={issues} />
         </section>
 
-        {/* When replies are loaded, show contributors AND responders side by side */}
+        {/* Response analytics charts row — only shown after replies are loaded */}
         {hasReplies ? (
-          <section className="grid gap-4 lg:grid-cols-2">
-            <TopContributors issues={issues} />
+          <section className="grid gap-4 lg:grid-cols-3">
+            <ResponseTimeChart issues={issues} />
+            <UnansweredIssues
+              issues={issues}
+              channelId={channelId}
+              onSelectIssue={setSelectedIssueForDetail}
+            />
             <TopResponders issues={issues} serverResponders={serverMetrics?.topResponders} />
           </section>
         ) : null}
@@ -426,7 +441,7 @@ export default function Home() {
             {topIssues.map((issue, idx) => (
               <a
                 key={issue.id}
-                href={`https://discord.com/channels/839993398554656828/${channelId}/${issue.id}`}
+                href={threadUrl({ guildId: '839993398554656828', channelId, threadId: issue.id })}
                 target="_blank"
                 rel="noreferrer"
                 className="group rounded-lg border bg-card p-3 hover:bg-accent transition-colors"
@@ -467,6 +482,13 @@ export default function Home() {
             APIs · Theme analysis by LLM
           </p>
         </footer>
+
+        <IssueDetailDialog
+          issue={selectedIssueForDetail}
+          guildId="839993398554656828"
+          channelId={channelId}
+          onClose={() => setSelectedIssueForDetail(null)}
+        />
       </main>
     </div>
   );

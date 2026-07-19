@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   ChartContainer,
@@ -16,6 +17,8 @@ interface IssuesOverTimeChartProps {
 }
 
 export function IssuesOverTimeChart({ issues, serverDailyStats }: IssuesOverTimeChartProps) {
+  const [chartMode, setChartMode] = useState<'trending' | 'cumulative'>('trending');
+
   let data;
   if (serverDailyStats && serverDailyStats.length > 0) {
     let running = 0;
@@ -49,10 +52,40 @@ export function IssuesOverTimeChart({ issues, serverDailyStats }: IssuesOverTime
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Issues Over Time</CardTitle>
-        <CardDescription>
-          Cumulative issue count by creation date ({data.length} active days)
-        </CardDescription>
+        <div className="flex items-center justify-between">
+          <div>
+            <CardTitle>Issues Over Time</CardTitle>
+            <CardDescription>
+              {chartMode === 'trending'
+                ? `New issues created per day (${data.length} active days)`
+                : `Cumulative issue count over time (${data.length} active days)`}
+            </CardDescription>
+          </div>
+          <div className="flex rounded-md bg-muted p-0.5 text-xs font-medium shrink-0">
+            <button
+              type="button"
+              onClick={() => setChartMode('trending')}
+              className={`rounded-sm px-2 py-0.5 transition-colors ${
+                chartMode === 'trending'
+                  ? 'bg-background text-foreground shadow-xs font-semibold'
+                  : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              Daily Trend
+            </button>
+            <button
+              type="button"
+              onClick={() => setChartMode('cumulative')}
+              className={`rounded-sm px-2 py-0.5 transition-colors ${
+                chartMode === 'cumulative'
+                  ? 'bg-background text-foreground shadow-xs font-semibold'
+                  : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              Cumulative
+            </button>
+          </div>
+        </div>
       </CardHeader>
       <CardContent>
         <ChartContainer config={chartConfig} className="h-[260px] w-full">
@@ -80,22 +113,25 @@ export function IssuesOverTimeChart({ issues, serverDailyStats }: IssuesOverTime
               />
               <YAxis allowDecimals={false} tick={{ fontSize: 11 }} width={32} />
               <ChartTooltip content={<ChartTooltipContent />} />
-              <Area
-                type="monotone"
-                dataKey="count"
-                name="New / Day"
-                stroke="var(--agl-pending)"
-                strokeWidth={1.5}
-                fill="url(#fillCount)"
-              />
-              <Area
-                type="monotone"
-                dataKey="cumulative"
-                name="Cumulative"
-                stroke="var(--agl-accent)"
-                strokeWidth={2}
-                fill="url(#fillCumulative)"
-              />
+              {chartMode === 'trending' ? (
+                <Area
+                  type="monotone"
+                  dataKey="count"
+                  name="New / Day"
+                  stroke="var(--agl-pending)"
+                  strokeWidth={1.5}
+                  fill="url(#fillCount)"
+                />
+              ) : (
+                <Area
+                  type="monotone"
+                  dataKey="cumulative"
+                  name="Cumulative"
+                  stroke="var(--agl-accent)"
+                  strokeWidth={2}
+                  fill="url(#fillCumulative)"
+                />
+              )}
             </AreaChart>
           </ResponsiveContainer>
         </ChartContainer>

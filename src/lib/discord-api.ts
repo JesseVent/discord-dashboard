@@ -228,10 +228,10 @@ export function avatarUrl(user: {
  */
 export function threadUrl(opts: {
   guildId: string;
-  channelId: string;
+  channelId?: string;
   threadId: string;
 }): string {
-  return `https://discord.com/channels/${opts.guildId}/${opts.channelId}/${opts.threadId}`;
+  return `https://discord.com/channels/${opts.guildId}/${opts.threadId}`;
 }
 
 /**

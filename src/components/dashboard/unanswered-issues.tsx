@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -16,7 +17,7 @@ interface UnansweredIssuesProps {
 }
 
 /**
- * Lists issues with zero replies from other users, sorted by age (oldest first).
+ * Lists issues with zero replies from other users, sorted by age.
  * These are the issues most in need of attention.
  */
 export function UnansweredIssues({
@@ -25,24 +26,53 @@ export function UnansweredIssues({
   channelId,
   onSelectIssue,
 }: UnansweredIssuesProps) {
+  const [sortBy, setSortBy] = useState<'newest' | 'oldest'>('newest');
   const hasReplies = issues.some((i) => i.replies !== undefined);
-  const unanswered = unansweredIssues(issues, 20);
+  const unanswered = unansweredIssues(issues, 20, sortBy);
 
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <AlertCircle className="h-4 w-4 text-error" />
-          Needs Attention
-          {unanswered.length > 0 ? (
-            <Badge variant="error" className="text-[10px]">
-              {unanswered.length} unanswered
-            </Badge>
-          ) : null}
-        </CardTitle>
+        <div className="flex items-center justify-between">
+          <CardTitle className="flex items-center gap-2">
+            <AlertCircle className="h-4 w-4 text-error" />
+            Needs Attention
+            {unanswered.length > 0 ? (
+              <Badge variant="error" className="text-[10px]">
+                {unanswered.length} unanswered
+              </Badge>
+            ) : null}
+          </CardTitle>
+          {hasReplies && unanswered.length > 0 && (
+            <div className="flex rounded-md bg-muted p-0.5 text-xs font-medium shrink-0">
+              <button
+                type="button"
+                onClick={() => setSortBy('newest')}
+                className={`rounded-sm px-2 py-0.5 transition-colors ${
+                  sortBy === 'newest'
+                    ? 'bg-background text-foreground shadow-xs font-semibold'
+                    : 'text-muted-foreground hover:text-foreground'
+                }`}
+              >
+                Newest
+              </button>
+              <button
+                type="button"
+                onClick={() => setSortBy('oldest')}
+                className={`rounded-sm px-2 py-0.5 transition-colors ${
+                  sortBy === 'oldest'
+                    ? 'bg-background text-foreground shadow-xs font-semibold'
+                    : 'text-muted-foreground hover:text-foreground'
+                }`}
+              >
+                Oldest
+              </button>
+            </div>
+          )}
+        </div>
         <CardDescription>
           {hasReplies
-            ? 'Issues with zero replies from other users, oldest first'
+            ? `Issues with zero replies from other users, ${sortBy === 'newest' ? 'newest' : 'oldest'} first`
             : 'Click "Fetch Replies" to identify unanswered issues'}
         </CardDescription>
       </CardHeader>
