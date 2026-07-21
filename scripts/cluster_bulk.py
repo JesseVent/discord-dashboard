@@ -61,6 +61,7 @@ def supabase_headers():
         "apikey": SUPABASE_KEY,
         "Authorization": f"Bearer {SUPABASE_KEY}",
         "Accept-Profile": SCHEMA,
+        "Content-Profile": SCHEMA,  # required for POST/PATCH/PUT
         "Content-Type": "application/json",
     }
 
@@ -92,12 +93,14 @@ def fetch_unclustered_issues(limit: int | None):
             break
 
 
-def query_vectorize(vector: list[float], top_k: int) -> list[dict]:
+def query_vectorize(vector: list[float], top_k: int, session: requests.Session | None = None) -> list[dict]:
     url = f"https://api.cloudflare.com/client/v4/accounts/{CF_ACCOUNT}/vectorize/v2/indexes/{VEC_INDEX}/query"
-    r = requests.post(
+    sess = session or requests
+    r = sess.post(
         url,
         headers={"Authorization": f"Bearer {CF_TOKEN}", "Content-Type": "application/json"},
         json={"vector": vector, "topK": top_k, "returnMetadata": "all"},
+        timeout=30,
     )
     if not r.ok:
         raise RuntimeError(f"Vectorize query {r.status_code}: {r.text[:300]}")
@@ -177,6 +180,9 @@ def main():
     p.add_argument("--top-k", type=int, default=DEFAULT_TOP_K)
     p.add_argument("--encode-batch", type=int, default=16)
     p.add_argument("--cpu", action="store_true")
+    p.add_argument("--cache", default="/tmp/cluster_bulk_embeddings.npz", help="Path to cache vectors")
+    p.add_argument("--no-cache", action="store_true", help="Skip caching vectors to disk")
+    p.add_argument("--workers", type=int, default=16, help="Parallel Vectorize queries")
     args = p.parse_args()
 
     print(f"[cluster_bulk] threshold={args.threshold} top_k={args.top_k} limit={args.limit}")
@@ -204,37 +210,118 @@ def main():
     if not issues:
         return
 
-    texts = [build_text(i) for i in issues]
-    print(f"[cluster_bulk] encoding {len(texts)} texts (batch={args.encode_batch})")
-    t0 = time.time()
-    vectors = model.encode(
-        texts, batch_size=args.encode_batch, normalize_embeddings=True, show_progress_bar=False
-    )
-    print(f"[cluster_bulk] encoded in {time.time() - t0:.1f}s")
+    cache_path = Path(args.cache)
+    cached_vectors = None
+    if cache_path.exists() and not args.no_cache:
+        try:
+            import numpy as np
+            # Plain numpy arrays saved by np.savez — no pickle needed.
+            npz = np.load(cache_path)
+            cached_ids = npz["ids"].tolist()
+            cached_set = set(cached_ids)
+            issue_ids = [i["id"] for i in issues]
+            issue_set = set(issue_ids)
+            missing = issue_set - cached_set
+            extra = cached_set - issue_set
+            # Tolerate small drift (a handful of new issues since last cache).
+            if not missing and not extra:
+                print(f"[cluster_bulk] reusing cached vectors from {cache_path}")
+                cached_vectors = npz["vectors"]
+            elif len(missing) <= max(10, len(issue_ids) * 0.01):
+                print(f"[cluster_bulk] cache covers {len(cached_set)}/{len(issue_ids)} issues "
+                      f"({len(missing)} new, {len(extra)} removed) — reusing for cached, encoding new")
+                cached_vectors = (np.array(cached_ids), npz["vectors"])
+            else:
+                print(f"[cluster_bulk] cache stale ({len(missing)} missing, {len(extra)} extra), re-encoding")
+        except Exception as e:
+            print(f"[cluster_bulk] cache load failed: {e}")
+
+    if cached_vectors is None:
+        texts = [build_text(i) for i in issues]
+        print(f"[cluster_bulk] encoding {len(texts)} texts (batch={args.encode_batch})")
+        t0 = time.time()
+        import numpy as np
+        vectors = model.encode(
+            texts, batch_size=args.encode_batch, normalize_embeddings=True, show_progress_bar=False
+        )
+        print(f"[cluster_bulk] encoded in {time.time() - t0:.1f}s")
+        if not args.no_cache:
+            try:
+                np.savez(cache_path, ids=[i["id"] for i in issues], vectors=vectors)
+                print(f"[cluster_bulk] cached vectors → {cache_path}")
+            except Exception as e:
+                print(f"[cluster_bulk] cache save failed: {e}")
+    elif isinstance(cached_vectors, tuple):
+        # Partial cache: use cached for known issues, encode new ones.
+        cached_id_arr, cached_vec_arr = cached_vectors
+        issue_ids = [i["id"] for i in issues]
+        missing = [i for i in issues if i["id"] not in set(cached_id_arr.tolist())]
+        print(f"[cluster_bulk] encoding {len(missing)} new issues (rest cached)")
+        import numpy as np
+        if missing:
+            new_texts = [build_text(i) for i in missing]
+            new_vecs = model.encode(new_texts, batch_size=args.encode_batch, normalize_embeddings=True, show_progress_bar=False)
+        else:
+            new_vecs = np.empty((0, cached_vec_arr.shape[1]))
+        # Build aligned vectors list
+        id_to_vec = dict(zip(cached_id_arr.tolist(), cached_vec_arr))
+        for i, v in zip(missing, new_vecs):
+            id_to_vec[i["id"]] = v
+        vectors = np.array([id_to_vec[i["id"]] for i in issues])
+        if not args.no_cache:
+            try:
+                np.savez(cache_path, ids=[i["id"] for i in issues], vectors=vectors)
+                print(f"[cluster_bulk] cache refreshed → {cache_path}")
+            except Exception as e:
+                print(f"[cluster_bulk] cache save failed: {e}")
+    else:
+        # Full cache hit.
+        vectors = cached_vectors
 
     # Build similarity graph.
     print("[cluster_bulk] querying Vectorize for nearest neighbours...")
     edges: dict[str, list[str]] = {}
-    for issue, vec in zip(issues, vectors):
+    t0 = time.time()
+    session = requests.Session()  # connection pooling
+    from concurrent.futures import ThreadPoolExecutor, as_completed
+
+    progress_every = 1000
+    threshold = args.threshold
+    top_k = args.top_k
+
+    def one(issue, vec):
         try:
-            matches = query_vectorize(vec.tolist(), args.top_k + 1)
+            matches = query_vectorize(vec.tolist(), top_k + 1, session=session)
         except RuntimeError as e:
-            print(f"[cluster_bulk] query failed for {issue['id']}: {e}")
-            continue
+            return issue["id"], None, str(e)
         neighbours = [
             m["metadata"]["issueId"]
             for m in matches
-            if m.get("score", 0) >= args.threshold
+            if m.get("score", 0) >= threshold
             and m.get("metadata", {}).get("issueId")
             and m["metadata"]["issueId"] != issue["id"]
         ]
-        if not neighbours:
-            continue
-        edges[issue["id"]] = neighbours
-        for n in neighbours:
-            edges.setdefault(n, [])
-            if issue["id"] not in edges[n]:
-                edges[n].append(issue["id"])
+        return issue["id"], neighbours, None
+
+    completed = 0
+    with ThreadPoolExecutor(max_workers=args.workers) as pool:
+        futures = [pool.submit(one, issue, vec) for issue, vec in zip(issues, vectors)]
+        for fut in as_completed(futures):
+            iid, neighbours, err = fut.result()
+            completed += 1
+            if err:
+                print(f"[cluster_bulk] query failed for {iid}: {err}")
+                continue
+            if neighbours:
+                edges[iid] = neighbours
+                for n in neighbours:
+                    edges.setdefault(n, [])
+                    if iid not in edges[n]:
+                        edges[n].append(iid)
+            if completed % progress_every == 0:
+                rate = completed / (time.time() - t0)
+                eta = (len(issues) - completed) / max(rate, 0.01)
+                print(f"[cluster_bulk]   {completed}/{len(issues)} ({rate:.1f}/s, ETA {eta:.0f}s)")
 
     groups = connected_components(edges)
     print(f"[cluster_bulk] {len(groups)} clusters found")

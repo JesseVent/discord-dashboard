@@ -11,7 +11,7 @@
   },
   "vars": {
     "TARGET_URL": "https://discord.supabasehire.me/api/cron/sync",
-    "SUPABASE_URL": "https://gpfuhxmtidkynxhmfphg.supabase.co"
+    "SUPABASE_URL": "https://discord.supabasehire.me/api/rest"
   },
   "ai": {
     "binding": "AI"

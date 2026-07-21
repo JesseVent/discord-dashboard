@@ -1,3 +1,5 @@
+SET search_path TO discord, public;
+
 -- Add indices to speed up queries
 CREATE INDEX IF NOT EXISTS idx_issues_channel_id ON issues(channel_id);
 CREATE INDEX IF NOT EXISTS idx_issues_created_at ON issues(created_at DESC);

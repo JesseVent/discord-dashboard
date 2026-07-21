@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { supabaseAdmin } from '@/lib/supabase';
+import { supabaseAdmin, ensureDatabaseReady } from '@/lib/supabase';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -10,6 +10,7 @@ export const dynamic = 'force-dynamic';
  */
 export async function DELETE(req: Request) {
   try {
+    await ensureDatabaseReady();
     const { searchParams } = new URL(req.url);
     const channelId = searchParams.get('channelId') ?? '';
 

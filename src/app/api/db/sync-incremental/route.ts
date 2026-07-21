@@ -8,7 +8,7 @@ import {
   computeResponseAnalytics,
 } from '@/lib/discord-api';
 import { upsertIssuesAndReplies } from '@/lib/persist-issues';
-import { supabaseAdmin } from '@/lib/supabase';
+import { supabaseAdmin, ensureDatabaseReady } from '@/lib/supabase';
 import type { DiscordMessage, DiscordThread, Issue } from '@/lib/discord-types';
 
 export const runtime = 'nodejs';
@@ -52,6 +52,7 @@ const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
  */
 export async function POST(req: NextRequest) {
   try {
+    await ensureDatabaseReady();
     const body = await req.json().catch(() => ({}));
     const { channelId, authToken } = resolveDiscordCreds({
       channelId: body.channelId,
@@ -95,7 +96,7 @@ export async function POST(req: NextRequest) {
         const { data: existingRows, error } = await supabaseAdmin
           .from('issues')
           .select('id, message_count, archived, locked')
-          .in('id', ids);
+          .in('id', ids.map((id) => `"${id}"`));
         if (error) throw new Error(`issues lookup failed: ${error.message}`);
         const existingById = new Map((existingRows ?? []).map((r: any) => [r.id, r]));
 

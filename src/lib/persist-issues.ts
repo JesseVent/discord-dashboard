@@ -1,5 +1,8 @@
-import { supabaseAdmin } from '@/lib/supabase';
+import { supabaseAdmin, ensureDatabaseReady, execRawSQL } from '@/lib/supabase';
 import type { DiscordMessage, Issue } from '@/lib/discord-types';
+
+/** Max rows per upsert batch to avoid PGlite parameter limits */
+const BATCH_SIZE = 50;
 
 /**
  * SERVER-ONLY: upsert issues (+ optionally their replies) into Supabase.
@@ -15,6 +18,7 @@ export async function upsertIssuesAndReplies(opts: {
   channelId: string;
   guildId?: string | null;
 }): Promise<{ issueCount: number; replyCount: number }> {
+  await ensureDatabaseReady();
   const { issues, channelId, guildId = null } = opts;
   if (issues.length === 0) return { issueCount: 0, replyCount: 0 };
 
@@ -42,48 +46,79 @@ export async function upsertIssuesAndReplies(opts: {
       first_message_author_name: issue.firstMessageAuthorName,
       first_message_created_at: issue.firstMessageCreatedAt,
 
-      // Response analytics
+      // Response analytics — use plain number (not BigInt) for PGlite compatibility
       is_answered: issue.isAnswered ?? false,
-      response_time_ms: issue.responseTimeMs != null ? BigInt(issue.responseTimeMs) : null,
+      response_time_ms: issue.responseTimeMs != null ? Number(issue.responseTimeMs) : null,
       responder_count: issue.responderCount ?? 0,
       resolution_status: issue.resolutionStatus ?? 'unanswered',
     };
     return row;
   });
 
-  const { error: upsertErr } = await supabaseAdmin.from('issues').upsert(issueRows, { onConflict: 'id' });
-  if (upsertErr) throw new Error(`issues upsert failed: ${upsertErr.message}`);
+  // Batch upserts to avoid hitting PGlite parameter limits
+  for (let i = 0; i < issueRows.length; i += BATCH_SIZE) {
+    const batch = issueRows.slice(i, i + BATCH_SIZE);
+    const { error: upsertErr } = await supabaseAdmin.from('issues').upsert(batch, { onConflict: 'id' });
+    if (upsertErr) throw new Error(`issues upsert failed: ${upsertErr.message}`);
+  }
 
   const issuesWithReplies = issues.filter((i) => i.replies !== undefined);
   let replyCount = 0;
 
   if (issuesWithReplies.length > 0) {
-    const issueIds = issuesWithReplies.map((i) => i.id);
-    const { error: delErr } = await supabaseAdmin.from('replies').delete().in('issue_id', issueIds);
-    if (delErr) throw new Error(`replies delete failed: ${delErr.message}`);
+    for (let i = 0; i < issuesWithReplies.length; i += BATCH_SIZE) {
+      const batchIssues = issuesWithReplies.slice(i, i + BATCH_SIZE);
 
-    const replyRows = issuesWithReplies.flatMap((issue) =>
-      (issue.replies ?? []).map((reply) => {
-        const r = reply as DiscordMessage;
-        return {
-          id: r.id,
-          issue_id: issue.id,
-          author_id: r.author?.id ?? 'unknown',
-          author_username: r.author?.username ?? 'unknown',
-          author_global_name: r.author?.global_name ?? null,
-          content: r.content ?? '',
-          timestamp: r.timestamp ? new Date(r.timestamp).toISOString() : new Date().toISOString(),
-          has_attachment: (r.attachments?.length ?? 0) > 0,
-          attachment_count: r.attachments?.length ?? 0,
-        };
-      }),
-    );
+      const replyRows = batchIssues.flatMap((issue) =>
+        (issue.replies ?? []).map((reply) => {
+          const r = reply as DiscordMessage;
+          return {
+            id: r.id,
+            issue_id: issue.id,
+            author_id: r.author?.id ?? 'unknown',
+            author_username: r.author?.username ?? 'unknown',
+            author_global_name: r.author?.global_name ?? null,
+            content: r.content ?? '',
+            timestamp: r.timestamp ? new Date(r.timestamp).toISOString() : new Date().toISOString(),
+            has_attachment: (r.attachments?.length ?? 0) > 0,
+            attachment_count: r.attachments?.length ?? 0,
+          };
+        }),
+      );
 
-    if (replyRows.length > 0) {
-      const { error: insErr } = await supabaseAdmin.from('replies').insert(replyRows);
-      if (insErr) throw new Error(`replies insert failed: ${insErr.message}`);
+      // Use raw SQL INSERT ... ON CONFLICT DO UPDATE so stale rows are refreshed,
+      // bypassing @supabase/lite's embedded PostgREST which doesn't support ON CONFLICT.
+      for (let j = 0; j < replyRows.length; j += BATCH_SIZE) {
+        const sub = replyRows.slice(j, j + BATCH_SIZE);
+        if (sub.length === 0) continue;
+
+        // Build parameterized INSERT ... ON CONFLICT (id) DO UPDATE
+        const cols = ['id', 'issue_id', 'author_id', 'author_username', 'author_global_name',
+          'content', 'timestamp', 'has_attachment', 'attachment_count'];
+        const colsSql = cols.map((c) => `"${c}"`).join(', ');
+        const updateSql = cols.filter((c) => c !== 'id')
+          .map((c) => `"${c}" = EXCLUDED."${c}"`).join(', ');
+
+        const valuePlaceholders: string[] = [];
+        const params: unknown[] = [];
+        let idx = 1;
+        for (const row of sub) {
+          const slots = cols.map(() => `$${idx++}`).join(', ');
+          valuePlaceholders.push(`(${slots})`);
+          params.push(
+            row.id, row.issue_id, row.author_id, row.author_username, row.author_global_name,
+            row.content, row.timestamp, row.has_attachment, row.attachment_count,
+          );
+        }
+
+        const sql = `INSERT INTO "discord"."replies" (${colsSql})
+VALUES ${valuePlaceholders.join(', ')}
+ON CONFLICT (id) DO UPDATE SET ${updateSql}`;
+
+        await execRawSQL(sql, params);
+      }
+      replyCount += replyRows.length;
     }
-    replyCount = replyRows.length;
   }
 
   return { issueCount: issueRows.length, replyCount };

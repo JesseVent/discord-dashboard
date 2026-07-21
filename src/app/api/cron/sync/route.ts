@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { supabaseAdmin } from '@/lib/supabase';
+import { supabaseAdmin, ensureDatabaseReady } from '@/lib/supabase';
 import { env } from 'process';
 
 export const runtime = 'nodejs';
@@ -27,6 +27,7 @@ async function fetchDiscordApi(url: string, token: string) {
 
 export async function GET(req: Request) {
   try {
+    await ensureDatabaseReady();
     // 1. Verify Vercel Cron Secret
     const authHeader = req.headers.get('authorization');
     if (env.CRON_SECRET && authHeader !== `Bearer ${env.CRON_SECRET}`) {

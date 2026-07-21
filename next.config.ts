@@ -7,6 +7,7 @@ const nextConfig: NextConfig = {
     ignoreBuildErrors: true,
   },
   reactStrictMode: false,
+  serverExternalPackages: ["@electric-sql/pglite", "@supabase/lite"],
 };
 
 export default nextConfig;

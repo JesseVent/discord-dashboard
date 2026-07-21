@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { supabaseAdmin } from '@/lib/supabase';
+import { supabaseAdmin, ensureDatabaseReady } from '@/lib/supabase';
 import type { DiscordMessage, Issue } from '@/lib/discord-types';
 
 export const runtime = 'nodejs';
@@ -12,6 +12,7 @@ export const dynamic = 'force-dynamic';
  */
 export async function GET(req: NextRequest) {
   try {
+    await ensureDatabaseReady();
     const { searchParams } = new URL(req.url);
     const channelId = searchParams.get('channelId') ?? '';
     const limit = Math.min(Number(searchParams.get('limit') ?? 50000), 50000);

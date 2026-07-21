@@ -53,4 +53,8 @@ server.log
 # Skills directory
 /skills/scrape-resume.mjs
 .env
-.env
+
+# Supabase Lite local database and agent folders
+supabase/.temp/
+.agents/
+scratch/

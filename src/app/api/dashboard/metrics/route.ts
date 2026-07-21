@@ -1,11 +1,12 @@
 import { NextResponse } from 'next/server';
-import { supabaseAdmin } from '@/lib/supabase';
+import { supabaseAdmin, ensureDatabaseReady } from '@/lib/supabase';
 
-export const runtime = 'edge';
+export const runtime = 'nodejs';
 export const revalidate = 3600; // Cache for 1 hour, updated by cron
 
 export async function GET() {
   try {
+    await ensureDatabaseReady();
     const [kpiRes, dailyStatsRes, respondersRes] = await Promise.all([
       // Use the new global metrics view for fast server-side KPIs
       supabaseAdmin.from('dashboard_global_metrics').select('*').single(),
