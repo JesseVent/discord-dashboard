@@ -51,10 +51,14 @@ prompt
 
 server.log
 # Skills directory
-/skills/scrape-resume.mjs
+/scripts/scrape-resume.mjs
 .env
 
 # Supabase Lite local database and agent folders
 supabase/.temp/
+supabase/data.db.tar.gz
 .agents/
 scratch/
+.remember/
+skills-lock.json
+*.pid

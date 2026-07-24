@@ -12,11 +12,6 @@ bun dev               # next dev -p 3000, logs to dev.log
 bun run build         # next build, then copies static/public into .next/standalone
 bun run start         # runs the standalone build (NODE_ENV=production), logs to server.log
 bun run lint          # eslint .
-
-bun run db:push       # prisma db push — VESTIGIAL (see Database: Prisma is legacy)
-bun run db:generate   # prisma generate — VESTIGIAL
-bun run db:migrate    # prisma migrate dev — VESTIGIAL
-bun run db:reset      # prisma migrate reset — VESTIGIAL
 ```
 
 The real DB is Supabase Postgres — apply schema changes via `supabase/migrations/` + the Supabase MCP, not Prisma.
@@ -84,11 +79,7 @@ Primary store is **Supabase Postgres**, schema `discord` (tables `issues`, `repl
 `/api/dashboard/metrics` is **edge runtime**, `revalidate = 3600`, and reads only those views — KPIs are
 served from cache and refreshed by the cron sync, not computed per-request.
 
-**Prisma is legacy.** `prisma/schema.prisma` (SQLite, `db/custom.db`) and `src/lib/db.ts` (singleton
-`PrismaClient`) are left over from the original stack and **no longer imported anywhere in `src/`** except
-`db.ts` itself — the `db:*` package scripts are vestigial. Don't add new persistence through Prisma; use
-`supabaseAdmin` + a migration instead. PostgREST caps a single request at 1000 rows, so bulk reads
-(`/api/db/load`) paginate server-side with `.range()`.
+**Prisma has been removed.** The legacy files (`prisma/schema.prisma`, SQLite `db/custom.db`, and `src/lib/db.ts`) and `db:*` package scripts have been deleted. Do not add new persistence through Prisma; use `supabaseAdmin` + a migration instead. PostgREST caps a single request at 1000 rows, so bulk reads (`/api/db/load`) paginate server-side with `.range()`.
 
 ### Cron & background sync
 
@@ -119,8 +110,7 @@ API route map: `/api/discord/{search,post-data,messages}` (Discord proxy), `/api
 **Bulk backfill** (one-shot, run locally): `scripts/embed_bulk.py` (sentence-transformers → Vectorize
 upsert, ~30 min for ~40k issues) then `scripts/cluster_bulk.py` (encodes locally, queries Vectorize,
 writes clusters + `duplicate_cluster_id`, ~55 min; run with `PYTORCH_MPS_HIGH_WATERMARK_RATIO=0.0`). See
-`cloudflare-cron/README.md` for required env vars. The root-level `scrape-*.mjs` scripts are ad-hoc
-reply-scraping helpers, not part of the scheduled pipeline.
+`cloudflare-cron/README.md` for required env vars. The scrape-*.mjs scripts in the `scripts/` directory are ad-hoc reply-scraping helpers, not part of the scheduled pipeline.
 
 ### UI
 
