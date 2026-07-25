@@ -1,0 +1,13 @@
+{
+  "backedUpAt": "2026-07-25",
+  "project": "gpfuhxmtidkynxhmfphg",
+  "schema": "discord",
+  "counts": {
+    "issues": 40570,
+    "replies": 233147,
+    "duplicate_clusters": 155,
+    "theme_clusters": 0
+  },
+  "note": "Snapshot of the discord.* schema on the shared hosted Supabase project (dashboard name: analytics), taken before dropping it — app itself moved to self-contained Supabase Lite (PGlite) on 2026-07-21. Data files are gzip-compressed NDJSON (one JSON object per line); schema.sql is the DDL copied from threadline-navigator2's apps/navigator/supabase/migrations/0002_ontology_knowledge_graph.sql lines 1542-1680.",
+  "reproduce": "node scripts/backup-hosted-discord-schema.mjs (reads NEXT_PUBLIC_SUPABASE_URL + SUPABASE_SERVICE_ROLE_KEY from env)"
+}
