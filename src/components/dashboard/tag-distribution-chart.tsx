@@ -50,12 +50,12 @@ export function TagDistributionChart({ issues, onSelectTag }: TagDistributionCha
               layout="vertical"
               margin={{ left: 8, right: 16, top: 0, bottom: 0 }}
             >
-              <XAxis type="number" allowDecimals={false} tick={{ fontSize: 11 }} />
+              <XAxis type="number" allowDecimals={false} tick={{ fontSize: 11, fill: 'var(--agl-muted-fg)' }} />
               <YAxis
                 type="category"
                 dataKey="name"
                 width={110}
-                tick={{ fontSize: 11 }}
+                tick={{ fontSize: 11, fill: 'var(--agl-muted-fg)' }}
               />
               <ChartTooltip content={<ChartTooltipContent />} />
               <Bar

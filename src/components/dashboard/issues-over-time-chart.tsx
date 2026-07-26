@@ -104,14 +104,14 @@ export function IssuesOverTimeChart({ issues, serverDailyStats }: IssuesOverTime
               <CartesianGrid strokeDasharray="3 3" stroke="var(--agl-border)" vertical={false} />
               <XAxis
                 dataKey="date"
-                tick={{ fontSize: 11 }}
+                tick={{ fontSize: 11, fill: 'var(--agl-muted-fg)' }}
                 tickFormatter={(v: string) => {
                   const d = new Date(v);
                   return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
                 }}
                 minTickGap={24}
               />
-              <YAxis allowDecimals={false} tick={{ fontSize: 11 }} width={32} />
+              <YAxis allowDecimals={false} tick={{ fontSize: 11, fill: 'var(--agl-muted-fg)' }} width={32} />
               <ChartTooltip content={<ChartTooltipContent />} />
               {chartMode === 'trending' ? (
                 <Area

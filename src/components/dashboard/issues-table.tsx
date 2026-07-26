@@ -43,6 +43,7 @@ import {
 import { threadUrl, computeResponseAnalytics } from '@/lib/discord-api';
 import { fetchThreadMessages } from '@/lib/data-loader';
 import { useDashboardStore } from '@/store/dashboard-store';
+import { NotesPanel } from '@/components/dashboard/notes-panel';
 
 interface IssuesTableProps {
   issues: Issue[];
@@ -435,6 +436,10 @@ export function IssueDetailDialog({
                 </div>
               </div>
             )}
+
+            <div className="pt-2 border-t">
+              <NotesPanel issueId={issue.id} />
+            </div>
           </div>
         </div>
 

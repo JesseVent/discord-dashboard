@@ -77,8 +77,8 @@ export function ResponseTimeChart({ issues }: ResponseTimeChartProps) {
           <ResponsiveContainer>
             <BarChart data={data} margin={{ left: 8, right: 16, top: 8, bottom: 0 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="var(--agl-border)" vertical={false} />
-              <XAxis dataKey="bucket" tick={{ fontSize: 11 }} />
-              <YAxis allowDecimals={false} tick={{ fontSize: 11 }} width={32} />
+              <XAxis dataKey="bucket" tick={{ fontSize: 11, fill: 'var(--agl-muted-fg)' }} />
+              <YAxis allowDecimals={false} tick={{ fontSize: 11, fill: 'var(--agl-muted-fg)' }} width={32} />
               <ChartTooltip content={<ChartTooltipContent />} />
               <Bar dataKey="count" name="Issues" radius={[4, 4, 0, 0]}>
                 {data.map((entry, idx) => (

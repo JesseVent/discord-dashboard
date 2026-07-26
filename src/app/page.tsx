@@ -14,6 +14,10 @@ import {
   AlertCircle,
   MessageCircleReply,
   Zap,
+  Github,
+  Linkedin,
+  Wrench,
+  Puzzle,
 } from 'lucide-react';
 import { useDashboardStore } from '@/store/dashboard-store';
 import {
@@ -47,6 +51,7 @@ import { DuplicateClusters } from '@/components/dashboard/duplicate-clusters';
 import { TimeOfWeekHeatmap } from '@/components/dashboard/time-of-week-heatmap';
 import { EscalationWatchlist } from '@/components/dashboard/escalation-watchlist';
 import { Badge } from '@/components/ui/badge';
+import { ThemeToggle } from '@/components/theme-toggle';
 
 export default function Home() {
   const {
@@ -202,16 +207,48 @@ export default function Home() {
                 </p>
               </div>
             </div>
-            <div className="hidden sm:flex items-center gap-2 text-xs text-muted-foreground">
-              {hasMore ? (
-                <Badge variant="outline" className="text-[10px]">
-                  showing {issues.length} of {totalResults.toLocaleString()} total
-                </Badge>
-              ) : (
-                <Badge variant="outline" className="text-[10px]">
-                  {issues.length} issues
-                </Badge>
-              )}
+            <div className="flex items-center gap-0.5 text-xs text-muted-foreground">
+              <a
+                href="https://supabasehire.me"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="hidden sm:flex h-8 items-center gap-1.5 px-2 rounded-md font-medium hover:text-foreground hover:bg-surface-2 transition-colors"
+                title="Devtool — supabasehire.me"
+              >
+                <Wrench className="size-4" />
+                supabasehire.me
+              </a>
+              <a
+                href="https://github.com/JesseVent/supa-agent"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="hidden sm:flex h-8 items-center gap-1.5 px-2 rounded-md font-medium hover:text-foreground hover:bg-surface-2 transition-colors"
+                title="Extension — SupaAgent"
+              >
+                <Puzzle className="size-4" />
+                Extension
+              </a>
+              <a
+                href="https://github.com/JesseVent"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="hidden sm:flex h-8 w-8 items-center justify-center rounded-md hover:text-foreground hover:bg-surface-2 transition-colors"
+                title="GitHub"
+              >
+                <Github className="size-4" />
+              </a>
+              <a
+                href="https://www.linkedin.com/in/jessevent/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="hidden sm:flex h-8 w-8 items-center justify-center rounded-md hover:text-foreground hover:bg-surface-2 transition-colors"
+                title="LinkedIn"
+              >
+                <Linkedin className="size-4" />
+              </a>
+              <div className="border-l pl-1 ml-1">
+                <ThemeToggle />
+              </div>
             </div>
           </div>
         </div>
@@ -473,13 +510,23 @@ export default function Home() {
           onClearTheme={() => setSelectedTheme(null)}
         />
 
-        <footer className="mt-8 border-t pt-4 text-center">
+        <footer className="mt-8 border-t pt-4 text-center space-y-1.5">
           <p className="agl-eyebrow">
             Supabase Community Tracker · Data via Discord&rsquo;s{' '}
             <code className="font-mono normal-case tracking-normal text-muted-foreground">/threads/search</code>{' '}
             and{' '}
             <code className="font-mono normal-case tracking-normal text-muted-foreground">/post-data</code>{' '}
             APIs · Theme analysis by LLM
+          </p>
+          <p className="text-[11px] text-muted-foreground">
+            <a
+              href="https://github.com/JesseVent/discord-dashboard"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="hover:text-foreground font-medium transition-colors"
+            >
+              GitHub
+            </a>
           </p>
         </footer>
 

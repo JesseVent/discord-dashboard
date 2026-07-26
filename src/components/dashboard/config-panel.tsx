@@ -315,9 +315,9 @@ export function ConfigPanel() {
 
   return (
     <Collapsible open={open} onOpenChange={setOpen}>
-      <Card>
+      <Card className="rounded-md">
         <CardHeader className="pb-3">
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between gap-3 flex-wrap">
             <div>
               <CardTitle className="flex items-center gap-2 text-base">
                 <Settings2 className="h-4 w-4" />
@@ -344,15 +344,31 @@ export function ConfigPanel() {
                   </span>
                 ) : null}
               </CardTitle>
-              <CardDescription className="mt-1">
-                Pull live from Discord, load sample data, or upload a JSON snapshot.
-              </CardDescription>
+              {open ? (
+                <CardDescription className="mt-1">
+                  Pull live from Discord, load sample data, or upload a JSON snapshot.
+                </CardDescription>
+              ) : null}
             </div>
-            <CollapsibleTrigger asChild>
-              <Button variant="ghost" size="sm">
-                {open ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+            <div className="flex items-center gap-2">
+              <Button onClick={handleFetch} disabled={busy || !canFetchFromDiscord} size="sm">
+                <RefreshCw className={`h-4 w-4 mr-1.5 ${busy ? 'animate-spin' : ''}`} />
+                Fetch from Discord
               </Button>
-            </CollapsibleTrigger>
+              <Button onClick={handleSample} disabled={busy} variant="outline" size="sm">
+                <Database className="h-4 w-4 mr-1.5" />
+                Load Sample Data
+              </Button>
+              <Button onClick={() => fileRef.current?.click()} disabled={busy} variant="outline" size="sm">
+                <Upload className="h-4 w-4 mr-1.5" />
+                Upload JSON
+              </Button>
+              <CollapsibleTrigger asChild>
+                <Button variant="ghost" size="sm">
+                  {open ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                </Button>
+              </CollapsibleTrigger>
+            </div>
           </div>
         </CardHeader>
 
@@ -479,21 +495,6 @@ export function ConfigPanel() {
             ) : null}
 
             <div className="flex flex-wrap gap-2">
-              <Button onClick={handleFetch} disabled={busy || !canFetchFromDiscord} size="sm">
-                <RefreshCw className={`h-4 w-4 mr-1.5 ${busy ? 'animate-spin' : ''}`} />
-                Fetch from Discord
-              </Button>
-              <Button onClick={handleSample} disabled={busy} variant="outline" size="sm">
-                <Database className="h-4 w-4 mr-1.5" />
-                Load Sample Data
-              </Button>
-              <Button onClick={() => fileRef.current?.click()} disabled={busy} variant="outline" size="sm">
-                <Upload className="h-4 w-4 mr-1.5" />
-                Upload JSON
-              </Button>
-
-              <div className="w-px h-6 bg-border mx-1 self-center" />
-
               <Button
                 onClick={handleReanalyzeLLM}
                 disabled={busy || issues.length === 0}
