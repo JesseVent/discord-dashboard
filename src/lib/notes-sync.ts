@@ -1,25 +1,24 @@
 // Small outbox + pull sync for per-issue notes, between the browser-embedded
-// local notes DB (src/lib/notes-db.ts) and the existing server-side PGlite
-// instance (already exposed at /api/rest — see src/app/api/rest/[...path]/route.ts).
+// local notes DB (src/lib/notes-db.ts) and the hosted Supabase project's
+// `public.notes` table (anon key, RLS open by design — see the migration).
 //
 // Not @supabase/lite's SyncEngine (from the supabaselite demo repo): that class
-// subscribes to cloud Realtime, which @supabase/lite doesn't support yet ("coming
-// soon" per its own feature table) — there's nothing to subscribe to since the
-// "cloud" here is the same local PGlite instance, not hosted Supabase. This is a
-// deliberately smaller version: flush-on-interval + pull-by-cursor, no push.
+// subscribes to Realtime for cross-tab push. Skipped here to keep this small —
+// flush-on-interval + pull-by-cursor covers the actual need (same identity,
+// different device/reload) without a Realtime subscription to manage.
 
 import { createClient } from '@supabase/supabase-js';
 import { getLocalNotesClient } from './notes-db';
 import { getLocalIdentity } from './local-identity';
 
-// supalite accepts any non-empty string as the anon key pre-1.0 (same
-// convention the supabaselite demo repo uses against its own local instance).
-// createClient requires an absolute URL, so this must be constructed lazily
-// (window isn't available at module-eval time during SSR).
 let _cloudClient: ReturnType<typeof createClient> | null = null;
 function cloudClient() {
   if (!_cloudClient) {
-    _cloudClient = createClient(`${window.location.origin}/api/rest`, 'local-anon-key');
+    _cloudClient = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      { db: { schema: 'public' } },
+    );
   }
   return _cloudClient;
 }

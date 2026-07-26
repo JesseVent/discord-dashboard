@@ -1,6 +1,6 @@
 create table if not exists public.notes (
   id uuid primary key,
-  issue_id text not null references discord.issues(id) on delete cascade,
+  issue_id text not null,
   user_id uuid not null,
   user_name text not null,
   content text not null default '',

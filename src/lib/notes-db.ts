@@ -16,8 +16,7 @@
 // Postgres syntax anyway (the schema below is already plain SQLite). Executing
 // the DDL directly via connection.exec() sidesteps that dependency entirely.
 
-import { App } from '@supabase/lite';
-import { BrowserSqliteConnection } from '@supabase/lite/sqlite';
+import type { App as AppType } from '@supabase/lite';
 import type { SupabaseClient } from '@supabase/supabase-js';
 
 const NOTES_SCHEMA = `
@@ -34,9 +33,16 @@ create table if not exists notes (
 create index if not exists notes_issue_user_idx on notes (issue_id, user_id);
 `;
 
-let appPromise: Promise<App> | null = null;
+let appPromise: Promise<AppType> | null = null;
 
-async function bootLocalNotesApp(): Promise<App> {
+async function bootLocalNotesApp(): Promise<AppType> {
+  // Dynamic imports: statically importing these pulls the Node-condition
+  // build into Next.js's SSR pass for this client component (SSR still runs
+  // in Node), which doesn't export BrowserSqliteConnection at all. Deferring
+  // to a runtime import means this code path only ever executes in the
+  // browser, where the browser condition resolves correctly.
+  const { App } = await import('@supabase/lite');
+  const { BrowserSqliteConnection } = await import('@supabase/lite/sqlite');
   const sqlite3Init = (await import('@sqlite.org/sqlite-wasm')).default;
   const sqlite3 = await sqlite3Init({ print: () => {}, printErr: () => {} });
   const db = new sqlite3.oo1.DB('local', 'ct', 'kvvfs');

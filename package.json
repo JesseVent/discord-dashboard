@@ -5,7 +5,7 @@
   "packageManager": "bun@1.3.3",
   "scripts": {
     "dev": "next dev -p 3000 2>&1 | tee dev.log",
-    "build": "cat supabase/data.db.tar.gz.part-* > supabase/data.db.tar.gz && mkdir -p supabase/.temp && tar -xzf supabase/data.db.tar.gz -C supabase/.temp && rm supabase/data.db.tar.gz && next build && cp -r .next/static .next/standalone/.next/ && cp -r public .next/standalone/ && cp -r supabase .next/standalone/",
+    "build": "next build && cp -r .next/static .next/standalone/.next/ && cp -r public .next/standalone/",
     "start": "NODE_ENV=production bun .next/standalone/server.js 2>&1 | tee server.log",
     "lint": "eslint ."
   },

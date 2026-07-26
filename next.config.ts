@@ -7,8 +7,8 @@ const nextConfig: NextConfig = {
     ignoreBuildErrors: true,
   },
   reactStrictMode: false,
-  serverExternalPackages: ["@electric-sql/pglite", "@supabase/lite"],
-  // @supabase/lite's DDL-translation layer pulls in libpg-query, whose
+  // @supabase/lite is client-only now (notes-db.ts). Its DDL-translation
+  // layer pulls in libpg-query, whose
   // emscripten bundle references Node built-ins the browser build never
   // actually needs (guarded by a runtime env check the bundler can't
   // eliminate statically). Stub them out for the client bundle only.
