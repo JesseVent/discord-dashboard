@@ -2,6 +2,7 @@
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useMemo } from 'react';
+import { useTheme } from 'next-themes';
 import type { Issue } from '@/lib/discord-types';
 
 interface TimeOfWeekHeatmapProps {
@@ -17,6 +18,9 @@ const HOURS = Array.from({ length: 24 }, (_, i) => i);
  * Uses the user's local timezone.
  */
 export function TimeOfWeekHeatmap({ issues }: TimeOfWeekHeatmapProps) {
+  const { resolvedTheme } = useTheme();
+  const isDark = resolvedTheme === 'dark';
+
   const { grid, maxCount, totalInGrid } = useMemo(() => {
     // 7 days × 24 hours
     const g: number[][] = Array.from({ length: 7 }, () => Array(24).fill(0));
@@ -41,7 +45,15 @@ export function TimeOfWeekHeatmap({ issues }: TimeOfWeekHeatmapProps) {
     if (count === 0) return 'var(--agl-surface-2)';
     if (maxCount === 0) return 'var(--agl-surface-2)';
     const intensity = count / maxCount;
-    // Interpolate from soft accent to strong accent
+    // Light mode: soft-to-strong accent. Dark mode: needs its own scale —
+    // the light-mode values (up to 92% lightness) read as washed-out,
+    // near-invisible cells against a near-black page.
+    if (isDark) {
+      if (intensity < 0.25) return 'oklch(0.32 0.07 255)';
+      if (intensity < 0.5) return 'oklch(0.42 0.12 255)';
+      if (intensity < 0.75) return 'oklch(0.52 0.17 255)';
+      return 'oklch(0.62 0.20 255)';
+    }
     if (intensity < 0.25) return 'oklch(0.92 0.04 255)'; // very light
     if (intensity < 0.5) return 'oklch(0.78 0.10 255)'; // light
     if (intensity < 0.75) return 'oklch(0.65 0.18 255)'; // medium
@@ -50,6 +62,10 @@ export function TimeOfWeekHeatmap({ issues }: TimeOfWeekHeatmapProps) {
 
   function textColorFor(count: number): string {
     if (count === 0) return 'var(--agl-muted-fg)';
+    // Dark mode's whole scale is dark-background cells — light text always
+    // reads. Light mode still needs the intensity-based split since its low
+    // cells are near-white.
+    if (isDark) return 'var(--agl-fg)';
     if (count / Math.max(maxCount, 1) < 0.5) return 'var(--agl-fg)';
     return 'white';
   }

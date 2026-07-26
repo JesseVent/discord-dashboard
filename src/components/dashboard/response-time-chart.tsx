@@ -9,6 +9,7 @@ import {
 import { Bar, BarChart, CartesianGrid, Cell, ResponsiveContainer, XAxis, YAxis } from 'recharts';
 import type { Issue } from '@/lib/discord-types';
 import { responseTimeDistribution } from '@/lib/dashboard-utils';
+import { useChartTickColor } from '@/lib/use-chart-tick-color';
 
 interface ResponseTimeChartProps {
   issues: Issue[];
@@ -31,6 +32,7 @@ export function ResponseTimeChart({ issues }: ResponseTimeChartProps) {
   const hasReplies = issues.some((i) => i.replies !== undefined);
   const data = responseTimeDistribution(issues);
   const totalAnswered = data.reduce((s, d) => s + d.count, 0);
+  const tickColor = useChartTickColor();
 
   if (!hasReplies) {
     return (
@@ -77,8 +79,8 @@ export function ResponseTimeChart({ issues }: ResponseTimeChartProps) {
           <ResponsiveContainer>
             <BarChart data={data} margin={{ left: 8, right: 16, top: 8, bottom: 0 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="var(--agl-border)" vertical={false} />
-              <XAxis dataKey="bucket" tick={{ fontSize: 11, fill: 'var(--agl-muted-fg)' }} />
-              <YAxis allowDecimals={false} tick={{ fontSize: 11, fill: 'var(--agl-muted-fg)' }} width={32} />
+              <XAxis dataKey="bucket" tick={{ fontSize: 11, fill: tickColor }} />
+              <YAxis allowDecimals={false} tick={{ fontSize: 11, fill: tickColor }} width={32} />
               <ChartTooltip content={<ChartTooltipContent />} />
               <Bar dataKey="count" name="Issues" radius={[4, 4, 0, 0]}>
                 {data.map((entry, idx) => (

@@ -9,6 +9,7 @@ import {
 import { Bar, BarChart, Cell, ResponsiveContainer, XAxis, YAxis } from 'recharts';
 import type { Issue } from '@/lib/discord-types';
 import { issuesByTag } from '@/lib/dashboard-utils';
+import { useChartTickColor } from '@/lib/use-chart-tick-color';
 
 interface TagDistributionChartProps {
   issues: Issue[];
@@ -17,6 +18,7 @@ interface TagDistributionChartProps {
 
 export function TagDistributionChart({ issues, onSelectTag }: TagDistributionChartProps) {
   const data = issuesByTag(issues);
+  const tickColor = useChartTickColor();
 
   if (data.length === 0) {
     return (
@@ -50,12 +52,12 @@ export function TagDistributionChart({ issues, onSelectTag }: TagDistributionCha
               layout="vertical"
               margin={{ left: 8, right: 16, top: 0, bottom: 0 }}
             >
-              <XAxis type="number" allowDecimals={false} tick={{ fontSize: 11, fill: 'var(--agl-muted-fg)' }} />
+              <XAxis type="number" allowDecimals={false} tick={{ fontSize: 11, fill: tickColor }} />
               <YAxis
                 type="category"
                 dataKey="name"
                 width={110}
-                tick={{ fontSize: 11, fill: 'var(--agl-muted-fg)' }}
+                tick={{ fontSize: 11, fill: tickColor }}
               />
               <ChartTooltip content={<ChartTooltipContent />} />
               <Bar

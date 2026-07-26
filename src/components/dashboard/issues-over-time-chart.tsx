@@ -10,6 +10,7 @@ import {
 import { Area, AreaChart, CartesianGrid, ResponsiveContainer, XAxis, YAxis } from 'recharts';
 import type { Issue } from '@/lib/discord-types';
 import { cumulativeIssuesByDay } from '@/lib/dashboard-utils';
+import { useChartTickColor } from '@/lib/use-chart-tick-color';
 
 interface IssuesOverTimeChartProps {
   issues: Issue[];
@@ -18,6 +19,7 @@ interface IssuesOverTimeChartProps {
 
 export function IssuesOverTimeChart({ issues, serverDailyStats }: IssuesOverTimeChartProps) {
   const [chartMode, setChartMode] = useState<'trending' | 'cumulative'>('trending');
+  const tickColor = useChartTickColor();
 
   let data;
   if (serverDailyStats && serverDailyStats.length > 0) {
@@ -104,14 +106,14 @@ export function IssuesOverTimeChart({ issues, serverDailyStats }: IssuesOverTime
               <CartesianGrid strokeDasharray="3 3" stroke="var(--agl-border)" vertical={false} />
               <XAxis
                 dataKey="date"
-                tick={{ fontSize: 11, fill: 'var(--agl-muted-fg)' }}
+                tick={{ fontSize: 11, fill: tickColor }}
                 tickFormatter={(v: string) => {
                   const d = new Date(v);
                   return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
                 }}
                 minTickGap={24}
               />
-              <YAxis allowDecimals={false} tick={{ fontSize: 11, fill: 'var(--agl-muted-fg)' }} width={32} />
+              <YAxis allowDecimals={false} tick={{ fontSize: 11, fill: tickColor }} width={32} />
               <ChartTooltip content={<ChartTooltipContent />} />
               {chartMode === 'trending' ? (
                 <Area
