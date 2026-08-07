@@ -6,6 +6,7 @@ import type { Issue, ThemeCluster } from '@/lib/discord-types';
  * Category colors use the trace-category palette (L=60% across hues, equal APCA).
  */
 export const KNOWN_TAG_NAMES: Record<string, string> = {
+  // Supabase · help-and-questions forum
   '1006941128441999421': 'Database',
   '1006941257274241114': 'Auth',
   '1006941275053899887': 'Edge Functions',
@@ -17,6 +18,27 @@ export const KNOWN_TAG_NAMES: Record<string, string> = {
   '1200092227200876554': 'Outage / Status',
   '1399429164783898665': 'Branching',
   '1399740852930089150': 'AI / Vectors',
+  // DataExpert · questions forum (channel 1378263233437106207)
+  '1383161449106505900': 'Python',
+  '1383161463471869972': 'SQL',
+  '1383161739557998612': 'Machine Learning',
+  '1383161756112781346': 'Data Modeling',
+  '1383161777877159977': 'Career Advice',
+  '1383161794599718985': 'Project Help',
+  '1383161845426426056': 'Interview Prep',
+  '1383161865882042508': 'Error Debugging',
+  '1383161890020130937': 'Tools Help',
+  '1383533341701308536': 'Bootcamp',
+  '1383533362882543687': 'Misc',
+  '1384466311551254630': 'Bugs',
+  '1384804373221216366': 'Assignments',
+  '1385494515879772230': 'Suggestion',
+  '1386003057799594067': 'Spark Fundamentals',
+  '1386003093677936670': 'Beginners / Upskilling',
+  '1386003130558316545': 'Data Quality / Airflow',
+  '1386003153043849318': 'Kafka / Flink Fundamentals',
+  '1386003273512648705': 'Analytical Patterns',
+  '1386003368509571122': 'KPIs & Experiments',
 };
 
 /**

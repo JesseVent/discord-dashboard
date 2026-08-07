@@ -11,7 +11,11 @@ import type { Issue, ThemeCluster } from './discord-types';
  * theme only. Order matters — more specific rules must come before more general
  * ones (e.g. "RLS / Permissions" before "Database & Connectivity").
  */
-const RULES: Array<{ theme: string; keywords: string[]; description: string }> = [
+type Rule = { theme: string; keywords: string[]; description: string };
+
+// Default rule set — Supabase community forum. Used when no channel-specific
+// set matches (including the Supabase channel id below).
+const SUPABASE_RULES: Rule[] = [
   {
     theme: 'Outage / Service Down',
     keywords: [
@@ -143,11 +147,167 @@ const RULES: Array<{ theme: string; keywords: string[]; description: string }> =
   },
 ];
 
+// DataExpert.io "questions" forum — data engineering / Databricks community.
+// Specific rules first; the generic "SQL / Queries" catch-all sits late so
+// Databricks/Spark/dbt specifics win over a plain "sql" mention.
+const DATAEXPERT_RULES: Rule[] = [
+  {
+    theme: 'Databricks Platform / Workspace',
+    keywords: [
+      'databricks', 'workspace', 'databricks sql', 'db sql', 'sql warehouse',
+      'all-purpose cluster', 'compute', 'cluster', 'driver', 'worker node',
+      'databricks ui', 'notebook', 'notebooks', 'repos', 'databricks connect',
+    ],
+    description: 'Databricks workspace, clusters, notebooks, or platform access issues.',
+  },
+  {
+    theme: 'Spark / PySpark',
+    keywords: [
+      'spark', 'pyspark', 'spark sql', 'dataframe', 'rdd', 'spark session',
+      'spark job', 'shuffle', 'catalyst', 'spark ui', 'executor', 'oom',
+      'out of memory', 'spark.driver', 'spark.executor',
+    ],
+    description: 'Apache Spark / PySpark job, DataFrame, or runtime issues.',
+  },
+  {
+    theme: 'Delta Lake / Lakehouse',
+    keywords: [
+      'delta', 'delta lake', 'delta table', 'merge into', 'optimize', 'z-order',
+      'vacuum', 'time travel', 'lakehouse', 'liquid clustering',
+      'delta live tables', 'dlt', 'pipelines', 'flow log',
+    ],
+    description: 'Delta Lake format, Lakehouse, or Delta Live Tables issues.',
+  },
+  {
+    theme: 'Unity Catalog / Governance',
+    keywords: [
+      'unity catalog', 'catalog', 'metastore', 'grant', 'privilege', 'permissions',
+      'external location', 'storage credential', 'data governance', 'lineage',
+      'audit log', 'credential',
+    ],
+    description: 'Unity Catalog, metastore, grants, or data governance issues.',
+  },
+  {
+    theme: 'Orchestration / Scheduling',
+    keywords: [
+      'airflow', 'dag', 'dags', 'airflow operator', 'prefect', 'dagster',
+      'databricks jobs', 'job cluster', 'job run', 'schedule', 'trigger',
+      'task', 'workflow', 'cron',
+    ],
+    description: 'Airflow, Databricks Jobs, or pipeline scheduling/orchestration issues.',
+  },
+  {
+    theme: 'dbt / Modeling',
+    keywords: [
+      'dbt', 'dbt core', 'dbt cloud', 'model', 'models', 'materialization',
+      'snapshot', 'staging', 'marts', 'seed', 'dbt project', 'jinjas',
+      'ref(', 'source(', 'incremental',
+    ],
+    description: 'dbt project, models, materialization, or transformation issues.',
+  },
+  {
+    theme: 'Streaming / Kafka',
+    keywords: [
+      'kafka', 'topic', 'consumer', 'producer', 'kafka connect',
+      'autoloader', 'auto loader', 'structured streaming', 'streaming',
+      'checkpoint', 'offset', 'kinesis', 'pubsub', 'eventhub',
+    ],
+    description: 'Kafka, Structured Streaming, Auto Loader, or streaming ingest issues.',
+  },
+  {
+    theme: 'Data Ingestion / ETL',
+    keywords: [
+      'ingest', 'ingestion', 'etl', 'elt', 'pipeline', 'load', 'loading',
+      'extract', 'copy into', 'autoloader', 'data load', 'batch', 's3',
+      'adls', 'blob storage', 'data lake', 'parquet', 'csv', 'json file',
+    ],
+    description: 'ETL/ELT pipelines, data loading, or file-format ingest issues.',
+  },
+  {
+    theme: 'SQL / Queries',
+    keywords: [
+      'sql', 'query', 'queries', 'select', 'join', 'group by', 'window function',
+      'cte', 'subquery', 'nested query', 'sql error', 'syntax error',
+      'slow query', 'query performance', 'analytic function',
+    ],
+    description: 'SQL query writing, syntax, or performance issues.',
+  },
+  {
+    theme: 'Python / Pandas',
+    keywords: [
+      'python', 'pandas', 'pandas dataframe', 'numpy', 'pyspark pandas',
+      'koalas', 'venv', 'pip install', 'import error', 'module not found',
+      'pandas api', 'apply(', 'dataframe schema',
+    ],
+    description: 'Python, Pandas, or library/environment issues in data workflows.',
+  },
+  {
+    theme: 'Performance / Cost',
+    keywords: [
+      'performance', 'slow', 'runtime', 'cost', 'expensive', 'dbu', 'pricing',
+      'optimize cost', 'photon', 'caching', 'cache', 'persist(', 'broadcast',
+      'skew', 'data skew', 'memory', 'heap',
+    ],
+    description: 'Job performance, runtime cost (DBUs), or optimization issues.',
+  },
+  {
+    theme: 'Authentication / Access',
+    keywords: [
+      'auth', 'login', 'sso', 'saml', 'scim', 'token', 'pat', 'personal access token',
+      'service principal', 'secret', 'key vault', 'databricks cli', 'unauthorized',
+      '403', '401', 'permission',
+    ],
+    description: 'Authentication, SSO, tokens, or workspace access issues.',
+  },
+  {
+    theme: 'Cloud / Infra Integration',
+    keywords: [
+      'aws', 's3', 'iam', 'role', 'azure', 'adls', 'gcp', 'gs bucket',
+      'terraform', 'databricks terraform', 'vpc', 'peering', 'private link',
+      'network', 'security group', 'bucket policy',
+    ],
+    description: 'Cloud provider integration, IAM, networking, or IaC issues.',
+  },
+  {
+    theme: 'ML / Feature Engineering',
+    keywords: [
+      'feature store', 'feature engineering', 'mlflow', 'model', 'model registry',
+      'training', 'inference', 'serving', 'sklearn', 'scikit', 'xgboost',
+      'tensorflow', 'pytorch', 'spark ml', 'mllib', 'vector search',
+    ],
+    description: 'MLflow, feature stores, model training/serving, or ML issues.',
+  },
+  {
+    theme: 'Certification / Learning',
+    keywords: [
+      'certification', 'exam', 'cert', 'bootcamp', 'course', 'tutorial',
+      'learn', 'learning', 'study', 'practice', 'question about', 'how do i',
+      'interview', 'career',
+    ],
+    description: 'Certification prep, course/bootcamp questions, or learning guidance.',
+  },
+];
+
+// Channel id → rule set. Channel ids live in CHANNEL_LABELS (discord-types).
+// Unknown / 'all' / Supabase channel falls back to SUPABASE_RULES.
+const DATAEXPERT_CHANNEL_ID = '1378263233437106207';
+const CHANNEL_RULES: Record<string, Rule[]> = {
+  [DATAEXPERT_CHANNEL_ID]: DATAEXPERT_RULES,
+};
+
+function rulesForChannel(channelId?: string): Rule[] {
+  return (channelId && CHANNEL_RULES[channelId]) || SUPABASE_RULES;
+}
+
 /**
  * Cluster issues into themes using the keyword rules above.
  * Falls back to an "Other" bucket for anything that doesn't match.
+ *
+ * When `channelId` is supplied, the channel-specific rule set is used
+ * (e.g. DataExpert data-engineering themes vs the default Supabase set).
  */
-export function fallbackThemes(issues: Issue[]): ThemeCluster[] {
+export function fallbackThemes(issues: Issue[], channelId?: string): ThemeCluster[] {
+  const RULES = rulesForChannel(channelId);
   const buckets: Record<string, string[]> = {};
   for (const rule of RULES) buckets[rule.theme] = [];
 
@@ -189,6 +349,6 @@ export function fallbackThemes(issues: Issue[]): ThemeCluster[] {
 }
 
 /**
- * Export the rule list so the UI can show a count of available themes.
+ * Export the default rule list so the UI can show a count of available themes.
  */
-export const FALLBACK_THEME_RULES = RULES;
+export const FALLBACK_THEME_RULES = SUPABASE_RULES;

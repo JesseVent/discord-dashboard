@@ -29,6 +29,7 @@ import {
   calculateWeeklyTrends,
 } from '@/lib/dashboard-utils';
 import { initSampleDataIfEmpty } from '@/lib/data-loader';
+import { fallbackThemes } from '@/lib/fallback-themes';
 import type { Issue } from '@/lib/discord-types';
 import { KpiCard } from '@/components/dashboard/kpi-card';
 import { IssuesOverTimeChart } from '@/components/dashboard/issues-over-time-chart';
@@ -51,13 +52,19 @@ import { DuplicateClusters } from '@/components/dashboard/duplicate-clusters';
 import { TimeOfWeekHeatmap } from '@/components/dashboard/time-of-week-heatmap';
 import { EscalationWatchlist } from '@/components/dashboard/escalation-watchlist';
 import { Badge } from '@/components/ui/badge';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { ThemeToggle } from '@/components/theme-toggle';
 
 export default function Home() {
   const {
     issues,
     themes,
-    totalResults,
     hasMore,
     source,
     channelId,
@@ -67,6 +74,8 @@ export default function Home() {
     sentimentFetchedAt,
     duplicatesFetchedAt,
     duplicateClusters,
+    channelFilter,
+    setChannelFilter,
   } = useDashboardStore();
 
   const [selectedTagIds, setSelectedTagIds] = useState<string[]>([]);
@@ -86,51 +95,99 @@ export default function Home() {
       .catch(err => console.error('Failed to load server metrics:', err));
   }, []);
 
+  // Channel filter: 'all' = combined dashboard; otherwise scope to one channel.
+  // Per-channel KPIs/charts come from the server route (full dataset via views); the client's
+  // loaded issues only drive the issues table + row-driven memos.
+  const channelIssues = useMemo(
+    () => (channelFilter === 'all' ? issues : issues.filter((i) => i.channelId === channelFilter)),
+    [issues, channelFilter],
+  );
+  const activeKpis = useMemo(
+    () => (channelFilter === 'all' ? serverMetrics?.kpis : serverMetrics?.byChannel?.[channelFilter]),
+    [serverMetrics, channelFilter],
+  );
+  const activeDailyStats = useMemo(
+    () => (channelFilter === 'all' ? serverMetrics?.dailyStats : serverMetrics?.dailyStatsByChannel?.[channelFilter]),
+    [serverMetrics, channelFilter],
+  );
+  const activeResponders = useMemo(
+    () => (channelFilter === 'all' ? serverMetrics?.topResponders : serverMetrics?.topRespondersByChannel?.[channelFilter]),
+    [serverMetrics, channelFilter],
+  );
+  // Metrics route returns channels as { id, label, issueCount }; FilterBar wants { id, label, count }.
+  const channelOptions = useMemo(
+    () => (serverMetrics?.channels ?? []).map((c: any) => ({ id: c.id, label: c.label, count: c.issueCount })),
+    [serverMetrics],
+  );
+  // channelId for Discord links in the rendered view: the selected channel when filtering, else the configured fetch channel.
+  const displayChannelId = channelFilter === 'all' ? channelId : channelFilter;
+  const channelTotal = activeKpis?.totalIssues ?? channelIssues.length;
+
+  // Themes/duplicates must reflect the selected channel, not the global store (which is dominated
+  // by whichever channel was analyzed on boot). ThemeCluster is an aggregate with only sample
+  // ids, so it can't be filtered by membership — recompute from the channel's loaded issues.
+  // ponytail: deterministic fallback per channel (LLM route is 404 in dev anyway); upgrade to an
+  // LLM-per-channel route if richer theme names are needed. For 'all' keep the store themes
+  // (potentially LLM-quality) to avoid a regression.
+  const channelThemes = useMemo(
+    () => (channelFilter === 'all' ? themes : fallbackThemes(channelIssues, channelFilter)),
+    [themes, channelFilter, channelIssues],
+  );
+  // Duplicate clusters: keep only clusters with ≥1 member in the channel's loaded issues, and trim
+  // each cluster's issueIds to channel members so the "N dupes" count is per-channel-accurate.
+  const channelClusters = useMemo(() => {
+    if (channelFilter === 'all') return duplicateClusters;
+    const ids = new Set(channelIssues.map((i) => i.id));
+    return duplicateClusters
+      .map((c) => ({ ...c, issueIds: c.issueIds.filter((id) => ids.has(id)) }))
+      .filter((c) => c.issueIds.length > 0);
+  }, [duplicateClusters, channelFilter, channelIssues]);
+
   const uniqueUsers = useMemo(() => {
-    if (serverMetrics?.kpis?.uniqueUsers != null) return serverMetrics.kpis.uniqueUsers;
+    if (activeKpis?.uniqueUsers != null) return activeKpis.uniqueUsers;
     const set = new Set<string>();
-    for (const i of issues) if (i.ownerId) set.add(i.ownerId);
+    for (const i of channelIssues) if (i.ownerId) set.add(i.ownerId);
     return set.size;
-  }, [issues, serverMetrics]);
+  }, [channelIssues, activeKpis]);
 
   const totalMessages = useMemo(() => {
-    if (serverMetrics?.kpis?.totalMessages != null) return serverMetrics.kpis.totalMessages;
-    return issues.reduce((sum, i) => sum + (i.totalMessageSent || i.messageCount || 0), 0);
-  }, [issues, serverMetrics]);
+    if (activeKpis?.totalMessages != null) return activeKpis.totalMessages;
+    return channelIssues.reduce((sum, i) => sum + (i.totalMessageSent || i.messageCount || 0), 0);
+  }, [channelIssues, activeKpis]);
 
   const archivedCount = useMemo(() => {
-    if (serverMetrics?.kpis?.archivedIssues != null) return serverMetrics.kpis.archivedIssues;
-    return issues.filter((i) => i.archived).length;
-  }, [issues, serverMetrics]);
+    if (activeKpis?.archivedIssues != null) return activeKpis.archivedIssues;
+    return channelIssues.filter((i) => i.archived).length;
+  }, [channelIssues, activeKpis]);
 
   const activeCount = useMemo(() => {
-    if (serverMetrics?.kpis) {
-      return serverMetrics.kpis.totalIssues - serverMetrics.kpis.archivedIssues;
+    if (activeKpis) {
+      return activeKpis.totalIssues - activeKpis.archivedIssues;
     }
-    return issues.length - archivedCount;
-  }, [issues.length, archivedCount, serverMetrics]);
+    return channelIssues.length - archivedCount;
+  }, [channelIssues.length, archivedCount, activeKpis]);
 
   const archivedPercentText = useMemo(() => {
-    if (serverMetrics?.kpis) {
-      const total = serverMetrics.kpis.totalIssues;
-      return total > 0 ? `${Math.round((serverMetrics.kpis.archivedIssues / total) * 100)}% of total` : '0% of total';
+    if (activeKpis) {
+      const total = activeKpis.totalIssues;
+      return total > 0 ? `${Math.round((activeKpis.archivedIssues / total) * 100)}% of total` : '0% of total';
     }
-    return issues.length > 0 ? `${Math.round((archivedCount / issues.length) * 100)}% of loaded` : '0% of loaded';
-  }, [issues.length, archivedCount, serverMetrics]);
+    return channelIssues.length > 0 ? `${Math.round((archivedCount / channelIssues.length) * 100)}% of loaded` : '0% of loaded';
+  }, [channelIssues.length, archivedCount, activeKpis]);
 
-  const avgMsgPerIssue = totalResults > 0 ? Math.round(totalMessages / totalResults) : 0;
+  const avgMsgPerIssue = channelTotal > 0 ? Math.round(totalMessages / channelTotal) : 0;
 
-  const tagCounts = useMemo(() => issuesByTag(issues), [issues]);
+  const tagCounts = useMemo(() => issuesByTag(channelIssues), [channelIssues]);
 
-  const weeklyTrends = useMemo(() => calculateWeeklyTrends(issues), [issues]);
+  const weeklyTrends = useMemo(() => calculateWeeklyTrends(channelIssues), [channelIssues]);
 
   // Response analytics (only meaningful after "Fetch Replies" has been clicked, or if we have server metrics)
-  const replyAnalytics = useMemo(() => responseAnalytics(issues), [issues]);
+  const replyAnalytics = useMemo(() => responseAnalytics(channelIssues), [channelIssues]);
   const hasLocalReplies = replyAnalytics.totalWithReplies > 0;
-  const hasServerMetrics = !!serverMetrics?.kpis;
+  const hasServerMetrics = !!activeKpis;
   const hasReplies = hasLocalReplies || hasServerMetrics;
-  const hasSentimentData = issues.some((i) => i.sentiment && i.sentiment !== 'unknown');
-  const hasDuplicateData = issues.some((i) => !!i.duplicateClusterId);
+  const hasSentimentData = channelIssues.some((i) => i.sentiment && i.sentiment !== 'unknown');
+  const hasDuplicateData = channelIssues.some((i) => !!i.duplicateClusterId);
   const [selectedIssueForDetail, setSelectedIssueForDetail] = useState<Issue | null>(null);
 
   // Compose legacy tagIds/theme with the unified filter panel
@@ -139,14 +196,14 @@ export default function Home() {
       ...filters,
       tagIds: selectedTagIds,
       theme: selectedTheme,
-      themes,
+      themes: channelThemes,
     }),
-    [filters, selectedTagIds, selectedTheme, themes],
+    [filters, selectedTagIds, selectedTheme, channelThemes],
   );
 
   const filteredIssues = useMemo(
-    () => filterIssues(issues, effectiveFilters),
-    [issues, effectiveFilters],
+    () => filterIssues(channelIssues, effectiveFilters),
+    [channelIssues, effectiveFilters],
   );
 
   const topIssues = useMemo(() => topIssuesByMessages(filteredIssues, 5), [filteredIssues]);
@@ -180,7 +237,7 @@ export default function Home() {
     );
   }
 
-  const kpis = serverMetrics?.kpis;
+  const kpis = activeKpis;
   const resolvedCount = kpis ? kpis.resolvedIssues : replyAnalytics.likelyResolvedCount;
   const totalWithRepliesCount = kpis ? kpis.totalIssues : replyAnalytics.totalWithReplies;
   const answeredCount = kpis ? kpis.answeredIssues : replyAnalytics.answeredCount;
@@ -201,13 +258,27 @@ export default function Home() {
                   Supabase Community Tracker
                 </h1>
                 <p className="agl-eyebrow truncate">
-                  Channel <span className="font-mono normal-case tracking-normal">{channelId}</span>
-                  {source ? ` · source: ${source}` : ''}
+                  {source ? `source: ${source}` : ''}
                   {lastFetchedAt ? ` · updated ${new Date(lastFetchedAt).toLocaleString()}` : ''}
                 </p>
               </div>
             </div>
             <div className="flex items-center gap-0.5 text-xs text-muted-foreground">
+              {channelOptions.length > 1 ? (
+                <Select value={channelFilter} onValueChange={(v) => setChannelFilter(v)}>
+                  <SelectTrigger className="h-8 w-[210px] text-xs gap-1.5 mr-1.5">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All channels</SelectItem>
+                    {channelOptions.map((c) => (
+                      <SelectItem key={c.id} value={c.id}>
+                        {c.label} ({c.count.toLocaleString()})
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              ) : null}
               <a
                 href="https://supabasehire.me"
                 target="_blank"
@@ -261,8 +332,8 @@ export default function Home() {
         <section className="grid gap-3 grid-cols-2 md:grid-cols-3 lg:grid-cols-6">
           <KpiCard
             title="Total Issues"
-            value={kpis?.totalIssues?.toLocaleString() ?? (totalResults > 0 ? totalResults.toLocaleString() : issues.length)}
-            subtitle={kpis ? 'server aggregated' : (totalResults > issues.length ? `${issues.length} loaded locally` : 'all loaded')}
+            value={kpis?.totalIssues?.toLocaleString() ?? (channelTotal > 0 ? channelTotal.toLocaleString() : channelIssues.length)}
+            subtitle={kpis ? 'server aggregated' : (channelTotal > channelIssues.length ? `${channelIssues.length} loaded locally` : 'all loaded')}
             icon={AlertTriangle}
             accent="text-error"
             delta={weeklyTrends.issuesCreated}
@@ -376,9 +447,9 @@ export default function Home() {
 
         {/* Charts row */}
         <section className="grid gap-4 lg:grid-cols-2">
-          <IssuesOverTimeChart issues={issues} serverDailyStats={serverMetrics?.dailyStats} />
+          <IssuesOverTimeChart issues={channelIssues} serverDailyStats={activeDailyStats} />
           <TagDistributionChart
-            issues={issues}
+            issues={channelIssues}
             onSelectTag={(tagId) =>
               setSelectedTagIds((prev) =>
                 prev.includes(tagId!) ? prev.filter((t) => t !== tagId) : [...prev, tagId!],
@@ -391,47 +462,47 @@ export default function Home() {
         <section className="grid gap-4 lg:grid-cols-3">
           <div className="lg:col-span-2">
             <ThemesPanel
-              themes={themes}
-              totalIssues={issues.length}
+              themes={channelThemes}
+              totalIssues={channelIssues.length}
               selectedTheme={selectedTheme}
               onSelectTheme={setSelectedTheme}
               isAnalyzing={isAnalyzing}
             />
           </div>
-          <TopContributors issues={issues} />
+          <TopContributors issues={channelIssues} />
         </section>
 
         {/* Response analytics charts row — only shown after replies are loaded */}
         {hasReplies ? (
           <section className="grid gap-4 lg:grid-cols-3">
-            <ResponseTimeChart issues={issues} />
+            <ResponseTimeChart issues={channelIssues} />
             <UnansweredIssues
-              issues={issues}
-              channelId={channelId}
+              issues={channelIssues}
+              channelId={displayChannelId}
               onSelectIssue={setSelectedIssueForDetail}
             />
-            <TopResponders issues={issues} serverResponders={serverMetrics?.topResponders} />
+            <TopResponders issues={channelIssues} serverResponders={activeResponders} />
           </section>
         ) : null}
 
         {/* Time-of-week heatmap — always shown if there are timestamped issues */}
-        <TimeOfWeekHeatmap issues={issues} />
+        <TimeOfWeekHeatmap issues={channelIssues} />
 
         {/* Sentiment + Duplicates row — shown when sentiment or duplicate data is loaded */}
         {sentimentFetchedAt || duplicatesFetchedAt ? (
           <section className="grid gap-4 lg:grid-cols-2">
             {sentimentFetchedAt ? (
               <SentimentPanel
-                issues={issues}
-                channelId={channelId}
+                issues={channelIssues}
+                channelId={displayChannelId}
                 onSelectIssue={setSelectedIssueForDetail}
               />
             ) : null}
             {duplicatesFetchedAt ? (
               <DuplicateClusters
-                issues={issues}
-                clusters={duplicateClusters}
-                channelId={channelId}
+                issues={channelIssues}
+                clusters={channelClusters}
+                channelId={displayChannelId}
                 onSelectIssue={setSelectedIssueForDetail}
               />
             ) : null}
@@ -441,8 +512,8 @@ export default function Home() {
         {/* Escalation watchlist — shown when replies are loaded */}
         {hasReplies ? (
           <EscalationWatchlist
-            issues={issues}
-            channelId={channelId}
+            issues={channelIssues}
+            channelId={displayChannelId}
             onSelectIssue={setSelectedIssueForDetail}
           />
         ) : null}
@@ -450,7 +521,7 @@ export default function Home() {
         {/* Filter bar */}
         <section className="rounded-lg border bg-card p-3">
           <FilterBar
-            issues={issues}
+            issues={channelIssues}
             filters={filters}
             onChange={setFilters}
             onClear={() => {
@@ -461,7 +532,7 @@ export default function Home() {
             hasSentimentData={hasSentimentData}
             hasDuplicateData={hasDuplicateData}
             hasRepliesLoaded={hasReplies}
-            totalLoaded={issues.length}
+            totalLoaded={channelIssues.length}
             filteredCount={filteredIssues.length}
             onToggleTag={(tagId) =>
               setSelectedTagIds((prev) =>
@@ -478,7 +549,7 @@ export default function Home() {
             {topIssues.map((issue, idx) => (
               <a
                 key={issue.id}
-                href={threadUrl({ guildId: '839993398554656828', channelId, threadId: issue.id })}
+                href={threadUrl({ guildId: '839993398554656828', channelId: issue.channelId ?? displayChannelId, threadId: issue.id })}
                 target="_blank"
                 rel="noreferrer"
                 className="group rounded-lg border bg-card p-3 hover:bg-accent transition-colors"
@@ -505,7 +576,7 @@ export default function Home() {
         {/* Issues table */}
         <IssuesTable
           issues={filteredIssues}
-          channelId={channelId}
+          channelId={displayChannelId}
           selectedTheme={selectedTheme}
           onClearTheme={() => setSelectedTheme(null)}
         />
