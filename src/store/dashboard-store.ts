@@ -16,6 +16,10 @@ interface DashboardState {
   authToken: string;
   setConfig: (cfg: { channelId?: string; authToken?: string }) => void;
 
+  // view: which channel the dashboard shows ('all' = combined, or a channel id)
+  channelFilter: 'all' | string;
+  setChannelFilter: (c: 'all' | string) => void;
+
   // server-side env config (not persisted; queried at runtime)
   envConfig: EnvConfig | null;
   setEnvConfig: (c: EnvConfig | null) => void;
@@ -69,6 +73,9 @@ export const useDashboardStore = create<DashboardState>()(
           channelId: cfg.channelId ?? s.channelId,
           authToken: cfg.authToken ?? s.authToken,
         })),
+
+      channelFilter: 'all',
+      setChannelFilter: (c) => set({ channelFilter: c }),
 
       envConfig: null,
       setEnvConfig: (c) => set({ envConfig: c }),
@@ -139,6 +146,7 @@ export const useDashboardStore = create<DashboardState>()(
       partialize: (s) => ({
         channelId: s.channelId,
         authToken: s.authToken,
+        channelFilter: s.channelFilter,
         themes: s.themes,
         themeMethod: s.themeMethod,
         totalResults: s.totalResults,

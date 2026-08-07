@@ -93,10 +93,21 @@ export interface PostDataResponse {
   >;
 }
 
+// Friendly labels for the known forum channels. Unknown channels fall back to their raw id.
+export const CHANNEL_LABELS: Record<string, string> = {
+  '1006358244786196510': 'Supabase · help-and-questions',
+  '1378263233437106207': 'DataExpert · questions',
+};
+
+export function channelLabel(channelId: string): string {
+  return CHANNEL_LABELS[channelId] ?? channelId;
+}
+
 // Normalized issue shape used by the dashboard
 export interface Issue {
   id: string;
   name: string;
+  channelId?: string; // Discord forum channel the issue belongs to
   createdAt: string; // ISO
   archivedAt: string | null;
   archived: boolean;

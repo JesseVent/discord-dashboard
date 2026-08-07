@@ -15,6 +15,8 @@ export async function GET(req: NextRequest) {
     await ensureDatabaseReady();
     const { searchParams } = new URL(req.url);
     const channelId = searchParams.get('channelId') ?? '';
+    // '' or 'all' → load every channel (combined dashboard). Any other value scopes to one channel.
+    const filterChannel = channelId && channelId !== 'all' ? channelId : '';
     const limit = Math.min(Number(searchParams.get('limit') ?? 50000), 50000);
 
     // PostgREST caps a single request at 1000 rows by default. Paginate server-side
@@ -31,7 +33,7 @@ export async function GET(req: NextRequest) {
           .select('*')
           .order('created_at', { ascending: false })
           .range(offset, offset + PAGE - 1);
-        if (channelId) q = q.eq('channel_id', channelId);
+        if (filterChannel) q = q.eq('channel_id', filterChannel);
         return q;
       }),
     );
@@ -46,10 +48,10 @@ export async function GET(req: NextRequest) {
               const offset = i * PAGE;
               let fallbackQ = supabaseAdmin
                 .from('issues')
-                .select('id, name, created_at, archived_at, archived, locked, message_count, member_count, total_message_sent, applied_tags, owner_id, owner_username, owner_global_name, owner_avatar, first_message_id, first_message_author_id, first_message_author_name, first_message_created_at, response_time_ms, responder_count, is_answered, resolution_status, sentiment, sentiment_score, sentiment_summary, duplicate_cluster_id')
+                .select('id, name, channel_id, created_at, archived_at, archived, locked, message_count, member_count, total_message_sent, applied_tags, owner_id, owner_username, owner_global_name, owner_avatar, first_message_id, first_message_author_id, first_message_author_name, first_message_created_at, response_time_ms, responder_count, is_answered, resolution_status, sentiment, sentiment_score, sentiment_summary, duplicate_cluster_id')
                 .order('created_at', { ascending: false })
                 .range(offset, offset + PAGE - 1);
-              if (channelId) fallbackQ = fallbackQ.eq('channel_id', channelId);
+              if (filterChannel) fallbackQ = fallbackQ.eq('channel_id', filterChannel);
               return fallbackQ;
             })
           );
@@ -68,7 +70,7 @@ export async function GET(req: NextRequest) {
     }
 
     let countQuery = supabaseAdmin.from('issues').select('id', { count: 'exact', head: true });
-    if (channelId) countQuery = countQuery.eq('channel_id', channelId);
+    if (filterChannel) countQuery = countQuery.eq('channel_id', filterChannel);
     const { count } = await countQuery;
 
     const issues: Issue[] = (rows ?? []).map((row: any) => {
@@ -102,6 +104,7 @@ export async function GET(req: NextRequest) {
       return {
         id: row.id,
         name: row.name,
+        channelId: row.channel_id ?? undefined,
         createdAt: row.created_at,
         archivedAt: row.archived_at,
         archived: row.archived,

@@ -456,10 +456,10 @@ export async function initSampleDataIfEmpty() {
   if (store.issues.length > 0) return; // already loaded (from localStorage)
 
   try {
-    // 1. Try loading from DB first
-    const channelId = store.channelId || process.env.NEXT_PUBLIC_DISCORD_CHANNEL_ID || '';
+    // 1. Try loading from DB first. Load ALL channels ('') so the combined dashboard hydrates
+    //    every channel at once; store.channelId is still used as the FETCH target elsewhere.
     store.setProgress({ stage: 'fetching-threads', fetchedCount: 0, totalResults: 0, message: 'Loading from database…' });
-    const dbData = await loadFromDb({ channelId });
+    const dbData = await loadFromDb({ channelId: '' });
     if (dbData && dbData.issues.length > 0) {
       store.setIssues(dbData.issues);
       store.setTotalResults(dbData.totalResults);
@@ -484,8 +484,8 @@ export async function initSampleDataIfEmpty() {
     store.setHasMore(hasMore);
     store.setSource('sample');
 
-    // Persist to DB in the background (non-blocking)
-    persistToDb({ issues, channelId }).catch((err) =>
+    // Persist to DB in the background (non-blocking). Sample data carries its own channel_id.
+    persistToDb({ issues, channelId: store.channelId || process.env.NEXT_PUBLIC_DISCORD_CHANNEL_ID || '' }).catch((err) =>
       console.warn('[initSampleDataIfEmpty] persist failed:', err),
     );
 
