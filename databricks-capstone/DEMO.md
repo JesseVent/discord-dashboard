@@ -97,6 +97,9 @@ panel, with the `dashboard_metrics` tool call expanded. It returns 40,570 / 19,0
 identical to the KPI tiles in `screenshots/app_overview.png`, so the agent and the dashboard are
 provably reading one source of truth.
 
+*(`total_messages` = `SUM(issues.message_count)`, Discord's own per-thread counter — which is why
+306,922 exceeds the 233,147 reply rows this pipeline actually loaded. See `00_START_HERE.md`.)*
+
 ---
 
 ## Turn 2 — Investigate a topic, then triage (the read → decide → **write** loop)
@@ -547,9 +550,11 @@ gotcha, is in `FEATURES.md` → *Vector Search*.
 
 ## Screenshots
 
-![Streamlit app on load — KPI tiles, charts, issues table](screenshots/app_overview.png)
+![Streamlit app on load — KPI tiles and charts](screenshots/app_overview.png)
 
-- `screenshots/app_overview.png` — full Streamlit app on load (KPIs + charts + table)
+- `screenshots/app_overview.png` — Streamlit app on load: the 9 KPI tiles and the charts above the
+  fold. The issues table, the per-issue thread inspector and the agent panel sit below it — the
+  agent panel is captured in `turn1`–`turn4` below.
 - `screenshots/turn1_dashboard.png` — `dashboard_metrics` call + the agent's KPI summary
 - `screenshots/turn2_triage.png` — agent chat with both write calls flagged `✍️`
 - `screenshots/turn3_sql.png` — SQL tool calls + duplicate-cluster table

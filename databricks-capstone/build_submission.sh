@@ -52,7 +52,9 @@ while IFS= read -r f; do
     *.png|*.jpg|*.jpeg|*.gif|*.webp) copy_keep "$f" ;;   # grader-supported images
     *) echo "SKIP (unsupported): $f" ;;
   esac
-done < <(fd -t f --exclude 'databricks-capstone-submission.zip')
+# --exclude databricks-capstone: if the zip was ever unpacked in place, that copy
+# must not be re-staged — it would ship a doubled tree with .txt.txt suffixes.
+done < <(fd -t f --exclude 'databricks-capstone-submission.zip' --exclude databricks-capstone)
 
 # Report
 echo "=== staged tree ==="

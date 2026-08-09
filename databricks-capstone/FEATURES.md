@@ -177,10 +177,12 @@ Two things this run exposed, both fixed rather than papered over:
   client ID and secret`. Inside the workspace (App or notebook) it authenticates automatically.
   To run it from a laptop, export `DATABRICKS_TOKEN` (e.g. from `databricks auth token`) first.
 
-`databricks-vectorsearch` is intentionally **absent** from `requirements.txt`: `_retrieve_vs`
-imports it inside the function, so the deployed App never installs a dependency its default
-backend does not use. (The package has since been renamed `databricks-ai-search`; the old import
-path still resolves as a re-export.)
+`databricks-vectorsearch` is not listed in `requirements.txt` — but it arrives anyway, as a
+transitive dependency of `databricks-langchain==0.8.2` (`mlflow>=2.20.1`,
+`databricks-vectorsearch>=0.50`). What the omission buys is at the *import* level, not the
+install level: `_retrieve_vs` imports it inside the function, so a broken or absent VS client
+can never stop the App from booting on its default pgvector backend. (The package has since
+been renamed `databricks-ai-search`; the old import path still resolves as a re-export.)
 
 Source table DDL:
 

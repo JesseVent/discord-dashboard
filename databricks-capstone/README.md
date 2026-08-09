@@ -73,9 +73,10 @@ the same pipeline.
                 ▼                             ▼
    ┌──────────────────────────┐   ┌──────────────────────────────────────┐
    │  Lakebase (Postgres)     │   │  Delta tables (Unity Catalog)        │
-   │  issues, replies,        │   │  daily_stats, global_metrics,        │
-   │  notes, duplicate_       │   │  issues_enriched, embeddings          │
-   │  clusters, theme_clusters│   └───────────────┬──────────────────────┘
+   │  issues, replies, notes, │   │  daily_stats, global_metrics,        │
+   │  duplicate_clusters,     │   │  issues_enriched, issues_light,      │
+   │  theme_clusters,         │   │  top_responders                      │
+   │  issue_embeddings (HNSW) │   └───────────────┬──────────────────────┘
    └─────────────┬────────────┘                   │
                  │ source-of-truth                │ Delta Sync
                  │                                ▼
@@ -155,9 +156,13 @@ See [`docs/architecture.md`](docs/architecture.md) for the expanded flow and
 
 ```
 databricks-capstone/
+├── 00_START_HERE.md                  ← the five requirements → evidence, and the reading order
+├── DEMO.md                           ← four live agent transcripts, every tool call verbatim
+├── FEATURES.md                       ← every feature → implementing file+line → command that proves it
 ├── README.md                         ← you are here
 ├── app.yaml                          ← Databricks App entrypoint + env (streamlit run app/app.py)
 ├── requirements.txt                  ← pinned deps (app runtime installs from here)
+├── screenshots/                      ← app + agent captures, and the source React dashboard
 ├── docs/
 │   ├── architecture.md               ← end-to-end data flow + component map
 │   └── design-decisions.md           ← why Lakebase/Delta, model & framework choices
@@ -212,7 +217,7 @@ databricks-capstone/
   away. Details and the two workspace-specific gotchas are in `FEATURES.md` → *MLflow*.
 - **CDC — scoped out, deliberately.** Notebook 02 recomputes the rollups with a batch
   overwrite; over 40,570 issues that finishes in well under a minute on serverless, so a
-  streaming Change Data Feed reader would add a always-on job and a checkpoint to maintain in
+  streaming Change Data Feed reader would add an always-on job and a checkpoint to maintain in
   exchange for latency this dashboard has no use for. CDF *is* enabled where it is actually
   required — on `discord_issues_vs_source`, because a Delta Sync index cannot exist without it.
   Not a TODO; see `FEATURES.md` → *Scoped out*.
