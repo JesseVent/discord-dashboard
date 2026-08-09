@@ -1,0 +1,15 @@
+# Pinned dependencies for the Streamlit Databricks App.
+# Deploy with: databricks apps deploy discord-capstone-app --source .
+#
+# Data + agent both run in-process against Lakebase (psycopg) and the workspace
+# LLM gateway (databricks-langchain). No SQL-warehouse connector or HTTP agent
+# endpoint is required. Versions resolved together against Python 3.12.
+
+streamlit==1.45.1
+pandas==2.3.3
+plotly==6.2.0
+psycopg[binary]==3.2.4
+databricks-langchain==0.8.2
+langgraph==0.2.34
+langchain-core==0.3.0
+sentence-transformers==3.0.1

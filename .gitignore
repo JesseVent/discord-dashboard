@@ -62,3 +62,9 @@ scratch/
 .remember/
 skills-lock.json
 *.pid
+
+# Databricks bootcamp homework (separate project; never commit into discord-dashboard)
+bootcamp/
+
+# Capstone submission bundle — regenerate with databricks-capstone/build_submission.sh
+databricks-capstone/databricks-capstone-submission.zip
