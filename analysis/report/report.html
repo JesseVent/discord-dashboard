@@ -1,0 +1,941 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Supabase community forum — friction report</title>
+<style>
+/* ============ fonts ============ */
+@font-face{font-family:"Custom Font";src:url("assets/fonts/CustomFont-Book.woff2") format("woff2");font-weight:400;font-display:swap}
+@font-face{font-family:"Custom Font";src:url("assets/fonts/CustomFont-Medium.woff2") format("woff2");font-weight:500;font-display:swap}
+@font-face{font-family:"Custom Font";src:url("assets/fonts/CustomFont-Bold.woff2") format("woff2");font-weight:700;font-display:swap}
+@font-face{font-family:"Custom Font";src:url("assets/fonts/CustomFont-Black.woff2") format("woff2");font-weight:800;font-display:swap}
+
+/* ============ tokens (Supabase, dark default) ============ */
+:root{
+  color-scheme:dark;
+  --bg:#121212;            /* background-default 7.1% */
+  --bg-200:#171717;        /* 9% */
+  --surface:#1f1f1f;       /* surface-100 12.2% */
+  --surface-200:#212121;   /* surface-200 12.9% */
+  --raised:#292929;        /* surface-300 16.1% */
+  --fg:#fafafa;            /* foreground-default 98% */
+  --fg-light:#b4b4b4;      /* 70.6% */
+  --fg-lighter:#898989;    /* 53.7% */
+  --fg-muted:#4d4d4d;      /* 30.2% */
+  --border:#2e2e2e;        /* border-default 18% */
+  --border-strong:#363636; /* 21.2% */
+  --border-stronger:#454545;/* 27.1% */
+  --brand:#3ecf8e;
+  --brand-600:#7fdfae;     /* brand-600 */
+  --warning:#daae00;       /* warning-default 38.9° 100% 42.9% */
+  --destructive:#e5484d;   /* destructive-default 10.2° 77.9% 53.9% */
+  --mono:"Source Code Pro",ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+  --sans:"Custom Font","Circular","Helvetica Neue",Helvetica,Arial,sans-serif;
+}
+@media (prefers-color-scheme:light){
+  :root:not([data-theme="dark"]){
+    color-scheme:light;
+    --bg:#fbfbfb; --bg-200:#f8f8f8; --surface:#fdfdfd; --surface-200:#f3f3f3; --raised:#ededed;
+    --fg:#171717; --fg-light:#525252; --fg-lighter:#707070; --fg-muted:#b2b2b2;
+    --border:#e0e0e0; --border-strong:#d4d4d4; --border-stronger:#a3a3a3;
+    --brand:#24b47e; --brand-600:#1c9968;
+    --warning:#c48a00; --destructive:#d3383d;
+  }
+}
+:root[data-theme="light"]{
+  color-scheme:light;
+  --bg:#fbfbfb; --bg-200:#f8f8f8; --surface:#fdfdfd; --surface-200:#f3f3f3; --raised:#ededed;
+  --fg:#171717; --fg-light:#525252; --fg-lighter:#707070; --fg-muted:#b2b2b2;
+  --border:#e0e0e0; --border-strong:#d4d4d4; --border-stronger:#a3a3a3;
+  --brand:#24b47e; --brand-600:#1c9968;
+  --warning:#c48a00; --destructive:#d3383d;
+}
+:root[data-theme="dark"]{
+  color-scheme:dark;
+  --bg:#121212; --bg-200:#171717; --surface:#1f1f1f; --surface-200:#212121; --raised:#292929;
+  --fg:#fafafa; --fg-light:#b4b4b4; --fg-lighter:#898989; --fg-muted:#4d4d4d;
+  --border:#2e2e2e; --border-strong:#363636; --border-stronger:#454545;
+  --brand:#3ecf8e; --brand-600:#7fdfae;
+  --warning:#daae00; --destructive:#e5484d;
+}
+
+/* ============ base ============ */
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{
+  margin:0; background:var(--bg); color:var(--fg);
+  font-family:var(--sans); font-size:15px; line-height:1.6;
+  -webkit-font-smoothing:antialiased;
+}
+.mono{font-family:var(--mono)}
+a{color:var(--brand); text-decoration:none}
+a:hover{text-decoration:underline}
+::selection{background:hsla(153,60%,53%,.28)}
+:focus-visible{outline:2px solid var(--brand); outline-offset:2px; border-radius:2px}
+
+.wrap{max-width:1128px; margin:0 auto; padding:0 32px}
+
+/* ============ titlebar ============ */
+.titlebar{background:var(--bg-200); border-bottom:1px solid var(--border)}
+.titlebar .wrap{
+  display:flex; align-items:center; gap:16px; height:44px;
+  font-size:13px; color:var(--fg-lighter); white-space:nowrap; overflow-x:auto;
+}
+.titlebar .name{display:flex; align-items:center; gap:8px; color:var(--fg); font-weight:500; flex:0 0 auto}
+.titlebar .name svg{width:16px; height:16px}
+.titlebar .sep{color:var(--fg-muted)}
+.titlebar a{color:var(--fg-light)}
+.titlebar a:hover{color:var(--fg); text-decoration:none}
+.titlebar .spacer{flex:1}
+
+/* ============ nav ============ */
+nav{
+  position:sticky; top:0; z-index:50;
+  background:color-mix(in srgb, var(--bg) 88%, transparent);
+  backdrop-filter:blur(8px);
+  border-bottom:1px solid var(--border);
+}
+nav .wrap{display:flex; align-items:center; gap:4px; height:48px; overflow-x:auto; white-space:nowrap}
+nav a{
+  font-size:13px; color:var(--fg-lighter); padding:5px 10px; border-radius:6px;
+}
+nav a:hover{color:var(--fg); background:var(--surface); text-decoration:none}
+nav a.on{color:var(--fg); background:var(--surface)}
+
+/* ============ header ============ */
+header{padding:64px 0 40px; border-bottom:1px solid var(--border)}
+.eyebrow{
+  font-family:var(--mono); font-size:12px; letter-spacing:.06em;
+  color:var(--fg-lighter); margin:0 0 16px;
+}
+h1{
+  font-size:clamp(30px,4.2vw,44px); line-height:1.12; letter-spacing:-.025em;
+  font-weight:700; margin:0 0 18px; max-width:22ch; text-wrap:balance;
+}
+h1 .accent{color:var(--brand)}
+h1 .warn{color:var(--warning)}
+.sub{
+  font-size:16px; line-height:1.6; color:var(--fg-light);
+  max-width:68ch; margin:0 0 26px;
+}
+.sub b{color:var(--fg); font-weight:500}
+.meta{font-size:13px; color:var(--fg-lighter); display:flex; flex-wrap:wrap; gap:6px 20px}
+.meta span::before{content:"·"; color:var(--fg-muted); margin-right:20px}
+.meta span:first-child::before{content:""; margin:0}
+
+/* ============ KPI row ============ */
+.kpis{display:grid; grid-template-columns:repeat(6,1fr); gap:12px; padding:28px 0 8px}
+.kpi{
+  background:var(--surface); border:1px solid var(--border); border-radius:8px;
+  padding:14px 16px 12px;
+}
+.kpi .v{font-size:22px; font-weight:500; letter-spacing:-.01em; line-height:1.15; font-variant-numeric:tabular-nums}
+.kpi .v small{font-size:14px; color:var(--fg-lighter); font-weight:400}
+.kpi .l{font-size:12px; color:var(--fg-lighter); margin-top:6px}
+.kpi .d{font-size:12px; color:var(--fg-muted); margin-top:2px}
+.kpi.rise .v{color:var(--brand)}
+.kpi.warn .v{color:var(--warning)}
+.kpi.bad .v{color:var(--destructive)}
+
+/* ============ orient block ============ */
+.orient{
+  margin:28px 0 8px; padding:20px 24px;
+  background:var(--surface); border:1px solid var(--border); border-radius:8px;
+  display:grid; grid-template-columns:132px 1fr; gap:8px 28px;
+  font-size:14px; line-height:1.6;
+}
+.orient .k{font-size:13px; font-weight:500; color:var(--fg); padding-top:1px}
+.orient .v{color:var(--fg-light); margin:0}
+.orient .v b{color:var(--fg); font-weight:500}
+@media (max-width:720px){
+  .orient{grid-template-columns:1fr; gap:12px}
+}
+
+/* ============ sections ============ */
+section{padding:52px 0 8px}
+.sec-head{margin-bottom:24px}
+.sec-head .eyebrow{margin-bottom:8px}
+.sec-head h2{font-size:clamp(22px,2.6vw,28px); line-height:1.2; letter-spacing:-.02em; font-weight:500; margin:0 0 10px; text-wrap:balance}
+.sec-head p{color:var(--fg-light); max-width:74ch; margin:0; font-size:14.5px}
+.read{
+  margin-top:20px; padding:14px 18px; background:var(--surface);
+  border:1px solid var(--border); border-left:2px solid var(--brand);
+  border-radius:6px; font-size:14px; color:var(--fg-light);
+}
+.read b{color:var(--fg); font-weight:500}
+.read .k{font-size:12px; font-weight:500; color:var(--fg-lighter); display:block; margin-bottom:4px}
+.read.warn{border-left-color:var(--warning)}
+
+/* ============ bars ============ */
+.bars{margin-top:8px}
+.bar-row{display:flex; align-items:center; gap:14px; padding:5px 0; position:relative; border-radius:4px}
+.bar-label{flex:0 0 200px; font-size:13px; color:var(--fg-light); text-align:right; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+.bar-track{flex:1; position:relative; height:20px; display:flex; align-items:center}
+.bar-track::before{ /* baseline ref line */
+  content:""; position:absolute; top:-3px; bottom:-3px; left:var(--refp,62.5%);
+  width:1px; background:var(--border-stronger); z-index:1;
+}
+.bar-track.no-ref::before{display:none}
+.bar-fill{
+  height:12px; border-radius:3px; min-width:2px; position:relative; z-index:0;
+  background:var(--brand);
+  transition:filter .15s ease;
+}
+.bar-row:hover .bar-fill{filter:brightness(1.12)}
+.bar-val{flex:0 0 58px; font-family:var(--mono); font-size:12.5px; color:var(--fg); text-align:right; font-variant-numeric:tabular-nums}
+.bar-row .bar-fill.gray{background:var(--fg-muted)}
+.bar-row:hover .bar-fill.gray{filter:brightness(1.35)}
+.chart-cap{font-size:12.5px; color:var(--fg-lighter); margin-top:12px}
+.chart-cap b{color:var(--fg-light); font-weight:500}
+
+/* ============ tables ============ */
+.tbl-wrap{overflow-x:auto; border:1px solid var(--border); border-radius:8px; background:var(--surface)}
+table{width:100%; border-collapse:collapse; font-size:13.5px; min-width:760px}
+thead th{
+  font-size:12px; font-weight:500; letter-spacing:.02em;
+  color:var(--fg-lighter); text-align:right; padding:10px 14px; border-bottom:1px solid var(--border);
+  white-space:nowrap; background:var(--bg-200);
+}
+thead th:first-child, td:first-child{text-align:left}
+tbody td{padding:9px 14px; border-bottom:1px solid var(--border); text-align:right; font-variant-numeric:tabular-nums; white-space:nowrap; color:var(--fg-light)}
+tbody tr:last-child td{border-bottom:none}
+tbody td.num{font-family:var(--mono); font-size:12.5px}
+tbody tr:hover{background:var(--surface-200)}
+tbody tr.rise td{background:hsla(153,60%,53%,.06)}
+tbody tr.rise td:first-child{box-shadow:inset 2px 0 0 var(--brand)}
+td .pill{
+  font-size:11px; font-weight:500;
+  padding:2px 8px; border-radius:99px; border:1px solid var(--border-strong); color:var(--fg-lighter);
+}
+td .pill.rise{color:var(--brand); border-color:hsla(153,60%,53%,.4); background:hsla(153,60%,53%,.08)}
+td .terms{font-family:var(--mono); font-size:12px; color:var(--fg-lighter); white-space:normal; max-width:340px; line-height:1.5; text-align:left}
+td .feat{font-weight:500; color:var(--fg)}
+tr.grp td{
+  font-size:12px; font-weight:500;
+  color:var(--fg-light); background:var(--bg-200); text-align:left; padding:7px 14px;
+}
+tr.grp td .sw{display:inline-block; width:8px; height:8px; border-radius:2px; margin-right:10px; vertical-align:middle}
+
+/* ============ triage cards ============ */
+.two{display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-top:8px}
+.panel{background:var(--surface); border:1px solid var(--border); border-radius:8px; padding:20px 22px}
+.panel h3{font-size:15px; font-weight:500; margin:0 0 2px; letter-spacing:-.01em}
+.panel .sub2{font-size:12.5px; color:var(--fg-lighter); margin-bottom:14px}
+.panel .bign{
+  font-size:34px; font-weight:500; letter-spacing:-.02em; line-height:1.1;
+  font-variant-numeric:tabular-nums; margin:2px 0 2px;
+}
+.panel .bign small{font-size:15px; color:var(--fg-lighter); font-weight:400}
+.panel .bign.brand{color:var(--brand)}
+.panel .bign.warn{color:var(--warning)}
+.panel .bign.bad{color:var(--destructive)}
+.stat-list{list-style:none; margin:10px 0 0; padding:0}
+.stat-list li{
+  display:flex; justify-content:space-between; gap:16px;
+  padding:8px 0; border-top:1px solid var(--border);
+  font-size:13px; color:var(--fg-light);
+}
+.stat-list li .num{font-family:var(--mono); font-size:12.5px; color:var(--fg); white-space:nowrap}
+.patterns{list-style:none; margin:0; padding:0}
+.patterns li{
+  padding:11px 0; border-bottom:1px solid var(--border); font-size:14px; color:var(--fg-light);
+}
+.patterns li:last-child{border-bottom:none}
+.patterns .p{font-family:var(--mono); font-size:11.5px; color:var(--brand); margin-right:10px}
+.patterns b{color:var(--fg); font-weight:500}
+
+/* ============ lenses ============ */
+.lenses{display:grid; grid-template-columns:repeat(3,1fr); gap:16px; margin-top:8px}
+.lens{background:var(--surface); border:1px solid var(--border); border-radius:8px; padding:20px 22px}
+.lens .tag{font-size:12px; font-weight:500; color:var(--fg-lighter)}
+.lens h3{font-size:17px; font-weight:500; margin:6px 0 2px; letter-spacing:-.01em}
+.lens .n{font-size:26px; font-weight:500; color:var(--fg); margin:6px 0 10px; font-variant-numeric:tabular-nums}
+.lens .n small{font-size:13px; color:var(--fg-lighter); font-weight:400}
+.lens p{font-size:13.5px; color:var(--fg-light); margin:0 0 12px}
+.lens ul{margin:0; padding:0; list-style:none}
+.lens li{font-size:12.5px; color:var(--fg-light); padding:6px 0; border-top:1px solid var(--border)}
+.lens li b{color:var(--fg); font-weight:500}
+.lens li .mono{color:var(--fg-lighter)}
+
+/* ============ footer ============ */
+footer{padding:48px 0 64px; border-top:1px solid var(--border); margin-top:48px}
+footer h3{font-size:14px; font-weight:500; margin:0 0 10px}
+footer p{font-size:13px; color:var(--fg-light); max-width:84ch; margin:0 0 8px}
+footer .mono{font-size:12px; color:var(--fg-lighter)}
+
+/* ============ tooltip ============ */
+#tip{
+  position:fixed; z-index:100; pointer-events:none; display:none;
+  background:var(--raised); border:1px solid var(--border-stronger); border-radius:6px;
+  padding:7px 11px; font-size:12px; color:var(--fg);
+  box-shadow:0 6px 24px rgba(0,0,0,.35); max-width:320px;
+}
+#tip.show{display:block}
+
+/* ============ responsive ============ */
+@media (max-width:900px){
+  .kpis{grid-template-columns:repeat(3,1fr)}
+  .two{grid-template-columns:1fr}
+  .lenses{grid-template-columns:1fr}
+  .bar-label{flex-basis:150px}
+}
+@media (max-width:560px){
+  .kpis{grid-template-columns:repeat(2,1fr)}
+  .bar-label{flex-basis:110px; font-size:12px}
+  .wrap{padding:0 18px}
+}
+
+/* ============ motion ============ */
+@media (prefers-reduced-motion:no-preference){
+  header{animation:fade .18s cubic-bezier(0.16,1,0.3,1) both}
+  @keyframes fade{from{opacity:0; transform:translateY(4px)} to{opacity:1; transform:none}}
+}
+
+/* ============ print / paged ============ */
+@page{margin:14mm 12mm}
+@media print{
+  :root{
+    color-scheme:light;
+    --bg:#fff; --bg-200:#f6f6f6; --surface:#fff; --surface-200:#fafafa; --raised:#f0f0f0;
+    --fg:#111; --fg-light:#333; --fg-lighter:#555; --fg-muted:#888;
+    --border:#d8d8d8; --border-strong:#c4c4c4; --border-stronger:#a8a8a8;
+    --brand:#0f7f57; --brand-600:#0b5f41;
+    --warning:#8a6100; --destructive:#a32226;
+  }
+  body{font-size:10pt; background:#fff}
+  nav, #tip{display:none}
+  .wrap{max-width:none; padding:0}
+  header{animation:none; padding-top:16pt}
+  /* one section per page, headings never orphaned from their content */
+  section{break-before:page; padding:0 0 8pt}
+  section:first-of-type{break-before:auto}
+  .sec-head{break-after:avoid; page-break-after:avoid; break-inside:avoid}
+  .sec-head h2{break-after:avoid; page-break-after:avoid}
+  .kpi, .panel, .lens, .read, .orient, .bar-row, .chart-cap{break-inside:avoid; page-break-inside:avoid}
+  .kpis{break-inside:avoid}
+  .tbl-wrap{overflow:visible; break-inside:auto}
+  table{min-width:0; width:100%; font-size:8.5pt}
+  thead{display:table-header-group}
+  tr{break-inside:avoid; page-break-inside:avoid}
+  thead th, tbody td{padding:5px 8px; white-space:normal}
+  td .terms{max-width:none}
+  footer{break-before:page; margin-top:0}
+  a{color:var(--fg); text-decoration:none}
+}
+</style>
+</head>
+<body>
+
+<div id="tip" role="status" aria-live="polite"></div>
+
+<div class="titlebar">
+  <div class="wrap">
+    <span class="name">
+      <svg viewBox="0 0 109 113" fill="none" aria-hidden="true"><path d="M63.7 110.3c-2.6 3.1-7.9 1.8-8-2.3l-1.2-45.4h30.9c4.6 0 7.2 5.3 4.3 9L63.7 110.3z" fill="#3ecf8e"/><path d="M63.7 110.3c-2.6 3.1-7.9 1.8-8-2.3l-1.2-45.4h30.9c4.6 0 7.2 5.3 4.3 9L63.7 110.3z" fill="url(#ga)" fill-opacity=".2"/><path d="M45.3 2.7c2.6-3.1 7.9-1.8 8 2.3l1.2 45.4H23.6c-4.6 0-7.2-5.3-4.3-9l26-38.7z" fill="#3ecf8e"/><defs><linearGradient id="ga" x1="53.9" y1="54.6" x2="94.5" y2="71.4" gradientUnits="userSpaceOnUse"><stop stop-color="#249361"/><stop offset="1" stop-color="#3ecf8e"/></linearGradient></defs></svg>
+      Forum friction report
+    </span>
+    <span class="sep">·</span>
+    <span>Supabase community Discord</span>
+    <span class="sep">·</span>
+    <span>Aug 2022 – Aug 2026</span>
+    <span class="spacer"></span>
+    <a href="../findings/findings.md">findings.md</a>
+    <span class="sep">·</span>
+    <a href="../findings/triage.md">triage.md</a>
+  </div>
+</div>
+
+<nav>
+  <div class="wrap">
+    <a href="#trend">What's rising</a>
+    <a href="#answers">Who answers</a>
+    <a href="#matrix">Doc gaps</a>
+    <a href="#drill">Rising threads</a>
+    <a href="#terms">New vocabulary</a>
+    <a href="#triage">Reply triage</a>
+    <a href="#lenses">Doc work</a>
+    <a href="#fixes">Fixes</a>
+  </div>
+</nav>
+
+<div class="wrap">
+
+<header>
+  <p class="eyebrow">Supabase community Discord · 41,392 threads · 270,020 replies · Aug 2022 – Aug 2026</p>
+  <h1>Harder problems, <span class="accent">one volunteer deep</span>.</h1>
+  <p class="sub">
+    Forum activity is down <b>18%</b> over the last six months — yet <b>Billing/Quotas</b>, <b>Network/DNS</b>,
+    and <b>Outage/Status</b> grew <b>58–74%</b> after adjusting for the decline, and two-thirds of the hardest
+    threads are bugs or outages. Almost everything gets <em>a</em> reply — only <b>14% of threads</b> never hear
+    from anyone else, and just <b>4%</b> in the last year — but the answer layer is volunteer labour: one
+    community moderator has written <b>27% of all 270,020 answers</b>, and none of the top 12 repliers identify
+    as staff.
+  </p>
+  <div class="meta">
+    <span>41,392 threads analysed</span>
+    <span>270,020 replies read</span>
+    <span>method: topic modelling + sentiment + manual triage</span>
+    <span>detail: <a href="../findings/findings.md">findings.md</a> · <a href="../findings/triage.md">triage.md</a></span>
+  </div>
+</header>
+
+<div class="kpis">
+  <div class="kpi"><div class="v">41,392</div><div class="l">Threads analysed</div><div class="d">forum issues, 2022–2026</div></div>
+  <div class="kpi"><div class="v">−18%</div><div class="l">Overall activity</div><div class="d">last 6 months vs prior 6</div></div>
+  <div class="kpi rise"><div class="v">+58–74%</div><div class="l">Rising areas</div><div class="d">billing, network, outages — adjusted</div></div>
+  <div class="kpi warn"><div class="v">14%</div><div class="l">Never answered</div><div class="d">no reply from anyone else, all time · 4% in the last year</div></div>
+  <div class="kpi warn"><div class="v">27%</div><div class="l">Answers by one volunteer</div><div class="d">73,069 of all replies</div></div>
+  <div class="kpi bad"><div class="v">21%</div><div class="l">Resolved by replies</div><div class="d">of the 96 hardest threads</div></div>
+</div>
+
+<div class="orient" aria-label="How to read this report">
+  <div class="k">What this is</div>
+  <p class="v">A four-year audit of every support thread in the Supabase community Discord. Each thread was scored
+  for frustration and grouped by topic, reply coverage was measured for all 41,392, and the 96 most difficult
+  threads were read in full to find the root cause and whether replies helped.</p>
+
+  <div class="k">Who it's for</div>
+  <p class="v">Support, docs, and product teams deciding where to invest next: self-service recovery, response
+  capacity, an education push, or new runbooks. Every claim traces back to real threads in the data.</p>
+
+  <div class="k">How to read it</div>
+  <p class="v"><b>What's rising</b> and <b>Who answers</b> are the two headline stories — demand and supply.
+  <b>Rising threads</b> shows what those threads say. <b>Doc work</b> and <b>Fixes</b> are the action list.
+  The rest is reference.</p>
+</div>
+
+<section id="trend">
+  <div class="sec-head">
+    <p class="eyebrow">01 · What's rising</p>
+    <h2>Three areas are growing against an 18% decline.</h2>
+    <p>The chart compares the last six months with the six months before, per product area, adjusted for the
+    forum-wide decline. A score of 1.0 means the area moved with the forum as a whole. Above 1.0 means it grew
+    despite the decline. Three areas clearly rise: Billing/Quotas (1.74), Network/DNS (1.63), and
+    Outage/Status (1.58) — with Dashboard/Access (1.15) a smaller fourth.</p>
+  </div>
+  <div class="bars" id="trend-bars"></div>
+  <p class="chart-cap"><b>Relative change by product area, last 6 months vs prior 6</b> · vertical line = forum-wide baseline (1.0) · green = growing · gray = shrinking with the forum</p>
+  <div class="read">
+    <span class="k">What this means</span>
+    The growing areas are not documentation problems. Auth — the largest documentation-gap area at 12,848
+    threads — is shrinking with the forum (0.90). What's growing is where the platform itself breaks: billing
+    state, project status, and network reachability. The fallers are instructive too: Edge Functions is down 81%
+    and Auth 71% from their 2023 peaks, against 56% for the forum — a gradual slide consistent with compounding
+    doc and SDK fixes, not one big change. The forum itself peaked in Q3 2023; the recent −18% is the tail of a
+    three-year decline.
+  </div>
+  <div class="panel" style="margin-top:16px">
+    <h3>What changed in August 2025: the tag, more than the volume</h3>
+    <div class="sub2">outage-tagged threads per month, last 18 months</div>
+    <div class="bars" id="outage-bars"></div>
+    <p class="chart-cap"><b>Two different stories.</b> The outage <em>tag</em> steps from ~5–25 uses/month to 58–109/month in Aug 2025 — but the tag only existed from 2024 and moderators clearly began applying it consistently then. Under the keyword classifier, outage volume rises only modestly over the same window (~1.3–1.5×). The step is mostly a moderation-behaviour signal, not a reliability one.</p>
+  </div>
+</section>
+
+<section id="answers">
+  <div class="sec-head">
+    <p class="eyebrow">02 · Who answers</p>
+    <h2>Nearly everything gets a reply — one person writes a quarter of them.</h2>
+    <p>Only 11.6% of the 41,392 threads have zero replies, and on the threads whose replies we read in full,
+    just 2.3% of the rest are the asker talking to themselves — so about <b>14%</b> never hear from anyone else.
+    Answering has been getting <em>better</em>: the last full quarter sits at 2.5%. What has not improved is who
+    does it. One community moderator, <span class="mono">garyaustin</span>, has written 27% of all 270,020
+    replies — steady at 24–28% every quarter for two years. The top 12 repliers hold about 41%, and none
+    identify as Supabase staff — the biggest answerers describe themselves as volunteer moderators.</p>
+  </div>
+  <div class="read warn" style="margin-bottom:24px">
+    <span class="k">Correction, 2026-08-10</span>
+    An earlier version of this report said <b>53% of threads never receive a reply</b>. That came from
+    <span class="mono">responder_count</span>, a field our own reply backfill populates — and the backfill never
+    reached 40% of the corpus, which then read as silence. Discord's own thread metadata
+    (<span class="mono">message_count</span>, which excludes the opening post) matches the fetched reply count on
+    <b>98.5%</b> of the 27,622 threads where both exist, and puts the real figure at <b>11.6%</b>. Every no-reply
+    number below is recomputed from that field.
+  </div>
+  <div class="two">
+    <div class="panel">
+      <h3>Threads with no reply, by product area</h3>
+      <div class="sub2">share of threads with zero replies · vertical line = forum average (11.6%) · keyword classifier, not forum tags (tag labels have drifted)</div>
+      <div class="bars" id="noreply-bars"></div>
+      <p class="chart-cap">green = the three rising areas — the <em>most</em>-answered parts of the forum (triage shows the answers still rarely resolve) · the ordering is unchanged from the earlier version; only the levels were wrong · deep dive: <a href="../findings/edge-functions-deep-dive.md">edge-functions-deep-dive.md</a></p>
+    </div>
+    <div class="panel">
+      <h3>No reply, by quarter</h3>
+      <div class="sub2">share of each quarter's threads with zero replies · from Discord's thread metadata, so no backfill lag to correct for</div>
+      <div class="bars" id="noreply-q-bars"></div>
+      <p class="chart-cap">green = latest full quarter (2.5%) — coverage has <em>improved</em> steadily since 2024: thread volume fell faster than answer capacity</p>
+    </div>
+  </div>
+  <div class="panel" style="margin-top:16px">
+    <h3>Answer concentration</h3>
+    <div class="sub2">who the forum depends on</div>
+    <div class="two" style="margin-top:0">
+      <div>
+        <div class="bign brand">27.0%</div>
+        <div style="font-size:13px; color:var(--fg-light)">of all replies written by <span class="mono">garyaustin</span> — one volunteer, 73,069 answers, every quarter for two years</div>
+      </div>
+      <div>
+        <div class="bign">~41%</div>
+        <div style="font-size:13px; color:var(--fg-light)">of all replies from the top 12 repliers combined</div>
+      </div>
+    </div>
+    <ul class="stat-list">
+      <li><span>Repeat askers (3+ threads) — 17.4% of all users</span><span class="num">produce 54.1% of all threads</span></li>
+      <li><span>Repeat-asker concentration is highest in Edge Functions and Auth</span><span class="num">65% / 62% of tagged threads</span></li>
+      <li><span>Most threads by one user</span><span class="num">110</span></li>
+    </ul>
+  </div>
+  <div class="read warn">
+    <span class="k">What this means</span>
+    Coverage is the best it has ever been — 2.5% of last quarter's threads went unanswered, against 17.8% in
+    mid-2024 — because volume fell faster than the answerers' capacity. The risk is concentration, not decline:
+    the forum's answer layer is volunteer labour, one moderator carries 27% of it, and there is no staff floor
+    underneath. If the top two volunteers step back, the specialist corners are where it shows first — TypeGen,
+    Self-Hosting and AI/Vectors already run at 2–3× the forum's no-reply rate.
+  </div>
+</section>
+
+<section id="matrix">
+  <div class="sec-head">
+    <p class="eyebrow">03 · Documentation gaps</p>
+    <h2>Auth, Storage, Realtime, and Edge Functions need the most doc work.</h2>
+    <p>Each area is scored for frustration (negative language, repeated failed attempts) and for how often people
+    blame the docs, ask how-to questions, or stay confused. This is the documentation view — a different signal
+    from the rising areas in section 01. Auth/JWT/OAuth leads on volume (12,848 threads) and frustration
+    (0.76) — though its doc-blame <em>rate</em> is average, so the lead comes from size, and its genuinely
+    under-served corners are SSR session handling (11.9% no-reply, n=1,708) and OAuth redirect config
+    (13.7%, n=846) — both above the 11.6% forum average.</p>
+  </div>
+  <div class="tbl-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Product area</th><th>Threads</th><th>Trend (adj.)</th><th>Direction</th><th>Frustration</th>
+          <th>Docs blamed %</th><th>Struggling %</th><th>Negative %</th><th>Bug reports %</th>
+        </tr>
+      </thead>
+      <tbody id="matrix-body"></tbody>
+    </table>
+  </div>
+  <div class="read">
+    <span class="k">Worth watching</span>
+    MCP is the newest area and small (90 threads), but it has the worst per-thread sentiment after Outage/Status:
+    42% negative, 41% bug reports. Early-product pain is cheapest to fix while the surface is still small.
+  </div>
+</section>
+
+<section id="drill">
+  <div class="sec-head">
+    <p class="eyebrow">04 · Rising threads</p>
+    <h2>The rising threads are operational, not conceptual.</h2>
+    <p>The most common topics inside each growing area. The dominant vocabulary is connection errors, projects
+    stuck pausing, and plan or limit confusion — the language of incidents and lifecycle operations, not missing
+    how-tos.</p>
+  </div>
+  <div class="tbl-wrap">
+    <table>
+      <thead>
+        <tr><th>Product area</th><th>Threads</th><th>Negative</th><th>Struggling</th><th>How-to</th><th>Top terms</th></tr>
+      </thead>
+      <tbody id="drill-body"></tbody>
+    </table>
+  </div>
+</section>
+
+<section id="terms">
+  <div class="sec-head">
+    <p class="eyebrow">05 · New vocabulary</p>
+    <h2>The forum's newest words are support-ticket words.</h2>
+    <p>Terms whose frequency grew the most in the last six months. They cluster around account restrictions,
+    billing lifecycle, and incident recovery — users come to the forum to learn the words that get a support
+    ticket noticed.</p>
+  </div>
+  <div class="bars" id="terms-bars"></div>
+  <p class="chart-cap"><b>Fastest-growing terms, last 6 months vs prior 6</b> · longer bar = larger increase</p>
+  <div class="read">
+    <span class="k">What this means</span>
+    <b>restricted · locked · banned · stuck pausing · grace period · recovery · 522 · egress</b> — every top term
+    is an account or platform state a user got stuck in. Threads titled "UPGRADE STUCK" or "Project stuck Pausing"
+    are users repeating the keywords they've learned catch the support filter.
+  </div>
+</section>
+
+<section id="triage">
+  <div class="sec-head">
+    <p class="eyebrow">06 · Reply triage</p>
+    <h2>96 difficult threads: two-thirds bugs or outages, one in five resolved.</h2>
+    <p>Six independent review passes read up to 6 replies in each of the 96 most difficult threads across the three
+    rising areas. This is the ground truth behind the text analysis above.</p>
+  </div>
+  <div class="two">
+    <div class="panel">
+      <h3>Root cause</h3>
+      <div class="sub2">primary category per thread, n = 96</div>
+      <div class="bars" id="cause-bars"></div>
+    </div>
+    <div class="panel">
+      <h3>Resolved by forum replies</h3>
+      <div class="sub2">per review batch · overall 21% · vertical line = overall</div>
+      <div class="bars" id="res-bars"></div>
+      <div class="read" style="margin-top:16px">
+        <span class="k">The catch</span>
+        The threads that do get resolved are almost all user misconfiguration that fixes itself. Bug and outage
+        threads are essentially never resolved by replies — the only path is opening a support ticket and waiting
+        days.
+      </div>
+      <p class="chart-cap">resolution here is <b>judged from reading the replies</b>, not taken from the forum's
+      own “resolved” marker — that marker is an optional self-assessment the asker may never apply, so any
+      tag-derived resolution rate is a floor, not a measurement.</p>
+    </div>
+  </div>
+  <div class="read" style="margin-top:16px">
+    <span class="k">What this means</span>
+    The fastest-growing part of the forum has a 21% reply-resolution rate, concentrated in self-fixing issues.
+    <b>The forum is absorbing incident-management work that the product and support process are not.</b>
+  </div>
+  <div class="panel" style="margin-top:16px">
+    <h3>Seven patterns, confirmed across all six review passes</h3>
+    <div class="sub2">each appeared independently in at least 3 of 6 batches</div>
+    <ul class="patterns">
+      <li><span class="p">P1</span><b>Platform-side state gets stuck, and there is no self-service recovery.</b> Projects stuck pausing for days, restores reporting "no backups found", stuck upgrades, resizes offline for 24h, ghost projects. Every one ends the same way: open a ticket and wait.</li>
+      <li><span class="p">P2</span><b>Support response lags, and the status page disagrees with reality.</b> Pro customers report production down for hours to weeks while the status page reads "All Systems Operational". Users learn which ticket keywords get a faster response.</li>
+      <li><span class="p">P3</span><b>The dashboard fails exactly when the project is degraded.</b> Restarts fail, the network-bans page won't load, key rotation deadlocks — the control plane is unusable at the moment it's needed most.</li>
+      <li><span class="p">P4</span><b>*.supabase.co is unreachable from specific networks.</b> A Brazil ISP block, Mullvad VPN timeouts, Vercel sin1 DNS failures — all misattributed to project outages.</li>
+      <li><span class="p">P5</span><b>Key rotation has a security gap.</b> Revoking the HS256 signing secret still honours the legacy <span class="mono">apikey</span> path for 12+ hours; a revoked secret still authorizes.</li>
+      <li><span class="p">P6</span><b>Billing and ban lifecycle is opaque.</b> Silent bans, no published grace period, and the Pro upgrade doesn't auto-apply the included micro compute.</li>
+      <li><span class="p">P7</span><b>Resource limits are hit without warning.</b> Disk full (pg_wal), row limits, pool saturation — no early warning, experienced as "my project died".</li>
+    </ul>
+  </div>
+</section>
+
+<section id="lenses">
+  <div class="sec-head">
+    <p class="eyebrow">07 · Doc work</p>
+    <h2>Three kinds of doc work: thin docs, missing education, missing runbooks.</h2>
+    <p>Three distinct gap populations across the full corpus. Each needs a different artifact.</p>
+  </div>
+  <div class="lenses">
+    <div class="lens">
+      <div class="tag">Lens A</div>
+      <h3>Thin docs</h3>
+      <div class="n">~930 <small>threads</small></div>
+      <p>Threads that cite the docs and still can't proceed. The docs exist but don't answer the question.</p>
+      <ul>
+        <li><b>Auth</b> <span class="mono">— 361 threads</span></li>
+        <li><b>DB full-text search</b> <span class="mono">— 111</span></li>
+        <li><b>Migrations</b> <span class="mono">— 62</span></li>
+        <li><b>Edge Functions CORS</b> <span class="mono">— 36</span></li>
+        <li><b>Storage upload</b> <span class="mono">— 28</span></li>
+      </ul>
+    </div>
+    <div class="lens">
+      <div class="tag">Lens B</div>
+      <h3>Education</h3>
+      <div class="n">~894 <small>threads</small></div>
+      <p>Conceptual how-to and best-practice questions. Better suited to guides and videos than reference docs.</p>
+      <ul>
+        <li><b>Stripe + Supabase</b> data modelling</li>
+        <li><b>Realtime presence</b> patterns</li>
+        <li><b>Postgres-for-Firebase</b> migration</li>
+      </ul>
+    </div>
+    <div class="lens">
+      <div class="tag">Lens C</div>
+      <h3>Incident runbooks</h3>
+      <div class="n">~661 <small>threads</small></div>
+      <p>Users are inside an incident and don't know what to do. These need runbooks: what to check when the platform is sick.</p>
+      <ul>
+        <li><b>Outage/Status</b> — the whole area</li>
+        <li><b>CLI DB connection</b> — pooler vs direct, 36 threads</li>
+        <li><b>Self-hosted Docker</b> recovery</li>
+        <li><b>TypeGen</b> null-typing</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section id="fixes">
+  <div class="sec-head">
+    <p class="eyebrow">08 · Fixes</p>
+    <h2>Self-service recovery is the highest-leverage fix — but answer capacity is the cheapest.</h2>
+    <p>Ranked by impact and frequency across the 96 reviewed threads and the forum-wide reply data. The top three
+    address most of the unresolved bug and outage threads; #4 addresses the concentration risk under an answer
+    layer that is one volunteer deep.</p>
+  </div>
+  <div class="tbl-wrap">
+    <table>
+      <thead>
+        <tr><th>#</th><th>Fix</th><th>Pattern</th><th>Effort</th><th>Impact</th></tr>
+      </thead>
+      <tbody id="fix-body"></tbody>
+    </table>
+  </div>
+</section>
+
+<footer>
+  <h3>Method</h3>
+  <p>All 41,392 threads and 270,020 replies were pulled from the Supabase community Discord (2022-08-11 →
+  2026-08-08). Frustration is measured from the text itself: sentiment, repeated failed attempts, doc-blame, and
+  how-to/confusion density — not response time, which measures responsiveness rather than difficulty. Trend
+  compares the last six months with the prior six, adjusted for the forum-wide decline (0.82). The triage read up
+  to 6 replies × 500 characters in each of 96 high-frustration threads from the last 12 months. No-reply rates
+  come from Discord's own <span class="mono">message_count</span> on each thread (which excludes the opening
+  post), not from our fetched replies — the fetch covers 60% of the corpus, and treating the un-fetched
+  remainder as unanswered is what produced the retracted 53% figure. Responder concentration is computed from
+  the 270,020 fetched replies, whose authorship is unaffected by that coverage gap. Every headline figure was independently re-derived by adversarial fact-check
+  agents (see <a href="../findings/fact-check.md">fact-check.md</a>); per-feature levels inherit a noisy keyword
+  classifier (~50–80% precision by area), so treat single-area absolutes as approximate and trends as the
+  reliable signal.</p>
+  <p class="mono">Full detail: <a href="../findings/findings.md">findings.md</a> · <a href="../findings/triage.md">triage.md</a> · charts in analysis/findings/charts/</p>
+</footer>
+
+</div>
+
+<script>
+/* ============ data ============ */
+const TREND = [
+  {l:"Billing/Quotas",  v:1.74, c:1, t:"1,336 threads · frustration −0.01 · docs blamed in 32%"},
+  {l:"Network/DNS",     v:1.63, c:1, t:"637 threads · frustration 0.02 · docs blamed in 28%"},
+  {l:"Outage/Status",   v:1.58, c:1, t:"2,645 threads · frustration 0.26 · docs blamed in 21%"},
+  {l:"Dashboard/Access",v:1.15, c:1, t:"1,051 threads · frustration −0.04 · a smaller fourth riser"},
+  {l:"MCP",             v:0.94, c:0, t:"90 threads · frustration −0.14"},
+  {l:"Migrations/Branching",v:0.93, c:0, t:"2,257 threads · frustration 0.05"},
+  {l:"Other/Unmatched", v:0.93, c:0, t:"7,386 threads"},
+  {l:"Auth/JWT/OAuth",  v:0.90, c:0, t:"12,848 threads · frustration 0.76 · docs blamed in 42%"},
+  {l:"Storage",         v:0.88, c:0, t:"1,875 threads · frustration 0.28"},
+  {l:"Realtime",        v:0.81, c:0, t:"1,322 threads · frustration 0.22"},
+  {l:"Integrations",    v:0.74, c:0, t:"981 threads · frustration −0.38"},
+  {l:"RLS/Permissions", v:0.72, c:0, t:"2,332 threads · frustration −0.03"},
+  {l:"Database/Connectivity",v:0.70, c:0, t:"3,274 threads · frustration −0.16"},
+  {l:"Edge Functions",  v:0.54, c:0, t:"2,000 threads · frustration 0.51 · docs blamed in 41%"},
+  {l:"Self-Hosting",    v:0.41, c:0, t:"451 threads · frustration −0.40"},
+  {l:"AI/Vectors",      v:0.36, c:0, t:"256 threads · frustration −0.33"},
+  {l:"CLI/Tooling",     v:0.28, c:0, t:"538 threads · frustration −0.06"},
+  {l:"TypeGen",         v:0.15, c:0, t:"113 threads · frustration −0.45"},
+];
+const OUTAGE_MONTHLY = [
+  {l:"2025-02", v:5, c:0}, {l:"2025-03", v:13, c:0}, {l:"2025-04", v:8, c:0},
+  {l:"2025-05", v:12, c:0}, {l:"2025-06", v:6, c:0}, {l:"2025-07", v:15, c:0},
+  {l:"2025-08", v:76, c:"var(--warning)", t:"Aug 2025 — the regime change: 76 vs ~15/mo before"},
+  {l:"2025-09", v:101, c:"var(--warning)"}, {l:"2025-10", v:105, c:"var(--warning)"},
+  {l:"2025-11", v:74, c:"var(--warning)"}, {l:"2025-12", v:58, c:"var(--warning)"},
+  {l:"2026-01", v:91, c:"var(--warning)"}, {l:"2026-02", v:98, c:"var(--warning)"},
+  {l:"2026-03", v:109, c:"var(--warning)"}, {l:"2026-04", v:99, c:"var(--warning)"},
+  {l:"2026-05", v:87, c:"var(--warning)"}, {l:"2026-06", v:81, c:"var(--warning)"},
+  {l:"2026-07", v:104, c:"var(--warning)"},
+  {l:"2026-08 (partial)", v:12, c:0, t:"month in progress"},
+];
+// Recomputed 2026-08-10 from Discord's thread message_count (see the correction
+// note in section 02); the earlier values came from the backfill-limited
+// responder_count field. Ranking is unchanged, levels are ~4-5x lower.
+const NOREPLY_TAG = [
+  {l:"TypeGen",        v:26.5, c:0, t:"26.5% of 113 threads got no reply — smallest slice, widest error bar"},
+  {l:"Self-Hosting",   v:23.3, c:0},
+  {l:"AI/Vectors",     v:21.9, c:0},
+  {l:"Integrations",   v:18.6, c:0},
+  {l:"MCP",            v:17.8, c:0},
+  {l:"CLI/Tooling",    v:17.5, c:0},
+  {l:"Edge Functions", v:16.7, c:0},
+  {l:"Migrations/Branching", v:14.6, c:0},
+  {l:"Realtime",       v:13.2, c:0},
+  {l:"Auth/JWT/OAuth", v:11.6, c:0},
+  {l:"Storage",        v:11.6, c:0},
+  {l:"Database/Connectivity", v:11.6, c:0},
+  {l:"Network/DNS",    v:11.3, c:1, t:"rising area — at the forum average"},
+  {l:"Dashboard/Access", v:10.2, c:0},
+  {l:"Outage/Status",  v:7.7, c:1, t:"rising area — answered, but triage shows answers rarely resolve"},
+  {l:"RLS/Permissions", v:6.7, c:0},
+  {l:"Billing/Quotas", v:3.9, c:1, t:"rising area — the most-answered part of the forum"},
+];
+const NOREPLY_Q = [
+  {l:"2023 Q3", v:14.0, c:0}, {l:"2023 Q4", v:15.9, c:0},
+  {l:"2024 Q1", v:16.0, c:0}, {l:"2024 Q2", v:17.8, c:0, t:"17.8% — the worst quarter on record"},
+  {l:"2024 Q3", v:13.1, c:0}, {l:"2024 Q4", v:12.4, c:0},
+  {l:"2025 Q1", v:9.2, c:0}, {l:"2025 Q2", v:9.6, c:0}, {l:"2025 Q3", v:7.7, c:0}, {l:"2025 Q4", v:4.5, c:0},
+  {l:"2026 Q1", v:4.0, c:0},
+  {l:"2026 Q2", v:2.5, c:1, t:"2.5% — best quarter in the corpus"},
+];
+const TERMS = [
+  {l:"restricted", v:5.98}, {l:"ticket su", v:5.73}, {l:"locked", v:5.01},
+  {l:"billing", v:4.70}, {l:"support ticket", v:4.58}, {l:"banned", v:4.33},
+  {l:"project ref", v:4.31}, {l:"healthy", v:4.19}, {l:"resume", v:4.17},
+  {l:"unhealthy", v:3.97}, {l:"ticket", v:3.90}, {l:"pausing state", v:3.74},
+  {l:"github account", v:3.67}, {l:"2fa", v:3.64}, {l:"mfa", v:3.63},
+  {l:"production project", v:3.49}, {l:"restriction", v:3.48}, {l:"billing cycle", v:3.39},
+  {l:"522", v:3.29}, {l:"egress", v:3.14},
+];
+const CAUSE = [
+  {l:"bug", v:37, c:"var(--destructive)", t:"37 threads · 39% — stuck state transitions, post-upgrade breakage"},
+  {l:"outage", v:26, c:"var(--warning)", t:"26 threads · 27% — platform capacity, region reachability"},
+  {l:"user misconfig", v:12, c:0, t:"12 threads · 13% — pooler-vs-direct, ISP/VPN; mostly self-resolves"},
+  {l:"quota / limit", v:8, c:0, t:"8 threads · 8% — disk full, row limits, pool exhaustion"},
+  {l:"billing policy", v:6, c:0, t:"6 threads · 6% — silent bans, no grace docs"},
+  {l:"doc gap", v:6, c:0, t:"6 threads · 6% — Prisma-direct, Windows IPv6, Docker migration"},
+  {l:"other", v:2, c:0, t:"2 threads · 2%"},
+];
+const RES = [
+  {l:"Billing/Quotas 1", v:19, c:0, t:"3 of 16 resolved"},
+  {l:"Billing/Quotas 2", v:19, c:0, t:"3 of 16 resolved"},
+  {l:"Outage/Status 1", v:12.5, c:0, t:"2 of 16 resolved"},
+  {l:"Outage/Status 2", v:31, c:0, t:"5 of 16 resolved"},
+  {l:"Network/DNS 1", v:19, c:0, t:"3 of 16 resolved"},
+  {l:"Network/DNS 2", v:25, c:0, t:"4 of 16 resolved"},
+];
+const MATRIX = [
+  ["Auth/JWT/OAuth",12848,0.90,"flat",0.76,42.3,2.9,29.9,32.3],
+  ["Storage",1875,0.88,"flat",0.28,41.4,2.2,25.7,27.1],
+  ["Realtime",1322,0.81,"flat",0.22,42.3,3.0,25.0,23.1],
+  ["Edge Functions",2000,0.54,"flat",0.51,41.4,2.6,30.0,29.8],
+  ["Migrations/Branching",2257,0.93,"flat",0.05,39.0,2.5,31.0,30.7],
+  ["Billing/Quotas",1336,1.74,"rise",-0.01,32.1,6.3,18.6,17.1],
+  ["Outage/Status",2645,1.58,"rise",0.26,20.5,5.9,46.9,52.6],
+  ["Network/DNS",637,1.63,"rise",0.02,27.5,5.8,35.3,38.5],
+  ["Dashboard/Access",1051,1.15,"rise",-0.04,33.3,5.2,28.7,25.3],
+  ["Other/Unmatched",7386,0.93,"flat",-0.12,37.1,2.4,24.0,19.6],
+  ["RLS/Permissions",2332,0.72,"flat",-0.03,35.0,3.0,31.1,35.8],
+  ["MCP",90,0.94,"flat",-0.14,32.2,2.2,42.2,41.1],
+  ["Database/Connectivity",3274,0.70,"flat",-0.16,38.7,2.2,27.2,28.2],
+  ["Integrations",981,0.74,"flat",-0.38,40.9,1.9,25.8,25.8],
+  ["CLI/Tooling",538,0.28,"flat",-0.06,40.1,2.8,31.2,30.1],
+  ["Self-Hosting",451,0.41,"flat",-0.40,37.9,1.8,25.5,22.8],
+  ["AI/Vectors",256,0.36,"flat",-0.33,34.8,4.3,25.0,37.1],
+  ["TypeGen",113,0.15,"flat",-0.45,37.2,1.8,29.2,31.0],
+];
+const DRILL = [
+  {f:"Billing/Quotas", c:"var(--brand)", rows:[
+    [667,0.13,0.04,0.27,"plan, pro, free, upgrade, limit, tier"],
+    [220,0.22,0.11,0.24,"project, stuck, pausing, restore, paused"],
+    [97,0.10,0.24,0.19,"help, need help, appreciated, thanks"],
+    [59,0.24,0.07,0.24,"account, login, access, github, support"],
+    [32,0.38,0.03,0.25,"email, link, confirmation, magic link"],
+    [29,0.41,0.07,0.21,"query, sql editor, select, run"],
+  ]},
+  {f:"Outage/Status", c:"var(--brand)", rows:[
+    [262,0.66,0.07,0.08,"error, connection, database, connect, pooler"],
+    [198,0.27,0.09,0.14,"plan, pro, free, upgrade, limit, tier"],
+    [170,0.32,0.18,0.08,"project, stuck, pausing, restore, paused"],
+    [164,0.71,0.04,0.14,"json, type, import, deno, headers"],
+    [144,0.50,0.03,0.16,"edge, functions, deno, deploy, webhook"],
+    [143,0.59,0.03,0.16,"storage, bucket, upload, file, image"],
+  ]},
+  {f:"Network/DNS", c:"var(--brand)", rows:[
+    [90,0.62,0.08,0.12,"error, connection, database, connect, pooler"],
+    [72,0.32,0.17,0.11,"project, stuck, pausing, restore, paused"],
+    [57,0.37,0.02,0.33,"storage, bucket, upload, file, image"],
+    [51,0.53,0.02,0.12,"json, type, import, deno, headers"],
+    [46,0.15,0.13,0.24,"plan, pro, free, upgrade, limit, tier"],
+    [41,0.37,0.05,0.32,"edge, functions, deno, deploy, webhook"],
+  ]},
+];
+const FIXES = [
+  ["1","Self-service force-restart, cancel, and rollback for stuck lifecycle operations, with hard timeouts and post-op health checks (PostgREST, not just the database)","P1","M","Huge"],
+  ["2","Support auto-escalation and a published SLA for production-down paid plans, backed by a real stuck-project queue","P2","M","Huge"],
+  ["3","An honest status page, per region and per project","P2","S","High"],
+  ["4","Forum answer capacity: a staff rotation or AI first-responder for threads still unanswered after 24h — coverage is good today (14% all-time, 4% this year) but one volunteer writes 27% of all answers and no staff floor exists underneath","response","M","High"],
+  ["5","A degraded-mode control plane: dashboard and recovery levers stay operable while the project is sick","P3","M","High"],
+  ["6","Revoke the legacy apikey path at key-rotation time, and make rotation completable from the CLI","P5","S","High · security"],
+  ["7","A “can't reach *.supabase.co” playbook with a custom-domain workaround, so network paths stop being misread as outages","P4","S","Med"],
+  ["8","Billing and ban lifecycle: ban notification emails with an appeal path, a published grace period, and auto-applied Pro micro compute","P6","S–M","Med"],
+  ["9","Resource exhaustion: early warning, auto-expand, and alerts that name the resource","P7","M","Med"],
+  ["10","Edge Functions limits observability: worker-boot errors (~50 threads) and the 256MB memory ceiling (~30) are discovered by crashing into them — publish the limits playbook (streaming patterns, workloads that don't fit) and show per-invocation memory in logs; there is no 10s limit","EF limits","S","Med"],
+  ["11","Doc-gap bundle: Prisma direct vs pooler, Windows IPv6, self-hosted Docker recovery, unreachable SMTP, Storage 400, pg_net DNS","doc gap","S","Low–Med"],
+];
+
+/* ============ render ============ */
+function bars(el, items, max, ref, fmt){
+  const refp = ref ? (ref/max*100).toFixed(1) : null;
+  el.style.setProperty("--refp", refp ? refp+"%" : "0%");
+  el.innerHTML = items.map(it=>{
+    const w = Math.max(1.5, it.v/max*100).toFixed(1);
+    const cls = (it.c===0||it.c===undefined) ? "bar-fill gray" : "bar-fill";
+    const col = (it.c===1) ? "" : (it.c===0||it.c===undefined) ? "" : `background:${it.c}`;
+    return `<div class="bar-row" tabindex="0" data-tip="${it.t||it.l}">
+      <span class="bar-label">${it.l}</span>
+      <span class="bar-track${ref?"":" no-ref"}"><span class="${cls}" style="width:${w}%;${col}"></span></span>
+      <span class="bar-val">${fmt(it.v)}</span>
+    </div>`;
+  }).join("");
+}
+bars(document.getElementById("trend-bars"), TREND, 1.8, 1.0, v=>v.toFixed(2));
+bars(document.getElementById("outage-bars"), OUTAGE_MONTHLY, 109, null, v=>v+"");
+bars(document.getElementById("noreply-bars"), NOREPLY_TAG, 30, 11.6, v=>v+"%");
+bars(document.getElementById("noreply-q-bars"), NOREPLY_Q, 20, 11.6, v=>v+"%");
+bars(document.getElementById("terms-bars"), TERMS, 6.2, null, v=>v.toFixed(2));
+bars(document.getElementById("cause-bars"), CAUSE, 40, null, v=>v+"");
+bars(document.getElementById("res-bars"), RES, 35, 21, v=>v+"%");
+
+/* matrix table */
+document.getElementById("matrix-body").innerHTML = MATRIX.map(r=>{
+  const rise = r[3]==="rise";
+  const pill = rise ? `<span class="pill rise">rising</span>` : `<span class="pill">flat</span>`;
+  return `<tr class="${rise?"rise":""}">
+    <td class="feat">${r[0]}</td>
+    <td class="num">${r[1].toLocaleString()}</td>
+    <td class="num">${r[2].toFixed(2)}</td>
+    <td>${pill}</td>
+    <td class="num">${r[4].toFixed(2)}</td>
+    <td class="num">${r[5].toFixed(1)}</td>
+    <td class="num">${r[6].toFixed(1)}</td>
+    <td class="num">${r[7].toFixed(1)}</td>
+    <td class="num">${r[8].toFixed(1)}</td>
+  </tr>`;
+}).join("");
+
+/* drill table */
+document.getElementById("drill-body").innerHTML = DRILL.map(g=>{
+  const head = `<tr class="grp"><td colspan="6"><span class="sw" style="background:${g.c}"></span>${g.f}</td></tr>`;
+  const rows = g.rows.map(r=>`<tr>
+    <td></td><td class="num">${r[0]}</td><td class="num">${r[1].toFixed(2)}</td>
+    <td class="num">${r[2].toFixed(2)}</td><td class="num">${r[3].toFixed(2)}</td>
+    <td class="terms">${r[4]}</td>
+  </tr>`).join("");
+  return head+rows;
+}).join("");
+
+/* fix table */
+document.getElementById("fix-body").innerHTML = FIXES.map(r=>`<tr>
+  <td class="num" style="color:var(--fg-lighter)">${r[0]}</td>
+  <td style="text-align:left; white-space:normal; max-width:520px; color:var(--fg-light)">${r[1]}</td>
+  <td class="num">${r[2]}</td>
+  <td class="num">${r[3]}</td>
+  <td class="num" style="color:${r[4].startsWith("Huge")?"var(--brand)":"var(--fg-light)"}">${r[4]}</td>
+</tr>`).join("");
+
+/* ============ tooltip ============ */
+const tip = document.getElementById("tip");
+function show(e, txt){
+  tip.textContent = txt; tip.classList.add("show");
+  move(e);
+}
+function move(e){
+  const pad = 14;
+  let x = e.clientX + pad, y = e.clientY + pad;
+  const r = tip.getBoundingClientRect();
+  if (x + r.width > innerWidth - 8) x = e.clientX - r.width - pad;
+  if (y + r.height > innerHeight - 8) y = e.clientY - r.height - pad;
+  tip.style.left = x+"px"; tip.style.top = y+"px";
+}
+function hide(){ tip.classList.remove("show"); }
+document.querySelectorAll("[data-tip]").forEach(el=>{
+  el.addEventListener("mouseenter", e=>show(e, el.dataset.tip));
+  el.addEventListener("mousemove", move);
+  el.addEventListener("mouseleave", hide);
+  el.addEventListener("focus", e=>show(e, el.dataset.tip));
+  el.addEventListener("blur", hide);
+});
+
+/* scrollspy */
+const links = [...document.querySelectorAll("nav a")];
+const secs = links.map(a=>document.querySelector(a.getAttribute("href")));
+const spy = new IntersectionObserver(es=>{
+  es.forEach(en=>{
+    if (en.isIntersecting){
+      links.forEach(a=>a.classList.toggle("on", a.getAttribute("href")==="#"+en.target.id));
+    }
+  });
+},{rootMargin:"-40% 0px -55% 0px"});
+secs.forEach(s=>spy.observe(s));
+</script>
+</body>
+</html>

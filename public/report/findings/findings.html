@@ -1,0 +1,909 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Findings — Community Friction Points</title>
+<link rel="stylesheet" href="/report/assets/brand.css">
+<link rel="stylesheet" href="/report/assets/doc.css">
+</head>
+<body>
+
+<div class="brandbar">
+  <div class="wrap">
+    <a class="brand" href="/report/">
+      <span class="brand-mark"><img src="/supabase-logo.svg" alt="" width="20" height="20"></span>
+      <span class="brand-txt">
+        <span class="brand-name">Community Friction Points</span>
+        <span class="brand-sub">Supabase community Discord · 41,392 threads · Aug 2022 – Aug 2026</span>
+      </span>
+    </a>
+    <span class="spacer"></span>
+    <nav class="brand-links" aria-label="Site">
+      <a href="/" class="home">Dashboard</a>
+      <span class="sep"></span>
+      <a href="/report/">Report</a>
+      <a href="/report/findings/findings.html" class="on">Findings</a>
+      <a href="/report/findings/triage.html">Triage</a>
+    </nav>
+  </div>
+</div>
+
+<nav>
+  <div class="wrap">
+    <a href="/report/findings/findings.html" class="on">Findings</a>
+    <a href="/report/findings/triage.html">Reply triage</a>
+    <a href="/report/findings/edge-functions-deep-dive.html">Edge Functions</a>
+    <a href="/report/findings/fact-check.html">Fact-check</a>
+    <span class="divider"></span>
+    <a href="/report/findings/findings.md">source .md</a>
+  </div>
+</nav>
+
+<div class="wrap">
+  <div class="doc">
+    <article>
+      <div class="doc-head">
+        <p class="eyebrow">findings.md · supporting detail</p>
+        <h1>Discord forum text-mining — findings</h1>
+        <p class="lede">Data: 2022-08-11 → 2026-08-08 (41,392 issues). Overall recent/prior ratio = <strong>0.82</strong> (corpus is shrinking), so <em>trending</em> = detrended ratio &gt; 1 (bucking the decline).</p>
+      </div>
+      <p>Friction is text-derived (affect + struggle + doc-blame + how-to/confusion density + NMF-topic concentration) — not response-time / resolution_status, which measure responsiveness, not friction.</p>
+<p>Note on <strong>resolution</strong>: the forum&#39;s &quot;resolved&quot; state is an <strong>optional self-assessment by the asker and is not enforced</strong> (and the dashboard&#39;s <code>resolution_status</code> is a keyword heuristic on top of that). Solved threads routinely go unmarked, so every resolution figure in these documents is a <strong>floor</strong>; where a rate is quoted it comes from reading the reply layer, not from the marker.</p>
+<h2 id="priority-matrix-trending-friction-doc-gap">Priority matrix (trending × friction × doc-gap)</h2>
+<div class="tbl-wrap"><table>
+<thead>
+<tr>
+<th align="left">feature</th>
+<th align="right">n</th>
+<th align="right">trend_ratio</th>
+<th align="right">detrended</th>
+<th align="left">rising</th>
+<th align="right">friction</th>
+<th align="right">docgap_proxy</th>
+<th align="right">struggle_pct</th>
+<th align="right">neg_pct</th>
+<th align="right">bug_pct</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left">Auth/JWT/OAuth</td>
+<td align="right">12848</td>
+<td align="right">0.73</td>
+<td align="right">0.90</td>
+<td align="left"><span class="pill">—</span></td>
+<td align="right">0.76</td>
+<td align="right">42.30</td>
+<td align="right">2.90</td>
+<td align="right">29.90</td>
+<td align="right">32.30</td>
+</tr>
+<tr>
+<td align="left">Storage</td>
+<td align="right">1875</td>
+<td align="right">0.71</td>
+<td align="right">0.88</td>
+<td align="left"><span class="pill">—</span></td>
+<td align="right">0.28</td>
+<td align="right">41.40</td>
+<td align="right">2.20</td>
+<td align="right">25.70</td>
+<td align="right">27.10</td>
+</tr>
+<tr>
+<td align="left">Realtime</td>
+<td align="right">1322</td>
+<td align="right">0.65</td>
+<td align="right">0.81</td>
+<td align="left"><span class="pill">—</span></td>
+<td align="right">0.22</td>
+<td align="right">42.30</td>
+<td align="right">3.00</td>
+<td align="right">25.00</td>
+<td align="right">23.10</td>
+</tr>
+<tr>
+<td align="left">Edge Functions</td>
+<td align="right">2000</td>
+<td align="right">0.44</td>
+<td align="right">0.54</td>
+<td align="left"><span class="pill">—</span></td>
+<td align="right">0.51</td>
+<td align="right">41.40</td>
+<td align="right">2.60</td>
+<td align="right">30.00</td>
+<td align="right">29.80</td>
+</tr>
+<tr>
+<td align="left">Migrations/Branching</td>
+<td align="right">2257</td>
+<td align="right">0.75</td>
+<td align="right">0.93</td>
+<td align="left"><span class="pill">—</span></td>
+<td align="right">0.05</td>
+<td align="right">39.00</td>
+<td align="right">2.50</td>
+<td align="right">31.00</td>
+<td align="right">30.70</td>
+</tr>
+<tr class="rise">
+<td align="left">Billing/Quotas</td>
+<td align="right">1336</td>
+<td align="right">1.40</td>
+<td align="right">1.74</td>
+<td align="left"><span class="pill rise">rising</span></td>
+<td align="right">-0.01</td>
+<td align="right">32.10</td>
+<td align="right">6.30</td>
+<td align="right">18.60</td>
+<td align="right">17.10</td>
+</tr>
+<tr class="rise">
+<td align="left">Outage/Status</td>
+<td align="right">2645</td>
+<td align="right">1.28</td>
+<td align="right">1.58</td>
+<td align="left"><span class="pill rise">rising</span></td>
+<td align="right">0.26</td>
+<td align="right">20.50</td>
+<td align="right">5.90</td>
+<td align="right">46.90</td>
+<td align="right">52.60</td>
+</tr>
+<tr class="rise">
+<td align="left">Network/DNS</td>
+<td align="right">637</td>
+<td align="right">1.32</td>
+<td align="right">1.63</td>
+<td align="left"><span class="pill rise">rising</span></td>
+<td align="right">0.02</td>
+<td align="right">27.50</td>
+<td align="right">5.80</td>
+<td align="right">35.30</td>
+<td align="right">38.50</td>
+</tr>
+<tr class="rise">
+<td align="left">Dashboard/Access</td>
+<td align="right">1051</td>
+<td align="right">0.93</td>
+<td align="right">1.15</td>
+<td align="left"><span class="pill rise">rising</span></td>
+<td align="right">-0.04</td>
+<td align="right">33.30</td>
+<td align="right">5.20</td>
+<td align="right">28.70</td>
+<td align="right">25.30</td>
+</tr>
+<tr>
+<td align="left">Other/Unmatched</td>
+<td align="right">7386</td>
+<td align="right">0.75</td>
+<td align="right">0.93</td>
+<td align="left"><span class="pill">—</span></td>
+<td align="right">-0.12</td>
+<td align="right">37.10</td>
+<td align="right">2.40</td>
+<td align="right">24.00</td>
+<td align="right">19.60</td>
+</tr>
+<tr>
+<td align="left">RLS/Permissions</td>
+<td align="right">2332</td>
+<td align="right">0.58</td>
+<td align="right">0.72</td>
+<td align="left"><span class="pill">—</span></td>
+<td align="right">-0.03</td>
+<td align="right">35.00</td>
+<td align="right">3.00</td>
+<td align="right">31.10</td>
+<td align="right">35.80</td>
+</tr>
+<tr>
+<td align="left">MCP</td>
+<td align="right">90</td>
+<td align="right">0.76</td>
+<td align="right">0.94</td>
+<td align="left"><span class="pill">—</span></td>
+<td align="right">-0.14</td>
+<td align="right">32.20</td>
+<td align="right">2.20</td>
+<td align="right">42.20</td>
+<td align="right">41.10</td>
+</tr>
+<tr>
+<td align="left">Database/Connectivity</td>
+<td align="right">3274</td>
+<td align="right">0.56</td>
+<td align="right">0.70</td>
+<td align="left"><span class="pill">—</span></td>
+<td align="right">-0.16</td>
+<td align="right">38.70</td>
+<td align="right">2.20</td>
+<td align="right">27.20</td>
+<td align="right">28.20</td>
+</tr>
+<tr>
+<td align="left">Integrations</td>
+<td align="right">981</td>
+<td align="right">0.60</td>
+<td align="right">0.74</td>
+<td align="left"><span class="pill">—</span></td>
+<td align="right">-0.38</td>
+<td align="right">40.90</td>
+<td align="right">1.90</td>
+<td align="right">25.80</td>
+<td align="right">25.80</td>
+</tr>
+<tr>
+<td align="left">CLI/Tooling</td>
+<td align="right">538</td>
+<td align="right">0.23</td>
+<td align="right">0.28</td>
+<td align="left"><span class="pill">—</span></td>
+<td align="right">-0.06</td>
+<td align="right">40.10</td>
+<td align="right">2.80</td>
+<td align="right">31.20</td>
+<td align="right">30.10</td>
+</tr>
+<tr>
+<td align="left">Self-Hosting</td>
+<td align="right">451</td>
+<td align="right">0.33</td>
+<td align="right">0.41</td>
+<td align="left"><span class="pill">—</span></td>
+<td align="right">-0.40</td>
+<td align="right">37.90</td>
+<td align="right">1.80</td>
+<td align="right">25.50</td>
+<td align="right">22.80</td>
+</tr>
+<tr>
+<td align="left">AI/Vectors</td>
+<td align="right">256</td>
+<td align="right">0.29</td>
+<td align="right">0.36</td>
+<td align="left"><span class="pill">—</span></td>
+<td align="right">-0.33</td>
+<td align="right">34.80</td>
+<td align="right">4.30</td>
+<td align="right">25.00</td>
+<td align="right">37.10</td>
+</tr>
+<tr>
+<td align="left">TypeGen</td>
+<td align="right">113</td>
+<td align="right">0.12</td>
+<td align="right">0.15</td>
+<td align="left"><span class="pill">—</span></td>
+<td align="right">-0.45</td>
+<td align="right">37.20</td>
+<td align="right">1.80</td>
+<td align="right">29.20</td>
+<td align="right">31.00</td>
+</tr>
+</tbody></table></div>
+<h2 id="rising-features-drill-down-top-nmf-topics">Rising features drill-down (top NMF topics)</h2>
+<div class="tbl-wrap"><table>
+<thead>
+<tr>
+<th align="left">feature</th>
+<th align="right">n</th>
+<th align="right">neg</th>
+<th align="right">struggle</th>
+<th align="right">docblame</th>
+<th align="right">howto</th>
+<th align="left">top_terms</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left">Billing/Quotas</td>
+<td align="right">667</td>
+<td align="right">0.13</td>
+<td align="right">0.04</td>
+<td align="right">0.03</td>
+<td align="right">0.27</td>
+<td align="left">plan, pro, free, pro plan, free plan, upgrade, limit, tier</td>
+</tr>
+<tr>
+<td align="left">Billing/Quotas</td>
+<td align="right">220</td>
+<td align="right">0.22</td>
+<td align="right">0.11</td>
+<td align="right">0.00</td>
+<td align="right">0.24</td>
+<td align="left">project, stuck, pausing, project stuck, restore, paused, dashboard, stuck pausing</td>
+</tr>
+<tr>
+<td align="left">Billing/Quotas</td>
+<td align="right">97</td>
+<td align="right">0.10</td>
+<td align="right">0.24</td>
+<td align="right">0.03</td>
+<td align="right">0.19</td>
+<td align="left">help, need, need help, appreciated, thanks, help appreciated, hi, ve</td>
+</tr>
+<tr>
+<td align="left">Billing/Quotas</td>
+<td align="right">59</td>
+<td align="right">0.24</td>
+<td align="right">0.07</td>
+<td align="right">0.00</td>
+<td align="right">0.24</td>
+<td align="left">account, login, access, github, support, github account, log, dashboard</td>
+</tr>
+<tr>
+<td align="left">Billing/Quotas</td>
+<td align="right">32</td>
+<td align="right">0.38</td>
+<td align="right">0.03</td>
+<td align="right">0.00</td>
+<td align="right">0.25</td>
+<td align="left">email, link, confirmation, magic, magic link, send, emails, signup</td>
+</tr>
+<tr>
+<td align="left">Billing/Quotas</td>
+<td align="right">29</td>
+<td align="right">0.41</td>
+<td align="right">0.07</td>
+<td align="right">0.00</td>
+<td align="right">0.21</td>
+<td align="left">query, sql, editor, sql query, sql editor, select, run, run sql</td>
+</tr>
+<tr>
+<td align="left">Billing/Quotas</td>
+<td align="right">29</td>
+<td align="right">0.45</td>
+<td align="right">0.00</td>
+<td align="right">0.07</td>
+<td align="right">0.24</td>
+<td align="left">error, connection, database, connect, postgres, failed, db, pooler</td>
+</tr>
+<tr>
+<td align="left">Billing/Quotas</td>
+<td align="right">28</td>
+<td align="right">0.18</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.39</td>
+<td align="left">table, column, tables, data, schema, columns, users table, rows</td>
+</tr>
+<tr>
+<td align="left">Billing/Quotas</td>
+<td align="right">25</td>
+<td align="right">0.20</td>
+<td align="right">0.00</td>
+<td align="right">0.08</td>
+<td align="right">0.32</td>
+<td align="left">self, hosted, self hosted, docker, hosting, self hosting, host, self host</td>
+</tr>
+<tr>
+<td align="left">Billing/Quotas</td>
+<td align="right">21</td>
+<td align="right">0.19</td>
+<td align="right">0.05</td>
+<td align="right">0.00</td>
+<td align="right">0.33</td>
+<td align="left">new, create, create new, new user, new project, creating, created, creating new</td>
+</tr>
+<tr>
+<td align="left">Billing/Quotas</td>
+<td align="right">17</td>
+<td align="right">0.35</td>
+<td align="right">0.00</td>
+<td align="right">0.06</td>
+<td align="right">0.24</td>
+<td align="left">api, key, api key, keys, service, rest, request, anon</td>
+</tr>
+<tr>
+<td align="left">Billing/Quotas</td>
+<td align="right">15</td>
+<td align="right">0.47</td>
+<td align="right">0.00</td>
+<td align="right">0.13</td>
+<td align="right">0.53</td>
+<td align="left">local, db, cli, migration, development, locally, migrations, remote</td>
+</tr>
+<tr>
+<td align="left">Billing/Quotas</td>
+<td align="right">14</td>
+<td align="right">0.14</td>
+<td align="right">0.07</td>
+<td align="right">0.14</td>
+<td align="right">0.36</td>
+<td align="left">docs, https com, com docs, com, guides, docs guides, https, guides auth</td>
+</tr>
+<tr>
+<td align="left">Billing/Quotas</td>
+<td align="right">14</td>
+<td align="right">0.21</td>
+<td align="right">0.07</td>
+<td align="right">0.00</td>
+<td align="right">0.29</td>
+<td align="left">delete, deleted, delete user, deleting, update, failed delete, delete row, remove</td>
+</tr>
+<tr>
+<td align="left">Billing/Quotas</td>
+<td align="right">12</td>
+<td align="right">0.17</td>
+<td align="right">0.00</td>
+<td align="right">0.08</td>
+<td align="right">0.50</td>
+<td align="left">id, null, key, uuid, select, user_id, text, foreign</td>
+</tr>
+<tr>
+<td align="left">Billing/Quotas</td>
+<td align="right">12</td>
+<td align="right">0.42</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.17</td>
+<td align="left">github, github com, https github, com, https, issues, discussions, com orgs</td>
+</tr>
+<tr>
+<td align="left">Billing/Quotas</td>
+<td align="right">12</td>
+<td align="right">0.50</td>
+<td align="right">0.08</td>
+<td align="right">0.00</td>
+<td align="right">0.42</td>
+<td align="left">json, type, import, deno, ts, js, headers, types</td>
+</tr>
+<tr>
+<td align="left">Network/DNS</td>
+<td align="right">90</td>
+<td align="right">0.62</td>
+<td align="right">0.08</td>
+<td align="right">0.00</td>
+<td align="right">0.12</td>
+<td align="left">error, connection, database, connect, postgres, failed, db, pooler</td>
+</tr>
+<tr>
+<td align="left">Network/DNS</td>
+<td align="right">72</td>
+<td align="right">0.32</td>
+<td align="right">0.17</td>
+<td align="right">0.03</td>
+<td align="right">0.11</td>
+<td align="left">project, stuck, pausing, project stuck, restore, paused, dashboard, stuck pausing</td>
+</tr>
+<tr>
+<td align="left">Network/DNS</td>
+<td align="right">57</td>
+<td align="right">0.37</td>
+<td align="right">0.02</td>
+<td align="right">0.07</td>
+<td align="right">0.33</td>
+<td align="left">storage, bucket, upload, file, files, image, images, buckets</td>
+</tr>
+<tr>
+<td align="left">Network/DNS</td>
+<td align="right">51</td>
+<td align="right">0.53</td>
+<td align="right">0.02</td>
+<td align="right">0.04</td>
+<td align="right">0.12</td>
+<td align="left">json, type, import, deno, ts, js, headers, types</td>
+</tr>
+<tr>
+<td align="left">Network/DNS</td>
+<td align="right">46</td>
+<td align="right">0.15</td>
+<td align="right">0.13</td>
+<td align="right">0.04</td>
+<td align="right">0.24</td>
+<td align="left">plan, pro, free, pro plan, free plan, upgrade, limit, tier</td>
+</tr>
+<tr>
+<td align="left">Network/DNS</td>
+<td align="right">41</td>
+<td align="right">0.37</td>
+<td align="right">0.05</td>
+<td align="right">0.00</td>
+<td align="right">0.32</td>
+<td align="left">edge, functions, edge function, edge functions, function, deno, deploy, webhook</td>
+</tr>
+<tr>
+<td align="left">Network/DNS</td>
+<td align="right">35</td>
+<td align="right">0.17</td>
+<td align="right">0.14</td>
+<td align="right">0.00</td>
+<td align="right">0.20</td>
+<td align="left">help, need, need help, appreciated, thanks, help appreciated, hi, ve</td>
+</tr>
+<tr>
+<td align="left">Network/DNS</td>
+<td align="right">30</td>
+<td align="right">0.23</td>
+<td align="right">0.03</td>
+<td align="right">0.03</td>
+<td align="right">0.30</td>
+<td align="left">self, hosted, self hosted, docker, hosting, self hosting, host, self host</td>
+</tr>
+<tr>
+<td align="left">Network/DNS</td>
+<td align="right">22</td>
+<td align="right">0.41</td>
+<td align="right">0.00</td>
+<td align="right">0.09</td>
+<td align="right">0.14</td>
+<td align="left">email, link, confirmation, magic, magic link, send, emails, signup</td>
+</tr>
+<tr>
+<td align="left">Network/DNS</td>
+<td align="right">20</td>
+<td align="right">0.20</td>
+<td align="right">0.00</td>
+<td align="right">0.05</td>
+<td align="right">0.20</td>
+<td align="left">new, create, create new, new user, new project, creating, created, creating new</td>
+</tr>
+<tr>
+<td align="left">Network/DNS</td>
+<td align="right">19</td>
+<td align="right">0.32</td>
+<td align="right">0.00</td>
+<td align="right">0.11</td>
+<td align="right">0.26</td>
+<td align="left">api, key, api key, keys, service, rest, request, anon</td>
+</tr>
+<tr>
+<td align="left">Network/DNS</td>
+<td align="right">18</td>
+<td align="right">0.22</td>
+<td align="right">0.00</td>
+<td align="right">0.11</td>
+<td align="right">0.11</td>
+<td align="left">github, github com, https github, com, https, issues, discussions, com orgs</td>
+</tr>
+<tr>
+<td align="left">Network/DNS</td>
+<td align="right">15</td>
+<td align="right">0.27</td>
+<td align="right">0.00</td>
+<td align="right">0.00</td>
+<td align="right">0.40</td>
+<td align="left">query, sql, editor, sql query, sql editor, select, run, run sql</td>
+</tr>
+</tbody></table></div>
+<h2 id="emerging-distinctive-terms-recent-6mo-vs-prior">Emerging distinctive terms (recent 6mo vs prior)</h2>
+<div class="chips"><span class="chip">restricted</span><span class="chip">ticket su</span><span class="chip">2026</span><span class="chip">locked</span><span class="chip">billing</span><span class="chip">su</span><span class="chip">support ticket</span><span class="chip">banned</span><span class="chip">project ref</span><span class="chip">healthy</span><span class="chip">cycle</span><span class="chip">resume</span><span class="chip">ref</span><span class="chip">unhealthy</span><span class="chip">ticket</span><span class="chip">pausing state</span><span class="chip">github account</span><span class="chip">2fa</span><span class="chip">mfa</span><span class="chip">production project</span><span class="chip">restriction</span><span class="chip">billing cycle</span><span class="chip">gb</span><span class="chip">account email</span><span class="chip">522</span><span class="chip">accidentally</span><span class="chip">business</span><span class="chip">period</span><span class="chip">ownership</span><span class="chip">force</span><span class="chip">submitted</span><span class="chip">cached egress</span><span class="chip">egress</span><span class="chip">gmail com</span><span class="chip">id su</span><span class="chip">unpause</span><span class="chip">ticket id</span><span class="chip">connection timeout</span><span class="chip">card</span><span class="chip">hi project</span></div>
+<h2 id="nmf-topics-largest">NMF topics (largest)</h2>
+<div class="tbl-wrap"><table>
+<thead>
+<tr>
+<th align="right">topic</th>
+<th align="right">size</th>
+<th align="right">trend_ratio</th>
+<th align="right">neg_pct</th>
+<th align="right">struggle_pct</th>
+<th align="right">docblame_pct</th>
+<th align="left">top_terms</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="right">24</td>
+<td align="right">2449</td>
+<td align="right">0.62</td>
+<td align="right">22.10</td>
+<td align="right">1.60</td>
+<td align="right">3.50</td>
+<td align="left">table, column, tables, data, schema, columns, users table, rows, foreign, add</td>
+</tr>
+<tr>
+<td align="right">29</td>
+<td align="right">2193</td>
+<td align="right">0.62</td>
+<td align="right">30.60</td>
+<td align="right">2.50</td>
+<td align="right">5.50</td>
+<td align="left">email, link, confirmation, magic, magic link, send, emails, signup, otp, smtp</td>
+</tr>
+<tr>
+<td align="right">28</td>
+<td align="right">1933</td>
+<td align="right">0.99</td>
+<td align="right">12.70</td>
+<td align="right">11.00</td>
+<td align="right">5.10</td>
+<td align="left">help, need, need help, appreciated, thanks, help appreciated, hi, ve, hello, advance</td>
+</tr>
+<tr>
+<td align="right">14</td>
+<td align="right">1920</td>
+<td align="right">0.60</td>
+<td align="right">58.70</td>
+<td align="right">3.80</td>
+<td align="right">2.90</td>
+<td align="left">error, connection, database, connect, postgres, failed, db, pooler, server, 5432</td>
+</tr>
+<tr>
+<td align="right">7</td>
+<td align="right">1908</td>
+<td align="right">0.54</td>
+<td align="right">27.10</td>
+<td align="right">1.80</td>
+<td align="right">5.00</td>
+<td align="left">storage, bucket, upload, file, files, image, images, buckets, storage bucket, uploading</td>
+</tr>
+<tr>
+<td align="right">22</td>
+<td align="right">1898</td>
+<td align="right">0.69</td>
+<td align="right">27.10</td>
+<td align="right">1.60</td>
+<td align="right">11.00</td>
+<td align="left">auth, server, session, nextjs, client, helpers, auth helpers, js, cookies, ssr</td>
+</tr>
+<tr>
+<td align="right">3</td>
+<td align="right">1815</td>
+<td align="right">0.46</td>
+<td align="right">26.90</td>
+<td align="right">2.30</td>
+<td align="right">5.60</td>
+<td align="left">edge, functions, edge function, edge functions, function, deno, deploy, webhook, logs, invoke</td>
+</tr>
+<tr>
+<td align="right">4</td>
+<td align="right">1703</td>
+<td align="right">0.52</td>
+<td align="right">18.70</td>
+<td align="right">1.60</td>
+<td align="right">5.50</td>
+<td align="left">user, users, auth, auth users, users table, admin, sign, user id, logged, auth user</td>
+</tr>
+<tr>
+<td align="right">26</td>
+<td align="right">1628</td>
+<td align="right">0.34</td>
+<td align="right">48.50</td>
+<td align="right">2.30</td>
+<td align="right">5.20</td>
+<td align="left">json, type, import, deno, ts, js, headers, types, env, response</td>
+</tr>
+<tr>
+<td align="right">19</td>
+<td align="right">1591</td>
+<td align="right">1.73</td>
+<td align="right">16.30</td>
+<td align="right">4.80</td>
+<td align="right">2.20</td>
+<td align="left">plan, pro, free, pro plan, free plan, upgrade, limit, tier, free tier, usage</td>
+</tr>
+<tr>
+<td align="right">1</td>
+<td align="right">1583</td>
+<td align="right">0.35</td>
+<td align="right">26.70</td>
+<td align="right">1.40</td>
+<td align="right">3.90</td>
+<td align="left">id, null, key, uuid, select, user_id, text, foreign, foreign key, primary</td>
+</tr>
+<tr>
+<td align="right">2</td>
+<td align="right">1558</td>
+<td align="right">0.41</td>
+<td align="right">55.90</td>
+<td align="right">2.40</td>
+<td align="right">5.60</td>
+<td align="left">const, data, await, error, const data, error await, console, data error, console log, log</td>
+</tr>
+<tr>
+<td align="right">6</td>
+<td align="right">1470</td>
+<td align="right">0.48</td>
+<td align="right">31.70</td>
+<td align="right">1.20</td>
+<td align="right">6.10</td>
+<td align="left">local, db, cli, migration, development, locally, migrations, remote, dev, local development</td>
+</tr>
+<tr>
+<td align="right">23</td>
+<td align="right">1430</td>
+<td align="right">2.00</td>
+<td align="right">23.10</td>
+<td align="right">7.30</td>
+<td align="right">1.70</td>
+<td align="left">account, login, access, github, support, github account, log, dashboard, email, locked</td>
+</tr>
+<tr>
+<td align="right">12</td>
+<td align="right">1337</td>
+<td align="right">0.56</td>
+<td align="right">31.00</td>
+<td align="right">2.80</td>
+<td align="right">7.00</td>
+<td align="left">google, oauth, url, provider, redirect, sign, login, auth, google oauth, app</td>
+</tr>
+<tr>
+<td align="right">16</td>
+<td align="right">1292</td>
+<td align="right">0.75</td>
+<td align="right">28.70</td>
+<td align="right">2.80</td>
+<td align="right">5.70</td>
+<td align="left">github, github com, https github, com, https, issues, discussions, com orgs, orgs discussions, orgs</td>
+</tr>
+<tr>
+<td align="right">13</td>
+<td align="right">1266</td>
+<td align="right">0.39</td>
+<td align="right">25.90</td>
+<td align="right">2.40</td>
+<td align="right">7.30</td>
+<td align="left">realtime, channel, payload, subscribe, event, changes, subscription, messages, postgres_changes, broadcast</td>
+</tr>
+<tr>
+<td align="right">9</td>
+<td align="right">1230</td>
+<td align="right">0.74</td>
+<td align="right">30.00</td>
+<td align="right">2.10</td>
+<td align="right">2.70</td>
+<td align="left">query, sql, editor, sql query, sql editor, select, run, run sql, queries, failed run</td>
+</tr>
+<tr>
+<td align="right">15</td>
+<td align="right">1191</td>
+<td align="right">0.53</td>
+<td align="right">25.40</td>
+<td align="right">2.90</td>
+<td align="right">7.30</td>
+<td align="left">api, key, api key, keys, service, rest, request, anon, api keys, service role</td>
+</tr>
+<tr>
+<td align="right">10</td>
+<td align="right">1175</td>
+<td align="right">0.59</td>
+<td align="right">27.50</td>
+<td align="right">2.10</td>
+<td align="right">8.30</td>
+<td align="left">self, hosted, self hosted, docker, hosting, self hosting, host, self host, instance, version</td>
+</tr>
+<tr>
+<td align="right">8</td>
+<td align="right">1153</td>
+<td align="right">1.41</td>
+<td align="right">28.00</td>
+<td align="right">9.40</td>
+<td align="right">1.50</td>
+<td align="left">project, stuck, pausing, project stuck, restore, paused, dashboard, stuck pausing, ticket, support</td>
+</tr>
+<tr>
+<td align="right">11</td>
+<td align="right">1091</td>
+<td align="right">0.43</td>
+<td align="right">22.00</td>
+<td align="right">2.10</td>
+<td align="right">4.00</td>
+<td align="left">rls, policy, rls policy, authenticated, uid, policies, auth uid, role, create policy, select</td>
+</tr>
+<tr>
+<td align="right">20</td>
+<td align="right">1037</td>
+<td align="right">0.48</td>
+<td align="right">27.80</td>
+<td align="right">1.90</td>
+<td align="right">6.20</td>
+<td align="left">token, access, jwt, refresh, access token, refresh token, tokens, session, invalid, expired</td>
+</tr>
+<tr>
+<td align="right">27</td>
+<td align="right">1035</td>
+<td align="right">0.46</td>
+<td align="right">26.50</td>
+<td align="right">2.50</td>
+<td align="right">4.70</td>
+<td align="left">new, create, create new, new user, new project, creating, created, creating new, failed create, create user</td>
+</tr>
+<tr>
+<td align="right">17</td>
+<td align="right">1029</td>
+<td align="right">0.33</td>
+<td align="right">22.80</td>
+<td align="right">1.60</td>
+<td align="right">4.30</td>
+<td align="left">function, trigger, public, end, insert, begin, language, returns, plpgsql, return</td>
+</tr>
+<tr>
+<td align="right">5</td>
+<td align="right">921</td>
+<td align="right">0.27</td>
+<td align="right">29.50</td>
+<td align="right">1.50</td>
+<td align="right">27.50</td>
+<td align="left">docs, https com, com docs, com, guides, docs guides, https, guides auth, guide, reference</td>
+</tr>
+<tr>
+<td align="right">25</td>
+<td align="right">784</td>
+<td align="right">0.89</td>
+<td align="right">30.00</td>
+<td align="right">2.80</td>
+<td align="right">4.60</td>
+<td align="left">delete, deleted, delete user, deleting, update, failed delete, delete row, remove, row, deletion</td>
+</tr>
+<tr>
+<td align="right">21</td>
+<td align="right">756</td>
+<td align="right">0.88</td>
+<td align="right">28.80</td>
+<td align="right">3.00</td>
+<td align="right">6.70</td>
+<td align="left">password, reset, reset password, password reset, forgot, link, email, forgot password, reset email, email password</td>
+</tr>
+<tr>
+<td align="right">18</td>
+<td align="right">678</td>
+<td align="right">0.79</td>
+<td align="right">35.70</td>
+<td align="right">3.50</td>
+<td align="right">5.80</td>
+<td align="left">row, level, level security, row level, security, new row, security policy, row violates, violates, violates row</td>
+</tr>
+<tr>
+<td align="right">0</td>
+<td align="right">338</td>
+<td align="right">0.71</td>
+<td align="right">8.00</td>
+<td align="right">0.90</td>
+<td align="right">2.70</td>
+<td align="left">way, like, want, know, database, just, best, possible, data, app</td>
+</tr>
+</tbody></table></div>
+<h2 id="reply-layer-triage-rising-feature-trio-billing-quotas-outage-status-network-dns">Reply-layer triage — rising-feature trio (Billing/Quotas, Outage/Status, Network/DNS)</h2>
+<p>The drill-down above is text-derived surfacing. A reply-layer triage of <strong>96 high-friction threads</strong> across the three rising features confirms the trio is rising because of <strong>incidents, not doc gaps</strong>: ~66% of threads are <code>bug</code>+<code>outage</code>, only ~6% are pure doc-gap, and the reply-resolution rate is <strong>~21%</strong> — with virtually all resolved threads being user-misconfig that self-resolves, and <strong>no bug/outage thread resolved by replies</strong> (recovery = wait days for a support agent).</p>
+<p>The single highest-leverage fix class — converged across all 6 triage batches — is <strong>self-service recovery for stuck platform-side state transitions</strong> (PAUSING/upgrade/resize/restore-stuck, ghost-projects, NXDOMAIN), followed by <strong>support SLA + auto-escalation for prod-down paid plans</strong> and <strong>honest per-region/per-project status</strong> (no more &quot;All Systems Operational&quot; while paying customers&#39; DBs are dead). A security gap — revoking the HS256 signing secret still honors the legacy <code>apikey</code> path for ~12h+ — also surfaced.</p>
+<p>Full synthesis (aggregate root-cause counts, per-batch resolution rates, 7 cross-batch dominant patterns, prioritized fix list, dashboard implications): <strong><a href="/report/findings/triage.html"><code>triage.md</code></a></strong>.</p>
+<h2 id="response-layer-findings-reply-metadata-verified-2026-08-08">Response-layer findings (reply metadata, verified 2026-08-08)</h2>
+<p>The thread-text analysis above never used the reply/coverage metadata (<code>responder_count</code>, <code>response_time_ms</code>, reply authors). These change the framing from &quot;what&#39;s rising&quot; to &quot;who answers&quot;:</p>
+<ul>
+<li><p><strong>~14% of threads never receive a reply from anyone else — not 53%.</strong> <em>(Corrected 2026-08-10; supersedes the <code>responder_count</code>-based figure published earlier, see the retraction below.)</em> Discord&#39;s own <code>message_count</code> (thread metadata, excludes the opening post) is zero on <strong>11.6%</strong> of threads; among threads whose replies were fetched, a further <strong>2.31%</strong> have replies only from the asker, giving ~13.6% with no external answer. By product area (keyword taxonomy — forum tag IDs have drifted from their original labels, verified 2026-08-08 by sampling titles per tag, so tag-sliced stats are unreliable): <strong>TypeGen 26.5%, Self-Hosting 23.3%, AI/Vectors 21.9%, Integrations 18.6%, CLI/Tooling 17.5%</strong> are worst — the specialist areas where volunteer generalists can&#39;t help. The rising trio is the <em>best</em>-served (Billing/Quotas 3.9%, Outage/Status 7.7%, Network/DNS 11.3%) — they get acknowledged, but triage shows acknowledgment ≠ resolution. <strong>The ranking is unchanged from the retracted version; only the levels were wrong.</strong> Answerability still tracks how generalist the area is, not volume. Edge Functions slice deep dive: <a href="/report/findings/edge-functions-deep-dive.html"><code>edge-functions-deep-dive.md</code></a>.</p>
+<p><strong>Retraction — the 53% figure.</strong> It came from <code>responder_count</code>, a column our own reply backfill populates. The backfill has only ever reached ~60% of the corpus, so <strong>17,231 threads (41.6%) have messages but no fetched replies</strong> and were counted as unanswered; for 2022–2023 the field reads 97–99% no-reply, which is plainly coverage, not silence. On the 27,622 threads where both exist, <code>message_count</code> equals the fetched reply count on <strong>98.5%</strong> (r = 0.90, identical medians of 5), so it is the sound basis. Use <code>message_count</code>, never <code>responder_count</code>, for coverage questions.</p>
+</li>
+<li><p class="callout"><strong>Coverage is improving, and the improvement is real:</strong> quarterly no-reply fell from a 17.8% peak (2024 Q2) to <strong>4.5% / 4.0% / 2.5%</strong> in 2025 Q4 → 2026 Q2. Because this is thread metadata rather than backfilled replies, there is no ~30-day pipeline lag to correct for, and the earlier &quot;Q3-2026 at 70.5%&quot; artefact disappears entirely (2026 Q3-to-date reads 2.9%).</p>
+</li>
+<li><p class="callout"><strong>Volume, though, is falling:</strong> total messages per quarter peaked at 23,723 (2023 Q3) and is down to 12,053 (2026 Q2) — but messages <em>per thread</em> rose from ~6.8 (2022–2024) to 8.5–9.4 (2025–2026). Last four quarters vs the four before: threads −19.5%, messages −13.3%, messages per thread <strong>+7.8%</strong>. Fewer questions, deeper conversations on each.</p>
+</li>
+<li><p class="callout"><strong>Answer concentration is one volunteer deep:</strong> <code>garyaustin</code> authored <strong>27.0% of all 270,020 replies</strong> (73,069), steady at 24–28% every quarter for two years; the top 12 repliers hold ≈41%. <strong>None of the top 12 identify as Supabase staff</strong> — the top two explicitly describe themselves as volunteer moderators (&quot;this is a user helping user forum&quot;). No bots in the top 20. The corpus decline is therefore not a responder exodus — response capacity was never diversified in the first place.</p>
+</li>
+<li><p class="callout"><strong>Repeat askers:</strong> 17.4% of thread owners (3+ threads) produce 54.1% of all threads (max 110 by one user). Repeat concentration is highest in Edge Functions (65.2%) and Auth (61.7%) — chronic config pain, not lifecycle ops.</p>
+</li>
+<li><p><strong>Outage/Status tag usage regime-changed in Aug 2025</strong> (5–25/mo → 58–109/mo), but the tag only existed from 2024 and the keyword-classified outage volume rose only ~1.3–1.5× over the same window — the step is a <strong>moderation-behaviour signal</strong>, not a reliability one. (An earlier version of this section claimed a real 7–10× regime change; corrected after independent fact-check — see <a href="/report/findings/fact-check.html"><code>fact-check.md</code></a>.)</p>
+</li>
+</ul>
+<p><strong>All headline claims in this file were independently re-derived by 6 adversarial fact-check agents on 2026-08-08.</strong> Verdicts, corrected magnitudes (detrended trio = 1.74/1.63/1.58 with Dashboard/Access 1.15 a fourth riser; Auth peak decline −71% not −86%; Edge memory threads ~30 not 113; plan-mention unique threads 3.5–3.9% not 4.1%), and surviving caveats: <strong><a href="/report/findings/fact-check.html"><code>fact-check.md</code></a></strong>.</p>
+<ul>
+<li><strong>Why the fallers fell:</strong> no cliff. Forum volume peaked Q3 2023 (3,544/qtr); the recent −18% is the tail of a 3-year decline. Edge Functions fell −81% and Auth-tagged −86% from peak vs forum −55% — a gradual multi-year slide consistent with compounding doc/SDK fixes (e.g. <code>@supabase/ssr</code> migration landing), not one big fix. Causal attribution not possible from this data.</li>
+</ul>
+
+      <footer>
+        <p>Generated from <span class="mono">analysis/findings/findings.md</span> — the raw markdown is still served alongside this page.</p>
+        <p class="mono">Supabase community Discord · 41,392 threads · 270,020 replies · Aug 2022 – Aug 2026</p>
+      </footer>
+    </article>
+    <nav class="toc" aria-label="On this page">
+    <p class="t">On this page</p>
+    <ol><li><a href="#priority-matrix-trending-friction-doc-gap">Priority matrix (trending × friction × doc-gap)</a></li><li><a href="#rising-features-drill-down-top-nmf-topics">Rising features drill-down (top NMF topics)</a></li><li><a href="#emerging-distinctive-terms-recent-6mo-vs-prior">Emerging distinctive terms (recent 6mo vs prior)</a></li><li><a href="#nmf-topics-largest">NMF topics (largest)</a></li><li><a href="#reply-layer-triage-rising-feature-trio-billing-quotas-outage-status-network-dns">Reply-layer triage — rising-feature trio (Billing/Quotas, Outage/Status, Network/DNS)</a></li><li><a href="#response-layer-findings-reply-metadata-verified-2026-08-08">Response-layer findings (reply metadata, verified 2026-08-08)</a></li></ol>
+  </nav>
+  </div>
+</div>
+
+<script>
+// highlight the section currently in view
+const links = [...document.querySelectorAll('.toc a')];
+const targets = links.map(a => document.getElementById(a.hash.slice(1))).filter(Boolean);
+if (targets.length) {
+  const seen = new Set();
+  const io = new IntersectionObserver(entries => {
+    for (const e of entries) e.isIntersecting ? seen.add(e.target.id) : seen.delete(e.target.id);
+    const first = targets.find(t => seen.has(t.id));
+    links.forEach(a => a.classList.toggle('on', !!first && a.hash === '#' + first.id));
+  }, { rootMargin: '-72px 0px -70% 0px' });
+  targets.forEach(t => io.observe(t));
+}
+</script>
+</body>
+</html>

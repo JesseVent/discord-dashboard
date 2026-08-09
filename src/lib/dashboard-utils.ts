@@ -1,94 +1,49 @@
 import type { Issue, ThemeCluster } from '@/lib/discord-types';
 
 /**
- * Maps Discord tag IDs (from the Supabase help forum) to human-readable names
- * AND to Agentic Labs category color tokens.
- * Category colors use the trace-category palette (L=60% across hues, equal APCA).
+ * The forum's live tag set, read from the channel's `available_tags`
+ * (GET /api/v9/channels/:id) on 2026-08-09. Discord caps a forum at 20 tags and
+ * the moderators have reused IDs over time — several of these IDs carried
+ * different names in earlier snapshots, so labels must come from the channel,
+ * never from memory. Names are reproduced exactly as the forum shows them.
  */
 export const KNOWN_TAG_NAMES: Record<string, string> = {
-  '1006941128441999421': 'Database',
-  '1006941257274241114': 'Auth',
-  '1006941275053899887': 'Edge Functions',
-  '1006941348454207579': 'Realtime',
-  '1006941367353737366': 'Storage',
-  '1006941396873257041': 'Migrations',
-  '1006941413101015110': 'Dashboard',
-  '1050788587593023559': 'Self-Hosting',
-  '1200092227200876554': 'Outage / Status',
-  '1399429164783898665': 'Branching',
-  '1399740852930089150': 'AI / Vectors',
-};
-
-/**
- * Maps tag IDs to Agentic Labs category color variable names.
- * Uses the trace-category palette for equal APCA across hues.
- */
-export const TAG_CATEGORY_MAP: Record<string, string> = {
-  '1006941128441999421': 'chain',      // Database → green
-  '1006941257274241114': 'agent',      // Auth → blue
-  '1006941275053899887': 'tool',       // Edge Functions → amber
-  '1006941348454207579': 'retrieval',  // Realtime → cyan
-  '1006941367353737366': 'retrieval',  // Storage → cyan
-  '1006941396873257041': 'chain',      // Migrations → green
-  '1006941413101015110': 'llm',        // Dashboard → purple
-  '1050788587593023559': 'guardrail',  // Self-Hosting → red
-  '1200092227200876554': 'guardrail',  // Outage / Status → red
-  '1399429164783898665': 'chain',      // Branching → green
-  '1399740852930089150': 'llm',        // AI / Vectors → purple
+  '1144312501811564726': 'Solved',
+  '1006941128441999421': 'other',
+  '1006941257274241114': 'RLS',
+  '1006941275053899887': 'SQL',
+  '1006941367353737366': 'CLI',
+  '1150095604177961040': 'self-hosted',
+  '1200092227200876554': 'DB Connections',
+  '1399429164783898665': 'AI Tools',
+  '1006941413101015110': 'auth',
+  '1006943650388914248': 'SSR',
+  '1006941333874802738': 'realtime',
+  '1006941396873257041': 'edge functions',
+  '1006941348454207579': 'storage',
+  '1399740852930089150': 'branching',
+  '1006943636237324318': 'javascript',
+  '1050788533822042123': 'Flutter',
+  '1050788587593023559': 'Python',
+  '1082682827839119370': 'Swift/Kotlin',
+  '1158801460063129650': 'PostgREST',
+  '1068631539556028468': 'Auth Helpers',
 };
 
 export function tagName(tagId: string): string {
-  return KNOWN_TAG_NAMES[tagId] ?? `Tag ${tagId.slice(-4)}`;
+  // Threads keep tags that have since been deleted from the channel; say so
+  // rather than inventing a name from the ID.
+  return KNOWN_TAG_NAMES[tagId] ?? `retired tag ·${tagId.slice(-4)}`;
 }
 
-/**
- * Returns the Agentic Labs category color CSS variable for a tag ID.
- * Falls back to a deterministic hash-based OKLCH color for unknown tags.
- */
+/** Brand green for live tags, muted for tags no longer in the channel. */
 export function tagColor(tagId: string): string {
-  const cat = TAG_CATEGORY_MAP[tagId];
-  if (cat) {
-    const varMap: Record<string, string> = {
-      llm: 'var(--agl-cat-llm)',
-      agent: 'var(--agl-cat-agent)',
-      tool: 'var(--agl-cat-tool)',
-      chain: 'var(--agl-cat-chain)',
-      retrieval: 'var(--agl-cat-retrieval)',
-      guardrail: 'var(--agl-cat-guardrail)',
-    };
-    return varMap[cat];
-  }
-  // Fallback: deterministic OKLCH at L=60%
-  let h = 0;
-  for (let i = 0; i < tagId.length; i++) {
-    h = (h * 31 + tagId.charCodeAt(i)) >>> 0;
-  }
-  const hue = h % 360;
-  return `oklch(0.60 0.15 ${hue})`;
+  return KNOWN_TAG_NAMES[tagId] ? 'var(--agl-accent)' : 'var(--agl-fg-subtle)';
 }
 
-/**
- * Returns the Agentic Labs category soft (background) color for a tag ID.
- */
+/** Matching pill background. */
 export function tagColorSoft(tagId: string): string {
-  const cat = TAG_CATEGORY_MAP[tagId];
-  if (cat) {
-    const varMap: Record<string, string> = {
-      llm: 'var(--agl-cat-llm-soft)',
-      agent: 'var(--agl-cat-agent-soft)',
-      tool: 'var(--agl-cat-tool-soft)',
-      chain: 'var(--agl-cat-chain-soft)',
-      retrieval: 'var(--agl-cat-retrieval-soft)',
-      guardrail: 'var(--agl-cat-guardrail-soft)',
-    };
-    return varMap[cat];
-  }
-  let h = 0;
-  for (let i = 0; i < tagId.length; i++) {
-    h = (h * 31 + tagId.charCodeAt(i)) >>> 0;
-  }
-  const hue = h % 360;
-  return `oklch(0.94 0.035 ${hue})`;
+  return KNOWN_TAG_NAMES[tagId] ? 'var(--agl-accent-soft)' : 'var(--agl-surface-2)';
 }
 
 /**
@@ -482,7 +437,10 @@ export function unansweredIssues(
   sortBy: 'newest' | 'oldest' = 'newest'
 ): Issue[] {
   return issues
-    .filter((i) => i.replies !== undefined && !i.isAnswered)
+    // messageCount is Discord's own reply count (excludes the opening post). A
+    // thread that reports messages but fetched none is a stale scrape, not an
+    // unanswered thread — counting those is what produced the 53% artefact.
+    .filter((i) => i.replies !== undefined && !i.isAnswered && (i.messageCount ?? 0) === 0)
     .sort((a, b) => {
       const aTime = a.createdAt ? new Date(a.createdAt).getTime() : 0;
       const bTime = b.createdAt ? new Date(b.createdAt).getTime() : 0;

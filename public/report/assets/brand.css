@@ -1,0 +1,64 @@
+/* Shared brand header — matches the dashboard's header (Martian Grotesk /
+   Martian Mono, /supabase-logo.svg in a rounded surface tile).
+   Loaded by both the report and the findings pages. */
+
+@font-face{
+  font-family:"Martian Grotesk";
+  src:url("/fonts/MartianGrotesk-VFVF.woff2") format("woff2-variations"),
+      url("/fonts/MartianGrotesk-VFVF.ttf") format("truetype-variations");
+  font-weight:100 900; font-stretch:50% 200%; font-display:swap;
+}
+@font-face{
+  font-family:"Martian Mono";
+  src:url("/fonts/MartianMono-VariableFont_wdth_wght.ttf") format("truetype-variations");
+  font-weight:100 800; font-stretch:75% 112.5%; font-display:swap;
+}
+
+.brandbar{background:var(--bg-200); border-bottom:1px solid var(--border)}
+.brandbar .wrap{display:flex; align-items:center; gap:16px; min-height:60px; padding-top:8px; padding-bottom:8px}
+.brandbar .spacer{flex:1}
+
+.brand{display:flex; align-items:center; gap:12px; min-width:0; color:inherit}
+.brand:hover{text-decoration:none}
+.brand-mark{
+  display:flex; align-items:center; justify-content:center; flex:0 0 auto;
+  width:36px; height:36px; border-radius:8px;
+  background:var(--surface); border:1px solid var(--border);
+}
+.brand-mark img{width:20px; height:20px; display:block}
+.brand-txt{display:flex; flex-direction:column; gap:2px; min-width:0}
+.brand-name{
+  font-family:"Martian Grotesk",var(--sans); font-stretch:85%;
+  font-size:17px; font-weight:600; letter-spacing:-.01em; color:var(--fg);
+  white-space:nowrap;
+}
+.brand-sub{
+  font-family:"Martian Mono",var(--mono); font-size:10px; font-weight:500;
+  letter-spacing:.06em; text-transform:uppercase; color:var(--fg-lighter);
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+}
+
+.brand-links{display:flex; align-items:center; gap:2px; flex:0 0 auto}
+.brand-links a{
+  display:flex; align-items:center; gap:6px; height:32px; padding:0 11px;
+  border:1px solid transparent; border-radius:6px;
+  font-family:"Martian Grotesk",var(--sans); font-stretch:87.5%;
+  font-size:12.5px; font-weight:500; color:var(--fg-light); white-space:nowrap;
+}
+.brand-links a:hover{color:var(--fg); background:var(--surface); text-decoration:none}
+.brand-links a.on{color:var(--fg); background:var(--surface); border-color:var(--border-strong)}
+.brand-links a.home{color:var(--fg-lighter)}
+.brand-links a.home:hover{color:var(--fg)}
+.brand-links .sep{width:1px; height:18px; background:var(--border-strong); margin:0 7px; flex:0 0 auto}
+.brand-links svg{width:14px; height:14px; flex:0 0 auto}
+
+@media (max-width:900px){
+  .brandbar .wrap{flex-wrap:wrap; gap:10px 16px}
+  .brand-sub{display:none}
+  .brand-links{width:100%; overflow-x:auto}
+}
+@media print{
+  .brandbar .brand-links{display:none}
+  .brandbar{border-bottom:1px solid var(--border)}
+  .brand-mark{border-color:var(--border)}
+}

@@ -1,0 +1,8 @@
+pandas>=2.2
+sqlalchemy>=2.0
+psycopg2-binary>=2.9
+scikit-learn>=1.5
+matplotlib>=3.9
+vaderSentiment>=3.3
+tqdm>=4.66
+python-dotenv>=1.0

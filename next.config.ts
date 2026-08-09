@@ -7,6 +7,12 @@ const nextConfig: NextConfig = {
     ignoreBuildErrors: true,
   },
   reactStrictMode: false,
+  // The static friction report lives in public/report (built by
+  // analysis/report/build-site.mjs). Public files have no directory index, so
+  // point the bare /report at its index.html.
+  async rewrites() {
+    return [{ source: "/report", destination: "/report/index.html" }];
+  },
   // @supabase/lite is client-only now (notes-db.ts). Its DDL-translation
   // layer pulls in libpg-query, whose
   // emscripten bundle references Node built-ins the browser build never

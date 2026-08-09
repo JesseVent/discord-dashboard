@@ -45,7 +45,13 @@ export function TagDistributionChart({ issues, onSelectTag }: TagDistributionCha
         <CardDescription>Issue count by Discord forum tag (click bar to filter)</CardDescription>
       </CardHeader>
       <CardContent>
-        <ChartContainer config={chartConfig} className="h-[260px] w-full">
+        {/* ~22px per row: recharts drops every other category label if the band
+            is shorter than the type, which is how these went unreadable. */}
+        <ChartContainer
+          config={chartConfig}
+          className="w-full"
+          style={{ height: Math.max(260, data.length * 22 + 32) }}
+        >
           <ResponsiveContainer>
             <BarChart
               data={data}
@@ -57,6 +63,7 @@ export function TagDistributionChart({ issues, onSelectTag }: TagDistributionCha
                 type="category"
                 dataKey="name"
                 width={110}
+                interval={0}
                 tick={{ fontSize: 11, fill: tickColor }}
               />
               <ChartTooltip content={<ChartTooltipContent />} />

@@ -18,6 +18,7 @@ import {
   Linkedin,
   Wrench,
   Puzzle,
+  FileText,
 } from 'lucide-react';
 import { useDashboardStore } from '@/store/dashboard-store';
 import {
@@ -208,6 +209,14 @@ export default function Home() {
               </div>
             </div>
             <div className="flex items-center gap-0.5 text-xs text-muted-foreground">
+              <a
+                href="/report"
+                className="flex h-8 items-center gap-1.5 px-2 rounded-md font-medium hover:text-foreground hover:bg-surface-2 transition-colors"
+                title="Friction report — text-mining findings"
+              >
+                <FileText className="size-4" />
+                Report
+              </a>
               <a
                 href="https://supabasehire.me"
                 target="_blank"

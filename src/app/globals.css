@@ -56,7 +56,9 @@
   --color-secondary: var(--agl-surface-2);
   --color-secondary-foreground: var(--agl-fg);
   --color-muted: var(--agl-surface-2);
-  --color-muted-foreground: var(--agl-fg-muted);
+  /* --agl-muted-fg, not --agl-fg-muted: the misspelling resolved to nothing,
+     which made every `fill-muted-foreground` (recharts axis ticks) render black. */
+  --color-muted-foreground: var(--agl-muted-fg);
   --color-accent: var(--agl-accent-soft);
   --color-accent-foreground: var(--agl-accent);
   --color-destructive: var(--agl-error);
@@ -234,58 +236,60 @@
   --violet-500:  oklch(60.6% 0.250 292.717);
   --violet-700:  oklch(49.1% 0.270 292.581);
 
-  /* ---- Semantic tokens (light theme — default) ---- */
-  --agl-bg:         #ffffff;
-  --agl-surface:    var(--slate-100);
-  --agl-surface-2:  var(--slate-200);
-  --agl-surface-3:  var(--slate-300);
+  /* ---- Semantic tokens (light theme — default) ----
+     Supabase palette, same values the friction report at /report uses, so the
+     tracker and the report read as one site. */
+  --agl-bg:         #fbfbfb;
+  --agl-surface:    #fdfdfd;
+  --agl-surface-2:  #f3f3f3;
+  --agl-surface-3:  #ededed;
   --agl-overlay:    oklch(100% 0 0 / 0.82);
 
-  --agl-fg:         var(--slate-900);
-  --agl-fg-strong:  var(--slate-950);
-  --agl-muted-fg:   var(--slate-600);
-  --agl-fg-subtle:  var(--slate-500);
-  --agl-fg-faint:   var(--slate-400);
+  --agl-fg:         #171717;
+  --agl-fg-strong:  #0a0a0a;
+  --agl-muted-fg:   #525252;
+  --agl-fg-subtle:  #707070;
+  --agl-fg-faint:   #b2b2b2;
   --agl-fg-inverse: #ffffff;
 
-  --agl-accent:     oklch(58% 0.16 163);
-  --agl-accent-hover: oklch(48% 0.14 163);
-  --agl-accent-soft: color-mix(in oklch, oklch(58% 0.16 163) 14%, transparent);
-  --agl-accent-soft-hover: color-mix(in oklch, oklch(58% 0.16 163) 22%, transparent);
+  --agl-accent:     #24b47e;
+  --agl-accent-hover: #1c9968;
+  --agl-accent-soft: color-mix(in srgb, #24b47e 12%, transparent);
+  --agl-accent-soft-hover: color-mix(in srgb, #24b47e 20%, transparent);
   --agl-on-accent:  #ffffff;
 
-  --agl-border:        color-mix(in oklch, var(--slate-500) 16%, transparent);
-  --agl-border-subtle: color-mix(in oklch, var(--slate-500) 8%, transparent);
-  --agl-border-strong: color-mix(in oklch, var(--slate-500) 28%, transparent);
+  --agl-border:        #e0e0e0;
+  --agl-border-subtle: #ededed;
+  --agl-border-strong: #d4d4d4;
 
   /* ---- Status tokens ---- */
-  --agl-success:        oklch(55% 0.135 160);
-  --agl-success-muted:  oklch(94% 0.045 160);
-  --agl-success-strong: oklch(42% 0.115 160);
-  --agl-success-soft:   oklch(94% 0.045 160);
+  --agl-success:        #24b47e;
+  --agl-success-muted:  color-mix(in srgb, #24b47e 12%, transparent);
+  --agl-success-strong: #1c9968;
+  --agl-success-soft:   color-mix(in srgb, #24b47e 12%, transparent);
 
-  --agl-warning:        oklch(55% 0.145 65);
-  --agl-warning-muted:  oklch(94% 0.045 65);
-  --agl-warning-strong: oklch(42% 0.115 65);
-  --agl-warning-soft:   oklch(94% 0.045 65);
+  --agl-warning:        #c48a00;
+  --agl-warning-muted:  color-mix(in srgb, #c48a00 12%, transparent);
+  --agl-warning-strong: #8a6100;
+  --agl-warning-soft:   color-mix(in srgb, #c48a00 12%, transparent);
 
-  --agl-error:          oklch(55% 0.205 25);
-  --agl-error-muted:    oklch(94% 0.045 25);
-  --agl-error-strong:   oklch(42% 0.175 25);
-  --agl-error-soft:     oklch(94% 0.045 25);
+  --agl-error:          #d3383d;
+  --agl-error-muted:    color-mix(in srgb, #d3383d 12%, transparent);
+  --agl-error-strong:   #a32226;
+  --agl-error-soft:     color-mix(in srgb, #d3383d 12%, transparent);
 
-  --agl-pending:        oklch(55% 0.180 295);
-  --agl-pending-muted:  oklch(94% 0.045 295);
-  --agl-pending-strong: oklch(42% 0.180 295);
-  --agl-pending-soft:   oklch(94% 0.045 295);
+  --agl-pending:        #1c9968;   /* secondary chart series */
+  --agl-pending-muted:  color-mix(in srgb, #1c9968 12%, transparent);
+  --agl-pending-strong: #14724e;
+  --agl-pending-soft:   color-mix(in srgb, #1c9968 12%, transparent);
 
   /* ---- Trace categories ---- */
-  --agl-cat-llm:          oklch(60% 0.22 295);
-  --agl-cat-agent:        oklch(60% 0.22 268);
-  --agl-cat-tool:         oklch(60% 0.18 50);
-  --agl-cat-chain:        oklch(60% 0.13 182);
-  --agl-cat-retrieval:    oklch(60% 0.15 215);
-  --agl-cat-guardrail:    oklch(60% 0.22 25);
+  --agl-cat-llm:          #7c5cf0;
+  --agl-cat-agent:        #2f6fd0;
+  --agl-cat-tool:         #c48a00;
+  --agl-cat-chain:        #24b47e;
+  --agl-cat-retrieval:    #0d9488;
+  --agl-cat-guardrail:    #d3383d;
 
   /* ---- Viz sequences ---- */
   --agl-cat-1: var(--agl-cat-agent);      /* blue */
@@ -322,28 +326,39 @@
 [data-theme="dark"] {
   color-scheme: dark;
 
-  --agl-bg:         var(--slate-950);
-  --agl-surface:    var(--slate-900);
-  --agl-surface-2:  var(--slate-800);
-  --agl-surface-3:  var(--slate-700);
-  --agl-overlay:    oklch(12.9% 0.042 264.695 / 0.86);
+  /* Supabase dark palette — matches /report exactly. */
+  --agl-bg:         #121212;
+  --agl-surface:    #1f1f1f;
+  --agl-surface-2:  #212121;
+  --agl-surface-3:  #292929;
+  --agl-overlay:    rgb(18 18 18 / 0.86);
 
-  --agl-fg:         var(--slate-100);
-  --agl-fg-strong:  var(--slate-50);
-  --agl-muted-fg:   var(--slate-400);
-  --agl-fg-subtle:  var(--slate-500);
-  --agl-fg-faint:   var(--slate-600);
-  --agl-fg-inverse: var(--slate-950);
+  --agl-fg:         #fafafa;
+  --agl-fg-strong:  #ffffff;
+  --agl-muted-fg:   #b4b4b4;
+  --agl-fg-subtle:  #898989;
+  --agl-fg-faint:   #4d4d4d;
+  --agl-fg-inverse: #121212;
 
-  --agl-accent:     oklch(76.5% 0.177 163.223);
-  --agl-accent-hover: oklch(82% 0.14 163.223);
-  --agl-accent-soft: color-mix(in oklch, oklch(76.5% 0.177 163.223) 18%, transparent);
-  --agl-accent-soft-hover: color-mix(in oklch, oklch(76.5% 0.177 163.223) 28%, transparent);
-  --agl-on-accent:  var(--slate-950);
+  --agl-accent:     #3ecf8e;
+  --agl-accent-hover: #7fdfae;
+  --agl-accent-soft: color-mix(in srgb, #3ecf8e 16%, transparent);
+  --agl-accent-soft-hover: color-mix(in srgb, #3ecf8e 26%, transparent);
+  --agl-on-accent:  #121212;
 
-  --agl-border:        color-mix(in oklch, var(--slate-300) 14%, transparent);
-  --agl-border-subtle: color-mix(in oklch, var(--slate-300) 7%, transparent);
-  --agl-border-strong: color-mix(in oklch, var(--slate-300) 24%, transparent);
+  --agl-border:        #2e2e2e;
+  --agl-border-subtle: #262626;
+  --agl-border-strong: #363636;
+
+  /* Status + series colours, Supabase-tuned for the dark surface. */
+  --agl-success: #3ecf8e;
+  --agl-success-strong: #7fdfae;
+  --agl-warning: #daae00;
+  --agl-warning-strong: #e5c34d;
+  --agl-error:   #e5484d;
+  --agl-error-strong: #ef7175;
+  --agl-pending: #7fdfae;          /* secondary chart series — pale brand green */
+  --agl-pending-strong: #a8ead0;
 
   --agl-success-muted:  color-mix(in oklch, var(--emerald-500) 14%, transparent);
   --agl-warning-muted:  color-mix(in oklch, var(--amber-500)   14%, transparent);
@@ -355,18 +370,18 @@
   --agl-error-soft:     color-mix(in oklch, var(--red-500)     14%, transparent);
   --agl-pending-soft:   color-mix(in oklch, var(--violet-500)  16%, transparent);
 
-  --agl-cat-llm: oklch(0.68 0.16 295);
-  --agl-cat-llm-soft: oklch(0.30 0.05 295);
-  --agl-cat-agent: oklch(0.68 0.16 255);
-  --agl-cat-agent-soft: oklch(0.30 0.05 255);
-  --agl-cat-tool: oklch(0.68 0.14 65);
-  --agl-cat-tool-soft: oklch(0.30 0.05 65);
-  --agl-cat-chain: oklch(0.68 0.13 160);
-  --agl-cat-chain-soft: oklch(0.30 0.05 160);
-  --agl-cat-retrieval: oklch(0.68 0.12 195);
-  --agl-cat-retrieval-soft: oklch(0.30 0.045 195);
-  --agl-cat-guardrail: oklch(0.68 0.16 25);
-  --agl-cat-guardrail-soft: oklch(0.30 0.05 25);
+  --agl-cat-chain: #3ecf8e;
+  --agl-cat-chain-soft: color-mix(in srgb, #3ecf8e 16%, transparent);
+  --agl-cat-retrieval: #2dd4bf;
+  --agl-cat-retrieval-soft: color-mix(in srgb, #2dd4bf 16%, transparent);
+  --agl-cat-agent: #5b9cf6;
+  --agl-cat-agent-soft: color-mix(in srgb, #5b9cf6 16%, transparent);
+  --agl-cat-llm: #a78bfa;
+  --agl-cat-llm-soft: color-mix(in srgb, #a78bfa 16%, transparent);
+  --agl-cat-tool: #daae00;
+  --agl-cat-tool-soft: color-mix(in srgb, #daae00 16%, transparent);
+  --agl-cat-guardrail: #e5484d;
+  --agl-cat-guardrail-soft: color-mix(in srgb, #e5484d 16%, transparent);
 
   --agl-shadow-hairline: inset 0 0 0 1px oklch(1 0 0 / 6%);
   --agl-shadow-sm: 0 1px 2px oklch(0 0 0 / 0.3), 0 1px 1px oklch(0 0 0 / 0.2);

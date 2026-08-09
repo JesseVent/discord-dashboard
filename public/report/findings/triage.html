@@ -1,0 +1,317 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Reply triage — Community Friction Points</title>
+<link rel="stylesheet" href="/report/assets/brand.css">
+<link rel="stylesheet" href="/report/assets/doc.css">
+</head>
+<body>
+
+<div class="brandbar">
+  <div class="wrap">
+    <a class="brand" href="/report/">
+      <span class="brand-mark"><img src="/supabase-logo.svg" alt="" width="20" height="20"></span>
+      <span class="brand-txt">
+        <span class="brand-name">Community Friction Points</span>
+        <span class="brand-sub">Supabase community Discord · 41,392 threads · Aug 2022 – Aug 2026</span>
+      </span>
+    </a>
+    <span class="spacer"></span>
+    <nav class="brand-links" aria-label="Site">
+      <a href="/" class="home">Dashboard</a>
+      <span class="sep"></span>
+      <a href="/report/">Report</a>
+      <a href="/report/findings/findings.html">Findings</a>
+      <a href="/report/findings/triage.html" class="on">Triage</a>
+    </nav>
+  </div>
+</div>
+
+<nav>
+  <div class="wrap">
+    <a href="/report/findings/findings.html">Findings</a>
+    <a href="/report/findings/triage.html" class="on">Reply triage</a>
+    <a href="/report/findings/edge-functions-deep-dive.html">Edge Functions</a>
+    <a href="/report/findings/fact-check.html">Fact-check</a>
+    <span class="divider"></span>
+    <a href="/report/findings/triage.md">source .md</a>
+  </div>
+</nav>
+
+<div class="wrap">
+  <div class="doc">
+    <article>
+      <div class="doc-head">
+        <p class="eyebrow">triage.md · supporting detail</p>
+        <h1>Reply-Layer Triage — Rising-Feature Trio (Billing/Quotas, Outage/Status, Network/DNS)</h1>
+        <p class="lede">Synthesized from 6 parallel triage passes over <strong>96 high-friction threads</strong> (2 batches × 16 threads per feature), each batch ranked by <code>[neg, struggle, created_at]</code> desc within the last 12 months of forum activity and capped at 6 replies × 500 chars / thread. Methodology and batch inputs in <code>/tmp/build_batches.py</code>; raw batch reports in the 6 dispatched-agent outputs. This is the reply-layer ground-truth that the text-mining surfacing in <code>findings.md</code> predicted: <strong>these are incident threads, not doc-gap threads</strong> — the dominant unmet need is operational recovery, and the forum replies resolve almost none of them.</p>
+      </div>
+      <h2 id="1-aggregate-root-cause-counts-96-threads"><span class="n">1</span>Aggregate root-cause counts (96 threads)</h2>
+<p>Counts are per-thread primary category (a handful of threads carry a compounding secondary cause; multi-cause inflation is ≤1 per batch). Rounded totals:</p>
+<div class="tbl-wrap"><table>
+<thead>
+<tr>
+<th>Category</th>
+<th align="right">Count</th>
+<th align="right">% of 96</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>bug</strong></td>
+<td align="right">37</td>
+<td align="right">39%</td>
+<td>Stuck state transitions, post-upgrade breakage, lifecycle ops silently killing connectivity/auth.</td>
+</tr>
+<tr>
+<td><strong>outage</strong></td>
+<td align="right">26</td>
+<td align="right">27%</td>
+<td>Platform-side capacity incidents, region reachability, &quot;project down, ticket open for days.&quot;</td>
+</tr>
+<tr>
+<td><strong>user-misconfig</strong></td>
+<td align="right">12</td>
+<td align="right">13%</td>
+<td>Pooler-vs-direct, ISP/VPN reachability, IPv6-only resolvers. Most of these <em>self-resolve</em>.</td>
+</tr>
+<tr>
+<td><strong>quota/limit</strong></td>
+<td align="right">8</td>
+<td align="right">8%</td>
+<td>Disk full (pg_wal), DB-size/row limits, connection-pool exhaustion. Users file these as &quot;auth outage.&quot;</td>
+</tr>
+<tr>
+<td><strong>billing-policy</strong></td>
+<td align="right">6</td>
+<td align="right">6%</td>
+<td>Silent bans, no overdue-grace docs, Pro upgrade not auto-applying included compute.</td>
+</tr>
+<tr>
+<td><strong>doc-gap</strong></td>
+<td align="right">6</td>
+<td align="right">6%</td>
+<td>Prisma-direct-not-pooler, Windows IPv6, self-hosted Docker migration, SMTP-unreachable naming.</td>
+</tr>
+<tr>
+<td><strong>other/unclear</strong></td>
+<td align="right">2</td>
+<td align="right">2%</td>
+<td></td>
+</tr>
+<tr>
+<td><strong>auth</strong></td>
+<td align="right">0</td>
+<td align="right">0%</td>
+<td>Never primary — but a <strong>compounding factor</strong> in ~8 threads (key-rotation honors legacy apikey, post-rotation PostgREST schema-cache 503, restart nukes session).</td>
+</tr>
+</tbody></table></div>
+<p class="callout"><strong>Read:</strong> ~66% of these threads are bug + outage — <em>platform reliability and recovery</em>, not documentation. The doc-gap bucket (6%) is real but cheap; it is not where the leverage is.</p>
+<h2 id="2-resolution-rate"><span class="n">2</span>Resolution rate</h2>
+<div class="tbl-wrap"><table>
+<thead>
+<tr>
+<th>Batch</th>
+<th align="right">Resolved</th>
+<th align="right">Rate</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Billing/Quotas (part 1)</td>
+<td align="right">~3 / 16</td>
+<td align="right">19%</td>
+</tr>
+<tr>
+<td>Billing/Quotas (part 2)</td>
+<td align="right">3 / 16</td>
+<td align="right">19%</td>
+</tr>
+<tr>
+<td>Outage/Status (part 1)</td>
+<td align="right">2 / 16</td>
+<td align="right">12.5%</td>
+</tr>
+<tr>
+<td>Outage/Status (part 2)</td>
+<td align="right">5 / 16</td>
+<td align="right">31%</td>
+</tr>
+<tr>
+<td>Network/DNS (part 1)</td>
+<td align="right">3 / 16</td>
+<td align="right">19%</td>
+</tr>
+<tr>
+<td>Network/DNS (part 2)</td>
+<td align="right">4 / 16</td>
+<td align="right">25%</td>
+</tr>
+<tr>
+<td><strong>Total</strong></td>
+<td align="right"><strong>~20 / 96</strong></td>
+<td align="right"><strong>~21%</strong></td>
+</tr>
+</tbody></table></div>
+<p class="callout"><strong>How &quot;resolved&quot; is decided here:</strong> each thread was judged by reading its replies — <em>not</em> by the forum&#39;s own resolved marker. That marker is an <strong>optional self-assessment by the asker and is not enforced</strong>: most threads that were in fact solved are never marked, so any resolution rate derived from the tag (or from the dashboard&#39;s keyword <code>resolution_status</code> heuristic) is a floor, not a measurement. The ~21% below is the read-the-replies number.</p>
+<p>Crucially, the resolved threads are <strong>almost entirely user-misconfig that self-resolves</strong> (switched pooler→direct, disabled VPN/ISP-block workaround, fixed local env). <strong>Virtually no <code>bug</code> or <code>outage</code> thread is resolved by forum replies</strong> — the only &quot;resolution&quot; for those is <em>wait days for a support agent to manually unstick the project</em>. That the single highest-friction trio in the forum has a ~21% reply-resolution rate, skewed entirely to the misconfig subset, is itself the headline finding: <strong>the forum is absorbing incident-management load that the product and support process are not.</strong></p>
+<h2 id="3-cross-batch-dominant-patterns-converged-across-all-6-passes"><span class="n">3</span>Cross-batch dominant patterns (converged across all 6 passes)</h2>
+<p>These themes recurred independently in ≥3 of 6 batches — high confidence.</p>
+<h3 id="p1-stuck-broken-platform-side-state-transitions-no-self-service-recovery">P1 — Stuck/broken platform-side state transitions, no self-service recovery</h3>
+<p><em>The single highest-leverage fix class. Surfaced in all 6 batches.</em></p>
+<ul>
+<li><code>PAUSING</code> stuck for days; <code>resume</code> spins indefinitely; restore fails with <strong>&quot;No backups found&quot;</strong> during capacity incidents (free-tier paused projects, threads 874/739/3844/1952 — the same incident wearing different faces).</li>
+<li>Compute <strong>upgrade stuck</strong> (&quot;optimizing database&quot; never completes); <strong>resize takes project offline for 24h</strong>; <strong>read-replica stuck FAILED</strong>; <strong>ghost projects</strong> (deleted but still billed/blocking name); <strong>NXDOMAIN</strong> on project hostname.</li>
+<li><strong>PostgREST schema-cache 503</strong> after key rotation; <strong>Supavisor circuit-breaker</strong> stuck.</li>
+<li>Every one of these has the same resolution path: <em>open a support ticket and wait</em>. There is no <code>force-restart</code>, <code>cancel</code>, <code>rollback</code>, or <code>retry</code> exposed to the user.</li>
+<li><strong>Fix:</strong> hard timeouts on all lifecycle ops + user-facing <strong>force-restart / cancel / rollback</strong>; <strong>post-operation health verification</strong> (PostgREST peer-auth, not just DB) with auto-rollback; surface the capacity-incident root cause instead of &quot;No backups found.&quot;</li>
+</ul>
+<h3 id="p2-support-sla-gap-status-page-dishonesty">P2 — Support SLA gap + status-page dishonesty</h3>
+<p><em>Surfaced in 4/6 batches (all Outage + 1 Billing).</em></p>
+<ul>
+<li><strong>Pro customers production-down</strong>, waiting <strong>hours-to-weeks</strong> for a first response; status page reads <strong>&quot;All Systems Operational&quot;</strong> throughout.</li>
+<li>An <strong>undocumented magic-keyword filter</strong> is the de facto escalation: users report titling tickets &quot;UPGRADE STUCK&quot; / &quot;Project stuck Pausing&quot; to <em>catch the support filter</em>. The forum is teaching users the secret words.</li>
+<li><strong>Fix:</strong> auto-escalation + published SLA for production-down on paid plans; honest <strong>per-region / per-project</strong> status (not a single green banner); a real stuck-project queue so &quot;the secret title&quot; is unnecessary.</li>
+</ul>
+<h3 id="p3-control-plane-dies-exactly-when-the-project-is-degraded">P3 — Control plane dies exactly when the project is degraded</h3>
+<p><em>Surfaced in 3/6 batches (both Outage + Network/DNS part 2).</em></p>
+<ul>
+<li>Restart fails, the <strong>network-bans page won&#39;t load</strong>, disk-modification is <strong>rate-limited</strong>, <strong>&quot;database set to 0&quot;</strong>, key-rotation UI <strong>deadlocks</strong> so the revoked secret can&#39;t be cleaned up. The dashboard becomes unusable at the moment it&#39;s needed most.</li>
+<li><strong>Fix:</strong> control-plane operations must remain operable when the data plane is degraded — degraded-mode dashboard, never rate-limit the levers you need during an incident.</li>
+</ul>
+<h3 id="p4-supabase-co-reachability-from-specific-networks">P4 — <code>*.supabase.co</code> reachability from specific networks</h3>
+<p><em>Surfaced in Network/DNS (both batches) + Outage part 2.</em></p>
+<ul>
+<li><strong>Brazil/Claro <code>.co</code> ISP block</strong> (≥3 threads), <strong>Mullvad VPN</strong> timeouts, <strong>Vercel sin1 ENOTFOUND</strong>, Russia reachability. Status-page misattributes these as project outages.</li>
+<li><strong>Fix:</strong> publish a <strong>&quot;Can&#39;t reach *.supabase.co&quot; troubleshooting playbook</strong> (ISP/VPN/region checks, custom-domain-via-Cloudflare workaround); stop attributing network-path failures to the project on the status page.</li>
+</ul>
+<h3 id="p5-key-rotation-security-gap">P5 — Key-rotation security gap</h3>
+<p><em>Surfaced in Network/DNS part 1.</em></p>
+<ul>
+<li>Revoking the HS256 signing secret <strong>does not invalidate the legacy <code>apikey</code> path for ~12h+</strong>; the rotation UI deadlocks so cleanup can&#39;t complete. A revoked secret still authorizes — a security issue, not a reliability one.</li>
+<li><strong>Fix:</strong> immediate — revoke must invalidate the legacy path synchronously; rotation must be completable without the dashboard (CLI escape hatch).</li>
+</ul>
+<h3 id="p6-billing-ban-lifecycle-opacity">P6 — Billing/ban lifecycle opacity</h3>
+<p><em>Surfaced in Billing/Quotas (both batches).</em></p>
+<ul>
+<li><strong>Silent bans</strong> (no email, no reason, no self-serve card-update once banned); <strong>no published overdue-invoice grace period</strong>; <strong>abuse@ has no SLA</strong>; <strong>Pro upgrade doesn&#39;t auto-apply the included micro compute</strong> (two-step trap: upgrade, then manually resize); &quot;upgrading to Pro retroactively unlocks 7 days of backups&quot; is <strong>undocumented</strong>.</li>
+<li><strong>Fix:</strong> automated ban email (reason + appeal link); published billing timelines; <strong>auto-apply included micro compute on Pro upgrade</strong>; document the retroactive-backup unlock.</li>
+</ul>
+<h3 id="p7-resource-exhaustion-silently-crosses-limits-can-39-t-recover">P7 — Resource exhaustion silently crosses limits, can&#39;t recover</h3>
+<p><em>Surfaced in Billing/Quotas + Outage part 2.</em></p>
+<ul>
+<li>Disk full (<code>pg_wal</code>), DB-size/row limit, connection-pool saturation. <strong>No auto-expand, no early warning, no named alert</strong> — users experience these as &quot;auth outages&quot; or &quot;my project died.&quot;</li>
+<li><strong>Fix:</strong> early-warning + auto-expand thresholds; a named &quot;resource limit&quot; alert distinct from &quot;outage.&quot;</li>
+</ul>
+<h2 id="4-prioritized-fix-list-by-leverage-frequency"><span class="n">4</span>Prioritized fix list (by leverage × frequency)</h2>
+<div class="tbl-wrap"><table>
+<thead>
+<tr>
+<th>#</th>
+<th>Fix</th>
+<th>Pattern</th>
+<th>Effort</th>
+<th>Impact</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>1</td>
+<td>Self-service <strong>force-restart / cancel / rollback</strong> for stuck lifecycle ops + hard timeouts + post-op health verification (PostgREST, not just DB)</td>
+<td>P1</td>
+<td>M</td>
+<td><strong>Huge</strong> — directly resolves the top bucket across all 6 batches</td>
+</tr>
+<tr>
+<td>2</td>
+<td><strong>Support auto-escalation + published SLA</strong> for prod-down paid plans; real stuck-project queue</td>
+<td>P2</td>
+<td>M</td>
+<td>Huge — kills the magic-keyword hack and the days-long wait</td>
+</tr>
+<tr>
+<td>3</td>
+<td><strong>Honest per-region/per-project status page</strong></td>
+<td>P2</td>
+<td>S</td>
+<td>High — stops &quot;All Systems Operational&quot; while DBs are dead</td>
+</tr>
+<tr>
+<td>4</td>
+<td><strong>Degraded-mode control plane</strong> — dashboard + levers stay operable when project is sick</td>
+<td>P3</td>
+<td>M</td>
+<td>High</td>
+</tr>
+<tr>
+<td>5</td>
+<td><strong>Sync revoke of legacy <code>apikey</code> path on key rotation</strong> + CLI-completable rotation</td>
+<td>P5</td>
+<td>S</td>
+<td>High (security)</td>
+</tr>
+<tr>
+<td>6</td>
+<td><strong>&quot;Can&#39;t reach *.supabase.co&quot; playbook</strong> + custom-domain workaround; stop network-path misattribution on status page</td>
+<td>P4</td>
+<td>S</td>
+<td>Med</td>
+</tr>
+<tr>
+<td>7</td>
+<td><strong>Billing/ban lifecycle</strong>: ban emails + appeal, published grace period, auto-apply Pro micro compute</td>
+<td>P6</td>
+<td>S–M</td>
+<td>Med</td>
+</tr>
+<tr>
+<td>8</td>
+<td><strong>Resource exhaustion</strong>: early-warning + auto-expand + named alerts</td>
+<td>P7</td>
+<td>M</td>
+<td>Med</td>
+</tr>
+<tr>
+<td>9</td>
+<td><strong>Doc-gap bundle</strong> (cheap, high-frequency): Prisma-direct-vs-pooler, Windows IPv6-only resolver→session pooler, self-hosted Docker migration recovery, SMTP-unreachable named error, Storage 400 surfaces underlying Postgres error, pg_net DNS error clarity</td>
+<td>doc-gap</td>
+<td>S</td>
+<td>Low–Med — the only cheap wins in this trio</td>
+</tr>
+</tbody></table></div>
+<h2 id="5-what-this-means-for-the-dashboard-pipeline"><span class="n">5</span>What this means for the dashboard / pipeline</h2>
+<ul>
+<li>The text-mining surfacing (<code>findings.md</code> rising-feature drill-down) was <strong>correct but mis-framed if read as doc gaps</strong>: the trio is rising because of <strong>incidents</strong>, and the reply layer confirms ~66% bug+outage. Any dashboard &quot;priority&quot; view that lumps these with auth/how-to doc gaps will mislead.</li>
+<li><strong>Suggested dashboard signal:</strong> expose the reply-resolution rate per feature (21% here) as a &quot;support-burden vs self-serve&quot; indicator. Features with high friction + low reply-resolution are incident sinks, not doc gaps. <strong>Do not compute it from the forum&#39;s resolved marker</strong> — that is optional and unenforced, so it measures who bothered to tick a box, not who got helped; derive it from the reply layer and label it as an estimate.</li>
+<li>The <strong><code>duplicate_cluster_id</code> Vectorize coverage (0.8%)</strong> is too sparse to carry repetition signal — the NMF-topic concentration metric remains the right proxy (see <code>findings.md</code> Section 8).</li>
+<li>These 96 threads map cleanly onto <strong>9 fix buckets</strong> above; the highest-leverage 3 (#1 stuck-state recovery, #2 support SLA, #3 status honesty) would resolve the majority of the unresolved bug+outage threads.</li>
+</ul>
+
+      <footer>
+        <p>Generated from <span class="mono">analysis/findings/triage.md</span> — the raw markdown is still served alongside this page.</p>
+        <p class="mono">Supabase community Discord · 41,392 threads · 270,020 replies · Aug 2022 – Aug 2026</p>
+      </footer>
+    </article>
+    <nav class="toc" aria-label="On this page">
+    <p class="t">On this page</p>
+    <ol><li><a href="#1-aggregate-root-cause-counts-96-threads">1. Aggregate root-cause counts (96 threads)</a></li><li><a href="#2-resolution-rate">2. Resolution rate</a></li><li><a href="#3-cross-batch-dominant-patterns-converged-across-all-6-passes">3. Cross-batch dominant patterns (converged across all 6 passes)</a></li><li class="sub"><a href="#p1-stuck-broken-platform-side-state-transitions-no-self-service-recovery">P1 — Stuck/broken platform-side state transitions, no self-service recovery</a></li><li class="sub"><a href="#p2-support-sla-gap-status-page-dishonesty">P2 — Support SLA gap + status-page dishonesty</a></li><li class="sub"><a href="#p3-control-plane-dies-exactly-when-the-project-is-degraded">P3 — Control plane dies exactly when the project is degraded</a></li><li class="sub"><a href="#p4-supabase-co-reachability-from-specific-networks">P4 — *.supabase.co reachability from specific networks</a></li><li class="sub"><a href="#p5-key-rotation-security-gap">P5 — Key-rotation security gap</a></li><li class="sub"><a href="#p6-billing-ban-lifecycle-opacity">P6 — Billing/ban lifecycle opacity</a></li><li class="sub"><a href="#p7-resource-exhaustion-silently-crosses-limits-can-39-t-recover">P7 — Resource exhaustion silently crosses limits, can&#39;t recover</a></li><li><a href="#4-prioritized-fix-list-by-leverage-frequency">4. Prioritized fix list (by leverage × frequency)</a></li><li><a href="#5-what-this-means-for-the-dashboard-pipeline">5. What this means for the dashboard / pipeline</a></li></ol>
+  </nav>
+  </div>
+</div>
+
+<script>
+// highlight the section currently in view
+const links = [...document.querySelectorAll('.toc a')];
+const targets = links.map(a => document.getElementById(a.hash.slice(1))).filter(Boolean);
+if (targets.length) {
+  const seen = new Set();
+  const io = new IntersectionObserver(entries => {
+    for (const e of entries) e.isIntersecting ? seen.add(e.target.id) : seen.delete(e.target.id);
+    const first = targets.find(t => seen.has(t.id));
+    links.forEach(a => a.classList.toggle('on', !!first && a.hash === '#' + first.id));
+  }, { rootMargin: '-72px 0px -70% 0px' });
+  targets.forEach(t => io.observe(t));
+}
+</script>
+</body>
+</html>

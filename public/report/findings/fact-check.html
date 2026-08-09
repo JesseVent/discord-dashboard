@@ -1,0 +1,180 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Fact-check — Community Friction Points</title>
+<link rel="stylesheet" href="/report/assets/brand.css">
+<link rel="stylesheet" href="/report/assets/doc.css">
+</head>
+<body>
+
+<div class="brandbar">
+  <div class="wrap">
+    <a class="brand" href="/report/">
+      <span class="brand-mark"><img src="/supabase-logo.svg" alt="" width="20" height="20"></span>
+      <span class="brand-txt">
+        <span class="brand-name">Community Friction Points</span>
+        <span class="brand-sub">Supabase community Discord · 41,392 threads · Aug 2022 – Aug 2026</span>
+      </span>
+    </a>
+    <span class="spacer"></span>
+    <nav class="brand-links" aria-label="Site">
+      <a href="/" class="home">Dashboard</a>
+      <span class="sep"></span>
+      <a href="/report/">Report</a>
+      <a href="/report/findings/findings.html">Findings</a>
+      <a href="/report/findings/triage.html">Triage</a>
+    </nav>
+  </div>
+</div>
+
+<nav>
+  <div class="wrap">
+    <a href="/report/findings/findings.html">Findings</a>
+    <a href="/report/findings/triage.html">Reply triage</a>
+    <a href="/report/findings/edge-functions-deep-dive.html">Edge Functions</a>
+    <a href="/report/findings/fact-check.html" class="on">Fact-check</a>
+    <span class="divider"></span>
+    <a href="/report/findings/fact-check.md">source .md</a>
+  </div>
+</nav>
+
+<div class="wrap">
+  <div class="doc">
+    <article>
+      <div class="doc-head">
+        <p class="eyebrow">fact-check.md · supporting detail</p>
+        <h1>Independent fact-check — 2026-08-08 (amended 2026-08-10)</h1>
+        <p class="lede">Six independent agents re-derived every headline claim from the raw parquet cache and live DB, with their own code, regexes, and samples (they were instructed to distrust the pipeline). 15 CONFIRMED, 7 PARTIAL, 2 REFUTED. Corrections below are already applied to <code>report.html</code>, <code>findings.md</code>, <code>edge-functions-deep-dive.md</code>, and the carousel.</p>
+      </div>
+      <h2 id="amendment-2026-08-10-the-53-no-reply-claim-is-retracted">Amendment 2026-08-10 — the 53% no-reply claim is RETRACTED</h2>
+<p>The fact-check pass confirmed &quot;53% never answered&quot; because all six agents re-derived it from the <strong>same field the pipeline used</strong>, <code>responder_count</code>. Agreement between agents reading one column is not verification of what that column means.</p>
+<p><code>responder_count</code> is populated by our reply backfill, which has only ever covered ~60% of the corpus. <strong>17,231 threads (41.6%) have messages but zero fetched replies</strong>, and the field reads 97–99% no-reply for 2022–2023 — coverage, not silence.</p>
+<p>Discord&#39;s own <code>message_count</code> (thread metadata, excludes the opening post) is the sound basis:</p>
+<div class="tbl-wrap"><table>
+<thead>
+<tr>
+<th>Check</th>
+<th>Result</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>message_count</code> = fetched reply count</td>
+<td><strong>98.5%</strong> of the 27,622 threads where both exist (r = 0.90, medians 5 and 5)</td>
+</tr>
+<tr>
+<td>Threads with <code>message_count = 0</code></td>
+<td><strong>11.6%</strong> (live DB, n = 41,697)</td>
+</tr>
+<tr>
+<td>Fetched threads where every reply is the asker&#39;s own</td>
+<td><strong>2.31%</strong></td>
+</tr>
+<tr>
+<td>⇒ no reply from anyone else</td>
+<td><strong>~13.6%</strong>, not 53.2%</td>
+</tr>
+<tr>
+<td>Last full quarter (2026 Q2)</td>
+<td><strong>2.5%</strong></td>
+</tr>
+</tbody></table></div>
+<p>Per-feature ranking survives intact (TypeGen worst, Billing best); the levels were inflated ~4–5×. The <code>Q3-2026 = 70.5%</code> row below is also void — that artefact only existed because of the same field; on <code>message_count</code>, 2026 Q3-to-date is 2.9%.</p>
+<p class="callout"><strong>Lesson for the next pass:</strong> an adversarial re-derivation must question the <em>definition</em> of a field, not just recompute it. Any claim of the form &quot;X never happened&quot; needs a source that records X independently of our own collection.</p>
+<h2 id="what-changed">What changed</h2>
+<div class="tbl-wrap"><table>
+<thead>
+<tr>
+<th>Claim</th>
+<th>Was</th>
+<th>Now</th>
+<th>Verdict</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Detrended trio</td>
+<td>Billing 1.56 / Network 1.41 / Outage 1.34</td>
+<td><strong>Billing 1.74 / Network 1.63 / Outage 1.58</strong> (spec windows, corpus 0.807); Dashboard/Access 1.15 is a fourth riser</td>
+<td>PARTIAL — ordering exact, magnitudes were understated</td>
+</tr>
+<tr>
+<td>Outage &quot;regime change&quot;</td>
+<td>5–15/mo → 74–109/mo, &quot;not a tagging change&quot;</td>
+<td>Tag series step is real but the tag <strong>didn&#39;t exist before 2024</strong> and moderators clearly adopted it Aug 2025; keyword-classified outage volume shows <strong>no step, only ~1.3–1.5× elevation</strong>. The dramatic 5× chart was a tag-adoption artefact</td>
+<td>PARTIAL — cross-check failed, reframed</td>
+</tr>
+<tr>
+<td>Q3-2026 no-reply 70.5%</td>
+<td>&quot;answer layer thinning fast&quot;</td>
+<td><strong>Pipeline artefact.</strong> Reply backfill lags ~30 days (100% no-reply at &lt;7d, cliff to 22% at 30–60d). Matched-window Q2 = 21.8% vs Q3&#39;s 70.8% — coverage is actually <strong>improving</strong> (37.9% 2025Q3 → 23.3% 2026Q2)</td>
+<td>REFUTED interpretation (numbers reproduce)</td>
+</tr>
+<tr>
+<td>Edge memory limit</td>
+<td>113 threads</td>
+<td><strong>~30–34 threads</strong> defensible. Worker-boot errors (~50) are the largest bucket; literal &quot;5407&quot; appears 0×; CPU 30 ✓, wall-clock 13–17 ✓, &quot;10 seconds&quot; 2 literal mentions, 0 substantive</td>
+<td>REFUTED count</td>
+</tr>
+<tr>
+<td>Auth classifier precision</td>
+<td>~60% (my 25-sample)</td>
+<td><strong>~80%</strong> (60-sample); Billing ~67%, Outage ~45–50%</td>
+<td>REFUTED — Auth is <em>more</em> precise than I said</td>
+</tr>
+<tr>
+<td>Auth decline</td>
+<td>−86% from peak</td>
+<td><strong>−71%</strong> on consistent full-quarter windows (−86% mixed the partial current quarter in)</td>
+<td>PARTIAL</td>
+</tr>
+</tbody></table></div>
+<h2 id="confirmed-as-is">Confirmed as-is</h2>
+<ul>
+<li>Corpus 41,392 threads / 270,020 replies / 2022-08-11 → 2026-08-08 (live DB now 270,552 — corpus still growing). <strong>Note: <code>data/replies.parquet</code> is capped at 200,000 most-recent replies</strong> (<code>load_replies LIMIT 200000</code>) — fine for aggregates, not the full corpus.</li>
+<li>Corpus ratio 0.82 (−18%).</li>
+<li><del>53% never answered (22,036/41,392 = 53.24%)</del> — <strong>retracted, see the 2026-08-10 amendment above.</strong> The arithmetic on <code>responder_count</code> is right; the field does not mean what it was read to mean.</li>
+<li>Per-feature no-reply table — all 9 rates reproduce to ±0.02pt <em>against <code>responder_count</code></em>, and the <strong>ranking holds</strong> on the corrected basis, but the levels are superseded (TypeGen 26.5% worst → Billing 3.9% best). Small-n caveat on TypeGen (113) and MCP (90).</li>
+<li>garyaustin 27.03% of all replies, single identity, steady 24–28% for 8 quarters; top-12 = 40.95%; <strong>no bots; none of the top 12 self-identify as Supabase staff — the top two explicitly state they are volunteer mods</strong> (&quot;This is a user helping user forum&quot;). New nuance: concentration is volunteer labour, not staff coverage.</li>
+<li>Repeat askers: 17.8% of owners (3+ threads) produce 55.7% of threads, max 110 — <strong>only after excluding the <code>unknown</code> owner placeholder</strong> (24% of threads have no resolved owner).</li>
+<li>Triage (independent re-code of 30 threads): bug+outage 57% (vs 66%), reply-resolved 17% (vs 21%), <strong>resolved-threads-are-misconfig confirmed (4/5; 5th was national ISP blocking)</strong>. Within sampling noise of n=96; direction solid.</li>
+<li>Plans: detrended free 2.66 / pro 2.07, no-reply free 34.7% / pro 34.6% / enterprise 53.8%, neg pro 0.21 &gt; free 0.12 — all hold. Headline &quot;1,695 threads / 4.1%&quot; double-counts multi-plan threads: unique ≈ 1,463–1,626 (<strong>3.5–3.9%</strong>).</li>
+<li>Edge: local deploy/CLI friction persists (~31/qtr through 2026Q1) ✓; Deno/esm.sh import pain collapsed (peak ~37/qtr 2023 → ~0–8/qtr 2026) ✓ direction; unanswered=code-vocab / answered=product-vocab ✓ (chi2, 10/10 and 9/10 terms).</li>
+<li>Auth outcomes average (29.2% resolved, rank 5/18). Its no-reply readings are superseded by the amendment: on <code>message_count</code>, Auth sits exactly at the forum average (11.6%), with SSR/server-session 11.9% (n=1,708) and OAuth-redirect 13.7% (n=846) — the narrowed Auth claim (SSR + OAuth are the gaps, not Auth broadly) survives on the corrected basis, by a smaller margin.</li>
+</ul>
+<h2 id="story-level-corrections">Story-level corrections</h2>
+<ol>
+<li><strong>&quot;Fewer answers&quot; is wrong, full stop.</strong> <em>(Strengthened 2026-08-10.)</em> Message <em>volume</em> fell (23.7k → 12.1k/quarter, tracking a −19.5% drop in threads), but coverage <strong>improved</strong> — 17.8% no-reply at the 2024 Q2 peak to 2.5% in 2026 Q2 — and messages per thread rose 6.8 → 8.8. Demand fell faster than answerer capacity. The supply risk is <strong>concentration</strong> (one volunteer, 27%; no staff in top 12), not decline.</li>
+<li><strong>The outage &quot;regime change&quot; is a moderation-behaviour signal, not a platform-reliability signal.</strong> The underlying outage-classified volume is only mildly elevated since Aug 2025.</li>
+<li><strong>The feature classifier is noisy</strong> (precision: Auth ~80%, Billing ~67%, Outage ~45–50%). Trends survive (noise roughly stationary), absolute per-feature levels should be quoted with less precision.</li>
+</ol>
+<p>Method: 6 parallel checkers, structured verdicts, journal at <code>workflows/wf_9be1cbb7-a67/journal.jsonl</code>.</p>
+
+      <footer>
+        <p>Generated from <span class="mono">analysis/findings/fact-check.md</span> — the raw markdown is still served alongside this page.</p>
+        <p class="mono">Supabase community Discord · 41,392 threads · 270,020 replies · Aug 2022 – Aug 2026</p>
+      </footer>
+    </article>
+    <nav class="toc" aria-label="On this page">
+    <p class="t">On this page</p>
+    <ol><li><a href="#amendment-2026-08-10-the-53-no-reply-claim-is-retracted">Amendment 2026-08-10 — the 53% no-reply claim is RETRACTED</a></li><li><a href="#what-changed">What changed</a></li><li><a href="#confirmed-as-is">Confirmed as-is</a></li><li><a href="#story-level-corrections">Story-level corrections</a></li></ol>
+  </nav>
+  </div>
+</div>
+
+<script>
+// highlight the section currently in view
+const links = [...document.querySelectorAll('.toc a')];
+const targets = links.map(a => document.getElementById(a.hash.slice(1))).filter(Boolean);
+if (targets.length) {
+  const seen = new Set();
+  const io = new IntersectionObserver(entries => {
+    for (const e of entries) e.isIntersecting ? seen.add(e.target.id) : seen.delete(e.target.id);
+    const first = targets.find(t => seen.has(t.id));
+    links.forEach(a => a.classList.toggle('on', !!first && a.hash === '#' + first.id));
+  }, { rootMargin: '-72px 0px -70% 0px' });
+  targets.forEach(t => io.observe(t));
+}
+</script>
+</body>
+</html>

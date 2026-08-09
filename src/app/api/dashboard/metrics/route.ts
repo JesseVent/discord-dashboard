@@ -7,9 +7,22 @@ export const revalidate = 3600; // Cache for 1 hour, updated by cron
 export async function GET() {
   try {
     await ensureDatabaseReady();
+    // dashboard_global_metrics has one row per channel_id, and the corpus holds
+    // a handful of stray channels alongside the real one — .single() over all of
+    // them errors out ("cannot coerce"), which silently dropped the whole KPI
+    // payload and left the client computing headline numbers from its 1000-row
+    // local sample. Pick the configured channel, else the largest.
+    const channelId = process.env.DISCORD_CHANNEL_ID;
+    const kpiQuery = channelId
+      ? supabaseAdmin.from('dashboard_global_metrics').select('*').eq('channel_id', channelId)
+      : supabaseAdmin
+          .from('dashboard_global_metrics')
+          .select('*')
+          .order('total_issues', { ascending: false })
+          .limit(1);
+
     const [kpiRes, dailyStatsRes, respondersRes] = await Promise.all([
-      // Use the new global metrics view for fast server-side KPIs
-      supabaseAdmin.from('dashboard_global_metrics').select('*').single(),
+      kpiQuery.maybeSingle(),
       supabaseAdmin.from('dashboard_daily_stats').select('*').order('date', { ascending: true }),
       supabaseAdmin.from('top_responders_view').select('*').limit(20)
     ]);

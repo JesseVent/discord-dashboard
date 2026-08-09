@@ -1,0 +1,453 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Edge Functions — Community Friction Points</title>
+<link rel="stylesheet" href="/report/assets/brand.css">
+<link rel="stylesheet" href="/report/assets/doc.css">
+</head>
+<body>
+
+<div class="brandbar">
+  <div class="wrap">
+    <a class="brand" href="/report/">
+      <span class="brand-mark"><img src="/supabase-logo.svg" alt="" width="20" height="20"></span>
+      <span class="brand-txt">
+        <span class="brand-name">Community Friction Points</span>
+        <span class="brand-sub">Supabase community Discord · 41,392 threads · Aug 2022 – Aug 2026</span>
+      </span>
+    </a>
+    <span class="spacer"></span>
+    <nav class="brand-links" aria-label="Site">
+      <a href="/" class="home">Dashboard</a>
+      <span class="sep"></span>
+      <a href="/report/">Report</a>
+      <a href="/report/findings/findings.html">Findings</a>
+      <a href="/report/findings/triage.html">Triage</a>
+    </nav>
+  </div>
+</div>
+
+<nav>
+  <div class="wrap">
+    <a href="/report/findings/findings.html">Findings</a>
+    <a href="/report/findings/triage.html">Reply triage</a>
+    <a href="/report/findings/edge-functions-deep-dive.html" class="on">Edge Functions</a>
+    <a href="/report/findings/fact-check.html">Fact-check</a>
+    <span class="divider"></span>
+    <a href="/report/findings/edge-functions-deep-dive.md">source .md</a>
+  </div>
+</nav>
+
+<div class="wrap">
+  <div class="doc">
+    <article>
+      <div class="doc-head">
+        <p class="eyebrow">edge-functions-deep-dive.md · supporting detail</p>
+        <h1>Edge Functions deep dive — what goes unanswered</h1>
+        <p class="lede">Slice: <strong>2,000 threads</strong> classified <code>Edge Functions</code> by the keyword taxonomy (not the forum tag — tag IDs have drifted from their original labels, verified 2026-08-08 by sampling titles per tag; e.g. the tag mapped to &#39;Edge Functions&#39; in <code>dashboard-utils.ts</code> now contains generic Postgres/SQL threads).</p>
+      </div>
+      <p><strong>16.7% never got a reply.</strong> Method: NMF (k=10) over title + first message; Monroe log-odds z-scores for unanswered-vs-answered vocabulary; quarterly per-topic volumes. Code: <code>pipeline/edge_deep_dive.py</code>.</p>
+<blockquote>
+<p>Recomputed 2026-08-10 on Discord&#39;s <code>message_count</code> (excludes the opening post). The earlier version of this file used <code>responder_count</code>, which our reply backfill only populates for ~60% of the corpus and which therefore read un-fetched threads as unanswered — it put this slice at 54.5%. Because the unanswered class is now a different (and much smaller) set of threads, the section-2 vocabulary below differs substantially from that version; the earlier &quot;unanswered = code vocabulary&quot; reading does not survive the correction.</p>
+</blockquote>
+<h2 id="1-the-frequent-issues-nmf-topics"><span class="n">1</span>The frequent issues (NMF topics)</h2>
+<div class="tbl-wrap"><table>
+<thead>
+<tr>
+<th>topic</th>
+<th align="right">n</th>
+<th align="right">% of slice</th>
+<th align="right">no-reply %</th>
+<th align="right">recent-12mo %</th>
+<th align="right">neg affect</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>local, deploy, locally, cli, error, project, running, edge functions</td>
+<td align="right">399</td>
+<td align="right">20.0</td>
+<td align="right">17.8</td>
+<td align="right">22.3</td>
+<td align="right">0.41</td>
+</tr>
+<tr>
+<td>edge functions, api, use, like, way, using, want, need</td>
+<td align="right">356</td>
+<td align="right">17.8</td>
+<td align="right">21.3</td>
+<td align="right">13.5</td>
+<td align="right">0.09</td>
+</tr>
+<tr>
+<td>webhook, table, trigger, database, edge function, insert, id, row</td>
+<td align="right">295</td>
+<td align="right">14.8</td>
+<td align="right">10.5</td>
+<td align="right">13.9</td>
+<td align="right">0.19</td>
+</tr>
+<tr>
+<td>deno, import, esm, sh, esm sh, npm, package, ts</td>
+<td align="right">253</td>
+<td align="right">12.6</td>
+<td align="right">22.1</td>
+<td align="right">5.5</td>
+<td align="right">0.33</td>
+</tr>
+<tr>
+<td>limit, time, edge function, logs, cpu, edge functions, cpu time, memory</td>
+<td align="right">225</td>
+<td align="right">11.2</td>
+<td align="right">12.4</td>
+<td align="right">24.4</td>
+<td align="right">0.24</td>
+</tr>
+<tr>
+<td>const, json, response, headers, return, req, await, content</td>
+<td align="right">150</td>
+<td align="right">7.5</td>
+<td align="right">14.0</td>
+<td align="right">5.3</td>
+<td align="right">0.5</td>
+</tr>
+<tr>
+<td>index, file, ts, js, error, index ts, ext, async</td>
+<td align="right">129</td>
+<td align="right">6.4</td>
+<td align="right">20.9</td>
+<td align="right">14.0</td>
+<td align="right">0.7</td>
+</tr>
+<tr>
+<td>cron, job, cron job, edge function, schedule, jobs, run, invoke edge</td>
+<td align="right">103</td>
+<td align="right">5.2</td>
+<td align="right">10.7</td>
+<td align="right">16.5</td>
+<td align="right">0.12</td>
+</tr>
+<tr>
+<td>self, hosted, self hosted, functions self, edge functions, version, hosted version, hosting</td>
+<td align="right">73</td>
+<td align="right">3.6</td>
+<td align="right">16.4</td>
+<td align="right">23.3</td>
+<td align="right">0.25</td>
+</tr>
+<tr>
+<td>eszip v0, land eszip, v0 30, eszip, v0, 30, wasm, anonymous deno</td>
+<td align="right">17</td>
+<td align="right">0.8</td>
+<td align="right">5.9</td>
+<td align="right">0.0</td>
+<td align="right">0.94</td>
+</tr>
+</tbody></table></div>
+<h2 id="2-the-vocabulary-of-threads-nobody-answers"><span class="n">2</span>The vocabulary of threads nobody answers</h2>
+<p>Over-indexed in <strong>unanswered</strong> threads (z-score):</p>
+<p><strong>postgres</strong> (4.17), <strong>certificate</strong> (3.97), <strong>invalid</strong> (3.0), <strong>13</strong> (2.62), <strong>image</strong> (2.35), <strong>14</strong> (2.29), <strong>vercel edge</strong> (2.23), <strong>2024</strong> (2.19), <strong>pool</strong> (2.12), <strong>customer</strong> (2.1), <strong>000</strong> (2.1), <strong>drizzle</strong> (2.1), <strong>types</strong> (2.06), <strong>components</strong> (2.04), <strong>docker container</strong> (1.99), <strong>believe</strong> (1.87), <strong>transaction</strong> (1.87), <strong>build</strong> (1.81), <strong>serverless</strong> (1.72), <strong>clients</strong> (1.7)</p>
+<p>Over-indexed in <strong>answered</strong> threads:</p>
+<p><strong>trigger</strong> (-1.83), <strong>dashboard</strong> (-1.63), <strong>code</strong> (-1.45), <strong>free</strong> (-1.41), <strong>cron</strong> (-1.35), <strong>function</strong> (-1.34), <strong>secret</strong> (-1.33), <strong>invoke edge</strong> (-1.3), <strong>pdf</strong> (-1.28), <strong>table</strong> (-1.27), <strong>delete</strong> (-1.23), <strong>object</strong> (-1.22), <strong>jobs</strong> (-1.21), <strong>self hosted</strong> (-1.18), <strong>world</strong> (-1.17), <strong>seconds</strong> (-1.17), <strong>key</strong> (-1.13), <strong>anon</strong> (-1.11), <strong>30</strong> (-1.07), <strong>update</strong> (-1.06)</p>
+<h2 id="3-what-died-and-what-persists-quarterly-volume-by-topic"><span class="n">3</span>What died and what persists (quarterly volume by topic)</h2>
+<div class="tbl-wrap"><table>
+<thead>
+<tr>
+<th align="left">qtr</th>
+<th align="right">#0 edge functions</th>
+<th align="right">#1 deno</th>
+<th align="right">#2 const</th>
+<th align="right">#3 self</th>
+<th align="right">#4 webhook</th>
+<th align="right">#5 eszip v0</th>
+<th align="right">#6 limit</th>
+<th align="right">#7 index</th>
+<th align="right">#8 cron</th>
+<th align="right">#9 local</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left">2022Q3</td>
+<td align="right">9</td>
+<td align="right">11</td>
+<td align="right">6</td>
+<td align="right">2</td>
+<td align="right">6</td>
+<td align="right">0</td>
+<td align="right">7</td>
+<td align="right">2</td>
+<td align="right">4</td>
+<td align="right">8</td>
+</tr>
+<tr>
+<td align="left">2022Q4</td>
+<td align="right">18</td>
+<td align="right">18</td>
+<td align="right">16</td>
+<td align="right">3</td>
+<td align="right">12</td>
+<td align="right">3</td>
+<td align="right">6</td>
+<td align="right">3</td>
+<td align="right">7</td>
+<td align="right">16</td>
+</tr>
+<tr>
+<td align="left">2023Q1</td>
+<td align="right">34</td>
+<td align="right">32</td>
+<td align="right">14</td>
+<td align="right">3</td>
+<td align="right">19</td>
+<td align="right">7</td>
+<td align="right">12</td>
+<td align="right">6</td>
+<td align="right">5</td>
+<td align="right">22</td>
+</tr>
+<tr>
+<td align="left">2023Q2</td>
+<td align="right">17</td>
+<td align="right">26</td>
+<td align="right">23</td>
+<td align="right">7</td>
+<td align="right">24</td>
+<td align="right">4</td>
+<td align="right">11</td>
+<td align="right">13</td>
+<td align="right">5</td>
+<td align="right">29</td>
+</tr>
+<tr>
+<td align="left">2023Q3</td>
+<td align="right">33</td>
+<td align="right">16</td>
+<td align="right">19</td>
+<td align="right">5</td>
+<td align="right">8</td>
+<td align="right">0</td>
+<td align="right">20</td>
+<td align="right">8</td>
+<td align="right">12</td>
+<td align="right">19</td>
+</tr>
+<tr>
+<td align="left">2023Q4</td>
+<td align="right">26</td>
+<td align="right">21</td>
+<td align="right">14</td>
+<td align="right">3</td>
+<td align="right">26</td>
+<td align="right">2</td>
+<td align="right">14</td>
+<td align="right">9</td>
+<td align="right">5</td>
+<td align="right">31</td>
+</tr>
+<tr>
+<td align="left">2024Q1</td>
+<td align="right">36</td>
+<td align="right">28</td>
+<td align="right">13</td>
+<td align="right">11</td>
+<td align="right">24</td>
+<td align="right">1</td>
+<td align="right">15</td>
+<td align="right">15</td>
+<td align="right">10</td>
+<td align="right">36</td>
+</tr>
+<tr>
+<td align="left">2024Q2</td>
+<td align="right">22</td>
+<td align="right">18</td>
+<td align="right">10</td>
+<td align="right">8</td>
+<td align="right">38</td>
+<td align="right">0</td>
+<td align="right">10</td>
+<td align="right">14</td>
+<td align="right">6</td>
+<td align="right">28</td>
+</tr>
+<tr>
+<td align="left">2024Q3</td>
+<td align="right">31</td>
+<td align="right">14</td>
+<td align="right">10</td>
+<td align="right">3</td>
+<td align="right">30</td>
+<td align="right">0</td>
+<td align="right">13</td>
+<td align="right">15</td>
+<td align="right">5</td>
+<td align="right">28</td>
+</tr>
+<tr>
+<td align="left">2024Q4</td>
+<td align="right">28</td>
+<td align="right">12</td>
+<td align="right">6</td>
+<td align="right">1</td>
+<td align="right">15</td>
+<td align="right">0</td>
+<td align="right">10</td>
+<td align="right">7</td>
+<td align="right">7</td>
+<td align="right">19</td>
+</tr>
+<tr>
+<td align="left">2025Q1</td>
+<td align="right">18</td>
+<td align="right">18</td>
+<td align="right">4</td>
+<td align="right">2</td>
+<td align="right">19</td>
+<td align="right">0</td>
+<td align="right">23</td>
+<td align="right">7</td>
+<td align="right">9</td>
+<td align="right">29</td>
+</tr>
+<tr>
+<td align="left">2025Q2</td>
+<td align="right">26</td>
+<td align="right">18</td>
+<td align="right">3</td>
+<td align="right">8</td>
+<td align="right">26</td>
+<td align="right">0</td>
+<td align="right">24</td>
+<td align="right">9</td>
+<td align="right">8</td>
+<td align="right">31</td>
+</tr>
+<tr>
+<td align="left">2025Q3</td>
+<td align="right">21</td>
+<td align="right">10</td>
+<td align="right">5</td>
+<td align="right">2</td>
+<td align="right">14</td>
+<td align="right">0</td>
+<td align="right">15</td>
+<td align="right">7</td>
+<td align="right">10</td>
+<td align="right">31</td>
+</tr>
+<tr>
+<td align="left">2025Q4</td>
+<td align="right">20</td>
+<td align="right">6</td>
+<td align="right">6</td>
+<td align="right">5</td>
+<td align="right">18</td>
+<td align="right">0</td>
+<td align="right">17</td>
+<td align="right">3</td>
+<td align="right">6</td>
+<td align="right">30</td>
+</tr>
+<tr>
+<td align="left">2026Q1</td>
+<td align="right">9</td>
+<td align="right">2</td>
+<td align="right">1</td>
+<td align="right">9</td>
+<td align="right">9</td>
+<td align="right">0</td>
+<td align="right">13</td>
+<td align="right">9</td>
+<td align="right">4</td>
+<td align="right">32</td>
+</tr>
+<tr>
+<td align="left">2026Q2</td>
+<td align="right">7</td>
+<td align="right">3</td>
+<td align="right">0</td>
+<td align="right">1</td>
+<td align="right">6</td>
+<td align="right">0</td>
+<td align="right">10</td>
+<td align="right">2</td>
+<td align="right">0</td>
+<td align="right">7</td>
+</tr>
+<tr>
+<td align="left">2026Q3</td>
+<td align="right">1</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">1</td>
+<td align="right">0</td>
+<td align="right">5</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">3</td>
+</tr>
+</tbody></table></div>
+<h2 id="4-the-binding-constraint-is-memory-not-duration-verified-2026-08-08-counts-corrected-after-fact-check"><span class="n">4</span>The binding constraint is memory, not duration (verified 2026-08-08; counts corrected after fact-check)</h2>
+<p>No &quot;10 second&quot; execution limit exists on Supabase Edge Functions (that&#39;s Vercel&#39;s Hobby serverless limit) — <strong>zero threads</strong> report hitting a Supabase 10s wall (2 literal &quot;10s&quot; mentions: one asking whether Supabase shares <em>Vercel&#39;s</em> limit, one about scheduling). What threads actually hit, per current docs vs corpus (counts independently re-derived; an earlier version of this table overstated memory 3×):</p>
+<div class="tbl-wrap"><table>
+<thead>
+<tr>
+<th>Limit</th>
+<th>Value (docs)</th>
+<th>Threads citing it</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Worker-boot errors</strong> (&quot;InvalidWorkerResponse&quot; etc.)</td>
+<td>—</td>
+<td><strong>~50</strong> (the cited &quot;5407&quot; code appears 0×)</td>
+</tr>
+<tr>
+<td><strong>Memory</strong></td>
+<td>256MB</td>
+<td><strong>~30–34</strong> — image processing, unzip, PDF, AI calls</td>
+</tr>
+<tr>
+<td>CPU time</td>
+<td>2s per request</td>
+<td>30</td>
+</tr>
+<tr>
+<td>Wall clock</td>
+<td>150s free / 400s paid</td>
+<td>13–17</td>
+</tr>
+</tbody></table></div>
+<p>Threads citing &quot;150MB&quot; against the docs&#39; current 256MB show the limit was raised mid-corpus — old threads still rank in search and mislead. The persisting Edge Functions pain is <strong>invisible limits discovered by crashing</strong>: no self-serve memory knob, no per-invocation memory in logs, and worker-boot failures with no actionable error. The community answer is &quot;restructure or move the work off Edge Functions.&quot;</p>
+<p class="callout"><strong>Fix:</strong> publish the limits playbook (memory streaming patterns, which workloads don&#39;t fit Edge Functions and where to move them), surface per-invocation memory usage in function logs, and give worker-boot failures a named, actionable error.</p>
+
+      <footer>
+        <p>Generated from <span class="mono">analysis/findings/edge-functions-deep-dive.md</span> — the raw markdown is still served alongside this page.</p>
+        <p class="mono">Supabase community Discord · 41,392 threads · 270,020 replies · Aug 2022 – Aug 2026</p>
+      </footer>
+    </article>
+    <nav class="toc" aria-label="On this page">
+    <p class="t">On this page</p>
+    <ol><li><a href="#1-the-frequent-issues-nmf-topics">1. The frequent issues (NMF topics)</a></li><li><a href="#2-the-vocabulary-of-threads-nobody-answers">2. The vocabulary of threads nobody answers</a></li><li><a href="#3-what-died-and-what-persists-quarterly-volume-by-topic">3. What died and what persists (quarterly volume by topic)</a></li><li><a href="#4-the-binding-constraint-is-memory-not-duration-verified-2026-08-08-counts-corrected-after-fact-check">4. The binding constraint is memory, not duration (verified 2026-08-08; counts corrected after fact-check)</a></li></ol>
+  </nav>
+  </div>
+</div>
+
+<script>
+// highlight the section currently in view
+const links = [...document.querySelectorAll('.toc a')];
+const targets = links.map(a => document.getElementById(a.hash.slice(1))).filter(Boolean);
+if (targets.length) {
+  const seen = new Set();
+  const io = new IntersectionObserver(entries => {
+    for (const e of entries) e.isIntersecting ? seen.add(e.target.id) : seen.delete(e.target.id);
+    const first = targets.find(t => seen.has(t.id));
+    links.forEach(a => a.classList.toggle('on', !!first && a.hash === '#' + first.id));
+  }, { rootMargin: '-72px 0px -70% 0px' });
+  targets.forEach(t => io.observe(t));
+}
+</script>
+</body>
+</html>

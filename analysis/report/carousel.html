@@ -1,0 +1,223 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Harder problems, one volunteer deep — carousel</title>
+<style>
+@font-face{font-family:"Custom Font";src:url("assets/fonts/CustomFont-Book.woff2") format("woff2");font-weight:400}
+@font-face{font-family:"Custom Font";src:url("assets/fonts/CustomFont-Medium.woff2") format("woff2");font-weight:500}
+@font-face{font-family:"Custom Font";src:url("assets/fonts/CustomFont-Bold.woff2") format("woff2");font-weight:700}
+@page{size:1080px 1350px; margin:0}
+*{box-sizing:border-box; margin:0; padding:0}
+:root{
+  --bg:#121212; --surface:#1f1f1f; --fg:#fafafa; --fg-light:#b4b4b4;
+  --fg-lighter:#898989; --border:#2e2e2e; --brand:#3ecf8e;
+  --warning:#daae00; --destructive:#e5484d;
+  --mono:"Source Code Pro",ui-monospace,Menlo,monospace;
+  --sans:"Custom Font","Helvetica Neue",Helvetica,Arial,sans-serif;
+}
+body{background:var(--bg); font-family:var(--sans); -webkit-print-color-adjust:exact; print-color-adjust:exact}
+.slide{
+  width:1080px; height:1350px; page-break-after:always; overflow:hidden;
+  background:var(--bg); color:var(--fg); padding:84px 88px;
+  display:flex; flex-direction:column; position:relative;
+}
+.slide.last{page-break-after:auto}
+.kick{font-family:var(--mono); font-size:19px; letter-spacing:.06em; color:var(--fg-lighter); margin-bottom:26px}
+.kick b{color:var(--brand); font-weight:500}
+h1{font-size:74px; line-height:1.06; letter-spacing:-.025em; font-weight:700}
+h1 .g{color:var(--brand)}
+h2{font-size:46px; line-height:1.12; letter-spacing:-.02em; font-weight:700; margin-bottom:18px}
+h2 .g{color:var(--brand)} h2 .w{color:var(--warning)} h2 .r{color:var(--destructive)}
+.lede{font-size:23px; line-height:1.55; color:var(--fg-light); max-width:60ch}
+.lede b{color:var(--fg); font-weight:500}
+.foot{
+  position:absolute; left:88px; right:88px; bottom:44px;
+  display:flex; justify-content:space-between; align-items:center;
+  font-family:var(--mono); font-size:16px; color:var(--fg-lighter);
+  border-top:1px solid var(--border); padding-top:18px;
+}
+.foot .mark{display:flex; align-items:center; gap:8px}
+.foot svg{width:15px; height:15px}
+
+/* stat blocks */
+.stats{display:flex; gap:20px; margin-top:44px}
+.stat{flex:1; background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:22px 24px}
+.stat .v{font-size:42px; font-weight:500; letter-spacing:-.02em; font-variant-numeric:tabular-nums}
+.stat .v.g{color:var(--brand)} .stat .v.w{color:var(--warning)} .stat .v.r{color:var(--destructive)}
+.stat .l{font-size:16.5px; color:var(--fg-lighter); margin-top:6px; line-height:1.4}
+
+/* bars */
+.bars{margin-top:40px}
+.row{display:flex; align-items:center; gap:18px; padding:7px 0}
+.row .lab{flex:0 0 285px; font-size:19.5px; color:var(--fg-light); text-align:right}
+.row .trk{flex:1; height:16px; position:relative; display:flex; align-items:center}
+.row .fill{height:11px; border-radius:3px; background:var(--brand); min-width:3px}
+.row .fill.gray{background:var(--fg-lighter); opacity:.5}
+.row .fill.warn{background:var(--warning)}
+.row .fill.red{background:var(--destructive)}
+.row .val{flex:0 0 74px; font-family:var(--mono); font-size:18px; text-align:right; color:var(--fg)}
+.ref{position:absolute; top:-5px; bottom:-5px; width:1px; background:#565656}
+.cap{font-size:16.5px; color:var(--fg-lighter); margin-top:20px; font-family:var(--mono)}
+.cap b{color:var(--fg-light); font-weight:500}
+
+/* numbered list */
+.list{margin-top:36px; counter-reset:n}
+.list li{
+  list-style:none; counter-increment:n; display:flex; gap:22px;
+  padding:17px 0; border-top:1px solid var(--border);
+  font-size:20px; line-height:1.5; color:var(--fg-light);
+}
+.list li::before{
+  content:counter(n); font-family:var(--mono); font-size:16px; color:var(--brand);
+  border:1px solid var(--border); border-radius:6px; padding:2px 9px; height:fit-content;
+}
+.list b{color:var(--fg); font-weight:500}
+</style>
+</head>
+<body>
+
+<!-- 1 · title -->
+<section class="slide">
+  <p class="kick"><b>DATA</b> · SUPABASE COMMUNITY DISCORD · 41,392 THREADS · 270,020 REPLIES · 2022–2026</p>
+  <h1>Harder problems,<br><span class="g">one volunteer deep.</span></h1>
+  <p class="lede" style="margin-top:28px">I mined four years of the Supabase community support forum — every thread,
+  every reply — then read the 96 hardest threads by hand. Two stories: the problems getting harder,
+  and an answer layer that rests on a single volunteer.</p>
+  <div class="stats">
+    <div class="stat"><div class="v">41,392</div><div class="l">threads analysed</div></div>
+    <div class="stat"><div class="v">270k</div><div class="l">replies read</div></div>
+    <div class="stat"><div class="v">4 yrs</div><div class="l">Aug 2022 – Aug 2026</div></div>
+  </div>
+  <div class="foot"><span class="mark"><svg viewBox="0 0 109 113" fill="none"><path d="M63.7 110.3c-2.6 3.1-7.9 1.8-8-2.3l-1.2-45.4h30.9c4.6 0 7.2 5.3 4.3 9L63.7 110.3z" fill="#3ecf8e"/><path d="M45.3 2.7c2.6-3.1 7.9-1.8 8 2.3l1.2 45.4H23.6c-4.6 0-7.2-5.3-4.3-9l26-38.7z" fill="#3ecf8e"/></svg>community-forum friction audit</span><span>1 / 8</span></div>
+</section>
+
+<!-- 2 · demand: rising trio -->
+<section class="slide">
+  <p class="kick"><b>01</b> · DEMAND</p>
+  <h2>Three areas grow against an <span class="g">18% decline</span></h2>
+  <p class="lede">Last 6 months vs the prior 6, per product area, adjusted for the forum-wide decline.
+  1.0 = moved with the forum. Only three areas rose.</p>
+  <div class="bars">
+    <div class="row"><span class="lab">Billing / Quotas</span><span class="trk"><span class="ref" style="left:55.6%"></span><span class="fill" style="width:97%"></span></span><span class="val">1.74</span></div>
+    <div class="row"><span class="lab">Network / DNS</span><span class="trk"><span class="ref" style="left:55.6%"></span><span class="fill" style="width:91%"></span></span><span class="val">1.63</span></div>
+    <div class="row"><span class="lab">Outage / Status</span><span class="trk"><span class="ref" style="left:55.6%"></span><span class="fill" style="width:88%"></span></span><span class="val">1.58</span></div>
+    <div class="row"><span class="lab">Auth / JWT / OAuth</span><span class="trk"><span class="ref" style="left:55.6%"></span><span class="fill gray" style="width:50%"></span></span><span class="val">0.90</span></div>
+    <div class="row"><span class="lab">Database / Connectivity</span><span class="trk"><span class="ref" style="left:55.6%"></span><span class="fill gray" style="width:39%"></span></span><span class="val">0.70</span></div>
+    <div class="row"><span class="lab">Edge Functions</span><span class="trk"><span class="ref" style="left:55.6%"></span><span class="fill gray" style="width:30%"></span></span><span class="val">0.54</span></div>
+  </div>
+  <p class="cap">green = growing despite the decline · the rising areas are where the <b>platform itself breaks</b>, not where the docs are thin — Auth, the biggest doc gap, is shrinking</p>
+  <div class="foot"><span>rising = billing state, project status, network reachability</span><span>2 / 8</span></div>
+</section>
+
+<!-- 3 · regime change -->
+<section class="slide">
+  <p class="kick"><b>02</b> · DEMAND</p>
+  <h2>August 2025: moderators started <span class="w">tagging outages</span></h2>
+  <p class="lede">The outage tag (created early 2024, rarely used) suddenly became standard practice in
+  Aug 2025 — 5–25 uses/month, then 58–109/month ever since. Keyword-classified outage volume rose only
+  ~1.3–1.5× over the same window: the step is mostly moderators getting organised, not a reliability cliff.</p>
+  <div class="bars">
+    <div class="row"><span class="lab">Feb – Jul 2025</span><span class="trk"><span class="fill gray" style="width:9%"></span></span><span class="val">~10</span></div>
+    <div class="row"><span class="lab">Aug 2025</span><span class="trk"><span class="fill warn" style="width:70%"></span></span><span class="val">76</span></div>
+    <div class="row"><span class="lab">Sep 2025</span><span class="trk"><span class="fill warn" style="width:93%"></span></span><span class="val">101</span></div>
+    <div class="row"><span class="lab">Oct 2025</span><span class="trk"><span class="fill warn" style="width:96%"></span></span><span class="val">105</span></div>
+    <div class="row"><span class="lab">Mar 2026</span><span class="trk"><span class="fill warn" style="width:100%"></span></span><span class="val">109</span></div>
+    <div class="row"><span class="lab">Jul 2026</span><span class="trk"><span class="fill warn" style="width:95%"></span></span><span class="val">104</span></div>
+  </div>
+  <p class="cap">outage-tag uses per month · the tagging step is real; the underlying volume step is modest · <b>an earlier draft of this chart claimed a reliability regime change — an independent fact-check caught it</b></p>
+  <div class="foot"><span>tag discipline ≠ platform health</span><span>3 / 8</span></div>
+</section>
+
+<!-- 4 · supply: silence -->
+<section class="slide">
+  <p class="kick"><b>03</b> · SUPPLY</p>
+  <h2>Silence is rare — <span class="w">but not evenly</span></h2>
+  <p class="lede">Only 11.6% of 41,392 threads get zero replies, and the last full quarter is 2.5%.
+  Coverage keeps improving as volume falls — but it rests on volunteers, and the specialist corners
+  are still 2–3× the average.</p>
+  <div class="bars">
+    <div class="row"><span class="lab">TypeGen</span><span class="trk"><span class="ref" style="left:39%"></span><span class="fill gray" style="width:100%"></span></span><span class="val">27%</span></div>
+    <div class="row"><span class="lab">Self-Hosting</span><span class="trk"><span class="ref" style="left:39%"></span><span class="fill gray" style="width:88%"></span></span><span class="val">23%</span></div>
+    <div class="row"><span class="lab">AI / Vectors</span><span class="trk"><span class="ref" style="left:39%"></span><span class="fill gray" style="width:83%"></span></span><span class="val">22%</span></div>
+    <div class="row"><span class="lab">Integrations</span><span class="trk"><span class="ref" style="left:39%"></span><span class="fill gray" style="width:70%"></span></span><span class="val">19%</span></div>
+    <div class="row"><span class="lab">CLI / Tooling</span><span class="trk"><span class="ref" style="left:39%"></span><span class="fill gray" style="width:66%"></span></span><span class="val">18%</span></div>
+    <div class="row"><span class="lab">Outage / Status</span><span class="trk"><span class="ref" style="left:39%"></span><span class="fill" style="width:29%"></span></span><span class="val">8%</span></div>
+    <div class="row"><span class="lab">Billing / Quotas</span><span class="trk"><span class="ref" style="left:39%"></span><span class="fill" style="width:15%"></span></span><span class="val">4%</span></div>
+  </div>
+  <p class="cap">share of threads with zero replies, by product area · line = forum average (11.6%) · <b>answerability tracks how generalist the topic is</b> — the incident areas get answers fastest, the specialist corners wait longest</p>
+  <div class="foot"><span>quarterly coverage improved 17.8% → 2.5% unanswered since mid-2024</span><span>4 / 8</span></div>
+</section>
+
+<!-- 5 · supply: concentration -->
+<section class="slide">
+  <p class="kick"><b>04</b> · SUPPLY</p>
+  <h2>One volunteer wrote <span class="g">27%</span> of all 270,020 answers</h2>
+  <p class="lede">Steady at 24–28% every quarter for two years. The top 12 repliers hold ~41% — and
+  <b>none identify as Supabase staff</b>. The two biggest answerers describe themselves as volunteer
+  moderators. The capacity was never diversified.</p>
+  <div class="stats" style="margin-top:40px">
+    <div class="stat"><div class="v g">27.0%</div><div class="l">of all replies from one community volunteer</div></div>
+    <div class="stat"><div class="v">~41%</div><div class="l">from the top 12 repliers combined</div></div>
+  </div>
+  <div class="stats" style="margin-top:20px">
+    <div class="stat"><div class="v">54%</div><div class="l">of threads come from 17% of users — a chronic-friction cohort</div></div>
+    <div class="stat"><div class="v w">110</div><div class="l">threads from the single most frequent poster</div></div>
+  </div>
+  <p class="cap">when half the forum gets silence and the answered half leans on one person, <b>response capacity is a single point of failure</b></p>
+  <div class="foot"><span>community moderation doesn't scale like headcount</span><span>5 / 8</span></div>
+</section>
+
+<!-- 6 · triage -->
+<section class="slide">
+  <p class="kick"><b>05</b> · GROUND TRUTH</p>
+  <h2>66% bugs or outages. <span class="r">21% resolved.</span></h2>
+  <p class="lede">Six independent passes read the 96 hardest threads across the rising areas.
+  Root causes:</p>
+  <div class="bars">
+    <div class="row"><span class="lab">bug</span><span class="trk"><span class="fill red" style="width:93%"></span></span><span class="val">37</span></div>
+    <div class="row"><span class="lab">outage</span><span class="trk"><span class="fill warn" style="width:65%"></span></span><span class="val">26</span></div>
+    <div class="row"><span class="lab">user misconfig</span><span class="trk"><span class="fill gray" style="width:30%"></span></span><span class="val">12</span></div>
+    <div class="row"><span class="lab">quota / limit</span><span class="trk"><span class="fill gray" style="width:20%"></span></span><span class="val">8</span></div>
+    <div class="row"><span class="lab">billing policy</span><span class="trk"><span class="fill gray" style="width:15%"></span></span><span class="val">6</span></div>
+    <div class="row"><span class="lab">doc gap</span><span class="trk"><span class="fill gray" style="width:15%"></span></span><span class="val">6</span></div>
+  </div>
+  <p class="cap">the 21% that resolve are almost all <b>self-fixing user misconfig</b> · bug and outage threads are never reply-resolved — the only path is a support ticket and days of waiting · saying your plan helps: "pro plan" threads rise 2× and get answered at 2× the forum rate</p>
+  <div class="foot"><span>the forum absorbs incident-management load the product doesn't</span><span>6 / 8</span></div>
+</section>
+
+<!-- 7 · edge -->
+<section class="slide">
+  <p class="kick"><b>06</b> · DEEP DIVE</p>
+  <h2>Edge Functions: limits are found <span class="w">by crashing</span></h2>
+  <p class="lede">There is no 10-second limit (that's Vercel's Hobby tier — zero threads report hitting one).
+  What 2,000 Edge Functions threads actually hit:</p>
+  <div class="bars">
+    <div class="row"><span class="lab">worker-boot errors</span><span class="trk"><span class="fill warn" style="width:100%"></span></span><span class="val">~50</span></div>
+    <div class="row"><span class="lab">memory (256MB)</span><span class="trk"><span class="fill gray" style="width:64%"></span></span><span class="val">~32</span></div>
+    <div class="row"><span class="lab">CPU time (2s)</span><span class="trk"><span class="fill gray" style="width:60%"></span></span><span class="val">30</span></div>
+    <div class="row"><span class="lab">wall clock (150s/400s)</span><span class="trk"><span class="fill gray" style="width:28%"></span></span><span class="val">14</span></div>
+  </div>
+  <p class="cap">no self-serve memory knob, no per-invocation memory in logs, worker-boot failures with no actionable error · the Deno/esm.sh import pain has quietly collapsed (~37 → ~2 threads/quarter) · what persists: <b>local deploy / CLI friction (~31/quarter)</b></p>
+  <div class="foot"><span>users find the limit when production dies</span><span>7 / 8</span></div>
+</section>
+
+<!-- 8 · fixes -->
+<section class="slide last">
+  <p class="kick"><b>07</b> · THE FIX LIST</p>
+  <h2>Where the leverage is</h2>
+  <ol class="list">
+    <li><b>Self-service recovery for stuck lifecycle ops</b> — force-restart / cancel / rollback + hard timeouts. Resolves the top root cause across all six triage passes.</li>
+    <li><b>Support SLA + auto-escalation for prod-down paid plans</b> — kills the "magic keyword" ticket hack.</li>
+    <li><b>Honest per-region / per-project status page</b> — no more "All Systems Operational" while databases are down.</li>
+    <li><b>Forum answer capacity</b> — staff rotation or AI first-response after 24h of silence. Coverage is good, but one volunteer carries 27% of it.</li>
+    <li><b>Degraded-mode dashboard</b> — the control plane fails exactly when the project is sick.</li>
+    <li><b>Edge Functions memory playbook + per-invocation memory in logs.</b></li>
+  </ol>
+  <p class="lede" style="margin-top:34px">Full interactive report with method, per-area tables, and the
+  reproducible pipeline — link in the post.</p>
+  <div class="foot"><span class="mark"><svg viewBox="0 0 109 113" fill="none"><path d="M63.7 110.3c-2.6 3.1-7.9 1.8-8-2.3l-1.2-45.4h30.9c4.6 0 7.2 5.3 4.3 9L63.7 110.3z" fill="#3ecf8e"/><path d="M45.3 2.7c2.6-3.1 7.9-1.8 8 2.3l1.2 45.4H23.6c-4.6 0-7.2-5.3-4.3-9l26-38.7z" fill="#3ecf8e"/></svg>community-forum friction audit · 2022–2026</span><span>8 / 8</span></div>
+</section>
+
+</body>
+</html>
