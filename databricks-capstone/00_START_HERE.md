@@ -29,9 +29,12 @@ file in this archive is plain-text readable. The stem keeps the real language.
 
 1. **`DEMO.md`** — four live agent transcripts, every tool call and result verbatim, each mapped
    to the requirement it evidences, with matching screenshots.
-2. **`README.md`** — architecture diagram, the reproducible build order, notes and caveats.
-3. **`docs/architecture.md`** — expanded data flow and component map.
-4. **`docs/design-decisions.md`** — why Lakebase + Delta, why pgvector over Vector Search, why the
+2. **`FEATURES.md`** — the index: every feature → the file and line that implements it → a command
+   that proves it runs. Also carries the rubric-dimension → evidence map and the explicit
+   scoped-out list.
+3. **`README.md`** — architecture diagram, the reproducible build order, notes and caveats.
+4. **`docs/architecture.md`** — expanded data flow and component map.
+5. **`docs/design-decisions.md`** — why Lakebase + Delta, why pgvector over Vector Search, why the
    agent runs in-process.
 
 **What this is a port of.** The original solution is a running Next.js/React dashboard over

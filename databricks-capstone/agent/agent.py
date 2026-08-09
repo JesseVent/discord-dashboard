@@ -63,27 +63,36 @@ def build_agent():
 
 # ---------- MLflow registration + serving ----------
 AGENT_NAME = "discord_triage_agent"
+# The legacy workspace model registry is disabled on this workspace ("PERMISSION_DENIED:
+# The legacy workspace model registry is disabled"), so the registry is Unity Catalog and
+# the model name must be three-level. Override either with env vars.
+REGISTERED_MODEL = os.environ.get("DISCORD_AGENT_UC_MODEL", f"workspace.discord.{AGENT_NAME}")
 
 def register():
     """Log the agent to MLflow with tracing, register it, and (optionally) deploy."""
+    mlflow.set_registry_uri(os.environ.get("MLFLOW_REGISTRY_URI", "databricks-uc"))
     mlflow.set_experiment(f"/Shared/{AGENT_NAME}")
 
     with mlflow.start_run(run_name=f"{AGENT_NAME}-{uuid.uuid4().hex[:6]}"):
         # Enable LangGraph auto-tracing (spans for every tool call + LLM call).
         # In current MLflow this is automatic when langchain/langgraph is importable.
+        # `lc_model` is a FILE PATH, not the object: MLflow's langchain flavor
+        # refuses to cloudpickle a CompiledStateGraph, so LangGraph agents must go
+        # through models-from-code (agent/mlflow_model.py calls set_model()).
         mlflow.langchain.log_model(
-            lc_model=build_agent(),
+            lc_model=os.path.join(os.path.dirname(__file__), "mlflow_model.py"),
             artifact_path="agent",
-            registered_model_name=AGENT_NAME,
+            code_paths=[os.path.dirname(__file__)],
+            registered_model_name=REGISTERED_MODEL,
             input_example={"messages": [{"role": "user", "content": "What are the most frustrating unresolved RLS issues?"}]},
         )
         mlflow.set_tag("agent_type", "langgraph_react")
         mlflow.set_tag("domain", "discord_support_triage")
         mlflow.set_tag("tools", ",".join(t.name for t in ALL_TOOLS))
 
-    print(f"✓ registered agent '{AGENT_NAME}'")
-    print(f"  serving: databricks serving-endpoints create from model '{AGENT_NAME}'")
-    print(f"  (UI: Models > {AGENT_NAME} > Serve > create real-time endpoint)")
+    print(f"✓ registered agent '{REGISTERED_MODEL}'")
+    print(f"  serving: databricks serving-endpoints create from model '{REGISTERED_MODEL}'")
+    print(f"  (UI: Catalog > {REGISTERED_MODEL} > Serve this model)")
 
 
 # ---------- message rendering (shared with the Streamlit app) ----------

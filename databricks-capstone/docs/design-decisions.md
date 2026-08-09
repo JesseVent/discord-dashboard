@@ -53,12 +53,28 @@ freshness and to demonstrate the **third-party-API-integration** requirement.
 
 ---
 
-## 3. Embeddings: `bge-large-en-v1.5` via Foundation Model API, Vector Search (Delta Sync)
+## 3. Embeddings: pgvector primary, Vector Search (Delta Sync) as the second backend
 
-**Decision:** Replace Cloudflare Workers AI + Vectorize with the Databricks Foundation
-Model API `bge-large-en-v1.5` and a Mosaic AI Vector Search **Delta Sync** index.
+**Original decision:** replace Cloudflare Workers AI + Vectorize with the Databricks
+Foundation Model API `bge-large-en-v1.5` and a Mosaic AI Vector Search **Delta Sync** index.
 
-**Why `bge-large` and not the repo's `bge-base`?**
+**Decision as shipped (revised during build):** `all-MiniLM-L6-v2` (384-d) into **pgvector**
+in the same Lakebase database as the issue rows is the **default** backend; the Vector Search
+Delta Sync index is provisioned and works, but sits behind `DISCORD_RETRIEVER_BACKEND=vs`.
+
+**Why the revision.** The agent's two write tools (`update_resolution_status`, `add_note`)
+run over psycopg against Lakebase. Keeping retrieval in the *same* database means a search
+and the write it justifies share one connection and one transaction boundary — the agent
+cannot retrieve from a store that has drifted from the store it writes to. A Delta Sync index
+is, by construction, eventually consistent with Lakebase (Lakebase → Delta → index). For a
+read-only RAG app that is fine; for an agent that mutates the rows it just retrieved it is a
+real correctness gap, and closing it was worth more than the retrieval-quality delta between
+MiniLM-384 and bge-large-1024.
+
+Both paths are live: see `FEATURES.md` → *Vector Search* for the provisioned endpoint, index,
+and the exact command that runs retrieval through it.
+
+**Why `bge-large` for the Vector Search path and not the repo's `bge-base`?**
 - Same model family → comparable embedding geometry, so the 0.86 cosine duplicate-
   detection threshold ports cleanly.
 - `large` gives better retrieval quality for the agent's `semantic_search` tool; cost is
@@ -71,7 +87,8 @@ Model API `bge-large-en-v1.5` and a Mosaic AI Vector Search **Delta Sync** index
 - It's the native Databricks RAG primitive — what the capstone is asking you to use.
 
 **Text construction is identical** to `embed.js:buildEmbedText` —
-`name + first_message_content + Tags` — so semantics match the original.
+`name + first_message_content + Tags` — so semantics match the original. Both backends embed
+the same text, which is what makes the 0.86 duplicate threshold portable between them.
 
 **Requirement served:** "unstructured-data retrieval (vector search / RAG)."
 

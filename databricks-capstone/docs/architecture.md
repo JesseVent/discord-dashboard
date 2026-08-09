@@ -34,20 +34,20 @@ the Discord dashboard repo (`../../`).
 │  discord.duplicate_*    │     │    discord.top_responders                  │
 │  discord.theme_clusters │     │                                            │
 │                         │     │  notebook 03 builds:                       │
-│  * source of truth *    │     │    discord.issue_embeddings (id, text, vec)│
+│  * source of truth *    │     │    discord_issues_vs_source (CDF on)       │
 │  agent writes here      │     │                                            │
-└─────────────┬───────────┘     └─────────────────────┬──────────────────────┘
-              │                                        │ Delta Sync trigger
-              │                                        ▼
-              │                   ┌──────────────────────────────────────────┐
-              │                   │  MOSAIC AI VECTOR SEARCH                  │
-              │                   │  index: discord_issues_vs                 │
-              │                   │  model: bge-large-en-v1.5                 │
-              │                   │  (replaces Cloudflare Vectorize)          │
-              │                   └─────────────────────┬────────────────────┘
+│  discord.issue_         │     └─────────────────────┬──────────────────────┘
+│    embeddings (pgvector)│                            │ Delta Sync trigger
+│    + HNSW cosine        │                            ▼
+└─────────────┬───────────┘     ┌──────────────────────────────────────────┐
+              │                 │  MOSAIC AI VECTOR SEARCH   (backend: vs)  │
+              │  DEFAULT        │  index: discord_issues_vs                 │
+              │  backend:       │  model: databricks-bge-large-en           │
+              │  pgvector       │  (replaces Cloudflare Vectorize)          │
+              │                 └─────────────────────┬────────────────────┘
               │                                        │
               │     ┌──────────────────────────────────┴──────────────────┐
-              │     │  rag/retriever.py                                    │
+              │     │  rag/retriever.py    DISCORD_RETRIEVER_BACKEND       │
               │     │  query → embed → top-K (with score + metadata)       │
               │     └──────────────────────┬──────────────────────────────┘
               │                            │
@@ -101,18 +101,22 @@ repo's Postgres **views** (`dashboard_global_metrics`, `dashboard_daily_stats`,
 tables the dashboard reads directly. This is a deliberate OLTP/OLAP split; see
 [design-decisions.md](design-decisions.md).
 
-### 2.3 Embeddings → Vector Search (notebook 03)
-Ports `cloudflare-cron/src/embed.js`:
+### 2.3 Embeddings → retrieval (notebook 03, `rag/retriever.py`)
+Ports `cloudflare-cron/src/embed.js`. Two backends ship; `rag/retriever.py` picks one from
+`DISCORD_RETRIEVER_BACKEND`.
 
-| Discord (Cloudflare) | Databricks |
-|---|---|
-| Workers AI `@cf/baai/bge-base-en-v1.5` | Foundation Model API `bge-large-en-v1.5` |
-| Vectorize index `discord-issues-index` | Vector Search index `discord_issues_vs` (Delta Sync) |
-| `embedAndUpsert` per issue | batch embed → upsert into `issue_embeddings` Delta → auto-sync |
-| `buildEmbedText`: name + body + Tags | identical text-construction function |
+| Discord (Cloudflare) | Databricks — **default** (`pgvector`) | Databricks — flag (`vs`) |
+|---|---|---|
+| Workers AI `@cf/baai/bge-base-en-v1.5` | `all-MiniLM-L6-v2`, 384-d, encoded in-process | `databricks-bge-large-en` (managed embeddings) |
+| Vectorize index `discord-issues-index` | `discord.issue_embeddings` + HNSW cosine index | Vector Search index `discord_issues_vs` (Delta Sync) |
+| `embedAndUpsert` per issue | batch embed → upsert over psycopg | Delta Sync — no manual upsert at all |
+| `buildEmbedText`: name + body + Tags | identical text-construction function | same text |
 
-A Delta Sync index means new issues appear in vector search with no manual upsert —
-a real upgrade over the Worker approach.
+pgvector is the default because the agent's write tools live in that same Postgres — retrieval
+and the writes it justifies share one connection and one transaction boundary, which a
+Lakebase → Delta → index pipeline cannot offer. The Delta Sync index is provisioned and
+verified; see `FEATURES.md` → *Vector Search*. Rationale in
+[design-decisions.md](design-decisions.md) §3.
 
 ### 2.4 Clustering (notebook 04)
 Ports `cloudflare-cron/src/cluster.js` exactly: per-issue top-K query → similarity graph
@@ -123,8 +127,11 @@ Ports `cloudflare-cron/src/cluster.js` exactly: per-issue top-K query → simila
 ### 2.5 Agent (agent/)
 The one piece with no counterpart in the Discord repo. A LangGraph ReAct agent with six
 tools — four read (semantic + SQL + detail + metrics) and two write (resolution status,
-notes). It talks to Lakebase for live data + writes, and Vector Search for retrieval.
-Served behind the Databricks AI Gateway, traced in MLflow.
+notes). It talks to Lakebase for live data, for writes **and** (by default) for retrieval —
+pgvector lives in the same database; Vector Search is the alternate backend behind a flag.
+The LLM is served behind the Databricks AI Gateway; the agent is logged and registered in
+MLflow (`agent/mlflow_model.py`, models-from-code) with LangGraph auto-tracing, and runs
+in-process inside the Streamlit App rather than as a served endpoint.
 
 ### 2.6 App (app/app.py)
 A Streamlit Databricks App that recreates the Next.js dashboard's surfaces — KPI strip,

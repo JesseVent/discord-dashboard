@@ -90,6 +90,8 @@ agent › Here are the headline numbers from the dashboard (single support chann
 Want me to dig into why the response rate is stuck at 48% — e.g. which topics go unanswered, or who the top responders are?
 ```
 
+![Turn 1 — dashboard_metrics through the app's chat panel](screenshots/turn1_dashboard.png)
+
 **Screenshot:** `screenshots/turn1_dashboard.png` — the same question asked through the app's chat
 panel, with the `dashboard_metrics` tool call expanded. It returns 40,570 / 19,048 / 306,922 / 48%,
 identical to the KPI tiles in `screenshots/app_overview.png`, so the agent and the dashboard are
@@ -225,6 +227,8 @@ WHERE id = '13201d0a-4d09-4685-9293-96550ece16a9';
 -- agent | Triage: marked in-progress. This is the highest-frustration…
 ```
 
+![Turn 2 — 11 tool calls, two of them writes](screenshots/turn2_triage.png)
+
 **Screenshot:** `screenshots/turn2_triage.png` — the app's chat panel expands to
 `🔧 11 tool call(s) … ✍️ wrote to the database`, with the two write calls flagged `✍️`.
 
@@ -327,6 +331,8 @@ disagrees with the number of issues actually carrying that `duplicate_cluster_id
 flagged the discrepancy rather than quoting whichever number suited the answer. That
 inconsistency is real — it is the gap between the clustering run's own tally and the rows
 that survived into the loaded dataset.
+
+![Turn 3 — agent-authored SQL and the duplicate-cluster table](screenshots/turn3_sql.png)
 
 **Screenshot:** `screenshots/turn3_sql.png` — captured from a *separate* run of the same prompt
 in the Streamlit app, so the agent reached for the other side of that same gap and reported
@@ -452,6 +458,8 @@ adjacent issues as the useful substitute, and names the assumption that could st
 wrong (different wording, or a channel outside this one). No fabricated issue IDs, no
 hedged "there may be some."
 
+![Turn 4 — the agent reports an empty result instead of inventing one](screenshots/turn4_guardrail.png)
+
 **Screenshot:** `screenshots/turn4_guardrail.png`
 
 ---
@@ -465,7 +473,47 @@ hedged "there may be some."
 | 3 | Req 5 + Req 3 | `search_issues_sql` ×3 across 3 tables | 1,978 issues in 701 pgvector-derived clusters |
 | 4 | Guardrail | `semantic_search` + 8 SQL probes | Answers "0 rows" and offers real alternatives instead of inventing |
 
+---
+
+## Bonus: MLflow registration (run for real)
+
+```
+$ python -m agent.agent register
+…
+Successfully registered model 'workspace.discord.discord_triage_agent'.
+Created version '1' of model 'workspace.discord.discord_triage_agent'.
+✓ registered agent 'workspace.discord.discord_triage_agent'
+```
+
+```bash
+$ databricks model-versions get workspace.discord.discord_triage_agent 1
+  "status": "READY",  "version": 1,  "run_id": "f6c307619e4c48b59f34e9f6092272c1"
+```
+
+Run tags on `f6c307619e4c48b59f34e9f6092272c1`:
+`agent_type=langgraph_react`, `domain=discord_support_triage`,
+`tools=semantic_search,search_issues_sql,get_issue_detail,dashboard_metrics,update_resolution_status,add_note`.
+
+Two workspace-specific obstacles were hit and fixed rather than worked around; both are the kind
+of thing that only shows up when you actually run it:
+
+1. `mlflow.langchain.log_model(lc_model=<the compiled graph>)` fails —
+   *"MLflow langchain flavor only supports subclasses of …, found CompiledStateGraph"*. LangGraph
+   agents must be logged **models-from-code**: `lc_model` is a path to a script that calls
+   `mlflow.models.set_model()`. That script is `agent/mlflow_model.py`.
+2. `registered_model_name="discord_triage_agent"` fails —
+   *"PERMISSION_DENIED: The legacy workspace model registry is disabled for the current Databricks
+   workspace."* The registry is Unity Catalog, so the name must be three-level:
+   `workspace.discord.discord_triage_agent`.
+
+Note what MLflow does while logging: to infer the signature it **invokes the agent** on the
+`input_example`. The Pydantic serializer warnings in the log are the DeepSeek reasoning blocks
+coming back through `langchain-core==0.3.0` — i.e. the logged run contains a real ReAct round
+trip, not a static signature.
+
 ## Screenshots
+
+![Streamlit app on load — KPI tiles, charts, issues table](screenshots/app_overview.png)
 
 - `screenshots/app_overview.png` — full Streamlit app on load (KPIs + charts + table)
 - `screenshots/turn1_dashboard.png` — `dashboard_metrics` call + the agent's KPI summary
