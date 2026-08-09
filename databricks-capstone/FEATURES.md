@@ -56,7 +56,7 @@ from Apps, so notebook 01 runs locally. The code is unchanged by that; see `READ
 | Batch encode with `all-MiniLM-L6-v2` (384-d) | `notebooks/03_build_embeddings.py:116,130` | `SELECT COUNT(*) FROM discord.issue_embeddings;` |
 | pgvector table + HNSW cosine index | `sql/02_issue_embeddings.sql` | `\d discord.issue_embeddings` shows the HNSW index |
 | Semantic search over pgvector (primary backend) | `rag/retriever.py:69` (`_retrieve_pgvector`) | `DISCORD_RETRIEVER_BACKEND=pgvector python -c "from rag.retriever import retrieve; print(retrieve('supabase auth', 3))"` |
-| Mosaic AI Vector Search backend behind an env flag | `rag/retriever.py:87` (`_retrieve_vs`), selected at line 127 | see [Vector Search](#vector-search-provisioned--sync-status-below) below |
+| Mosaic AI Vector Search backend behind an env flag | `rag/retriever.py:87` (`_retrieve_vs`), selected at line 127 | see [Vector Search](#vector-search-verified) below |
 | Near-duplicate clustering — pgvector self-join at cosine 0.86 + union-find | `notebooks/04_cluster_duplicates.py:55-105` | see the reconciliation SQL in `DEMO.md` (turn 3) |
 
 ## 4. Databricks App + frontend
@@ -129,15 +129,24 @@ of …, found CompiledStateGraph`). The supported route is *models-from-code* �
 legacy workspace model registry **disabled**, so the model name must be the three-level Unity
 Catalog name (`agent/agent.py:69`, override with `DISCORD_AGENT_UC_MODEL`).
 
-### Vector Search (provisioned — sync status below)
+### Vector Search (verified)
 
-`rag/retriever.py` selects its backend at line 127. To run the Mosaic AI Vector Search path:
+`rag/retriever.py` selects its backend at line 127. Run the Mosaic AI Vector Search path:
 
 ```bash
 DISCORD_RETRIEVER_BACKEND=vs \
 DISCORD_VS_ENDPOINT=discord-vs \
-DISCORD_VS_INDEX=workspace.discord.discord_issues_vs \
+DISCORD_VS_INDEX=workspace.discord.discord_issues_vs_small \
 python -c "from rag.retriever import retrieve; print(retrieve('supabase auth failing', 3))"
+```
+
+Actual output:
+
+```
+backend: vs
+RetrievalHit(issue_id='1013859924771618886', score=0.6925505, channel_id='1006358244786196510', sentiment='unknown')
+RetrievalHit(issue_id='1015308892315590748', score=0.6878665, channel_id='1006358244786196510', sentiment='unknown')
+RetrievalHit(issue_id='1015877810629386310', score=0.6814146, channel_id='1006358244786196510', sentiment='unknown')
 ```
 
 Provisioned on this workspace as:
@@ -145,10 +154,33 @@ Provisioned on this workspace as:
 | | |
 |---|---|
 | Endpoint | `discord-vs` (STANDARD) |
-| Index | `workspace.discord.discord_issues_vs`, DELTA_SYNC / TRIGGERED |
-| Source table | `workspace.discord.discord_issues_vs_source` (39,302 rows, CDF on) |
+| Index — **verified** | `workspace.discord.discord_issues_vs_small`, DELTA_SYNC / TRIGGERED, 500 rows, `ready: true` |
+| Index — full corpus | `workspace.discord.discord_issues_vs`, same spec over all 39,302 rows — **still syncing** |
+| Source tables | `discord_issues_vs_source` (39,302 rows) and `discord_issues_vs_sample` (500 rows), both CDF on |
 | Embeddings | managed, `databricks-bge-large-en` over the `text` column |
 | Columns exposed | `issue_id`, `channel_id`, `sentiment` — exactly what `_retrieve_vs` selects |
+
+**Why two indexes.** Managed-embedding sync on this workspace runs at roughly **30 rows/minute**,
+so the full 39,302-row index needs about 22 hours — real, but not on today's clock. The 500-row
+index over the same table and the same embedding endpoint syncs in ~11 minutes and exercises
+exactly the same code path, so the flag is verified against real data today while the full index
+keeps building. pgvector, the default backend, covers all 40,570 issues with no such limit.
+
+Two things this run exposed, both fixed rather than papered over:
+
+- `_retrieve_vs` parsed `result.data` as a list of dicts. The API actually returns **positional**
+  rows in `result.data_array`, with column order declared in `manifest.columns` (+ a trailing
+  `score`). The old parser silently returned zero hits — the failure mode of a code path nobody
+  had run. `rag/retriever.py:110-123` now zips the manifest against each row.
+- `VectorSearchClient()` does not pick up the Databricks CLI's OAuth profile, so *locally* it
+  raises `InvalidInputException: Please specify either personal access token or service principal
+  client ID and secret`. Inside the workspace (App or notebook) it authenticates automatically.
+  To run it from a laptop, export `DATABRICKS_TOKEN` (e.g. from `databricks auth token`) first.
+
+`databricks-vectorsearch` is intentionally **absent** from `requirements.txt`: `_retrieve_vs`
+imports it inside the function, so the deployed App never installs a dependency its default
+backend does not use. (The package has since been renamed `databricks-ai-search`; the old import
+path still resolves as a re-export.)
 
 Source table DDL:
 
@@ -164,6 +196,8 @@ WHERE first_message_content IS NOT NULL AND LENGTH(TRIM(first_message_content)) 
 pgvector remains the **default** backend: 384-d MiniLM in the same Postgres as the issue rows
 means retrieval and the write tools share one connection and one transaction boundary. Vector
 Search is the flag, not the default, for that reason — not because it is unproven.
+
+Side-by-side on the same query is in `DEMO.md` → *Bonus: Vector Search backend*.
 
 ---
 

@@ -107,11 +107,16 @@ def _retrieve_vs(query: str, top_k: int) -> list[RetrievalHit]:
             columns=["issue_id", "channel_id", "sentiment"],
             num_results=top_k,
         )
+    # The API returns positional rows in `result.data_array`, with the column
+    # order declared in `manifest.columns` (plus a trailing `score`) — NOT a list
+    # of dicts. Zip them rather than assuming the order.
+    cols = [c["name"] for c in res.get("manifest", {}).get("columns", [])]
     hits: list[RetrievalHit] = []
-    for row in res.get("result", {}).get("data", []):
+    for values in res.get("result", {}).get("data_array", []):
+        row = dict(zip(cols, values))
         hits.append(RetrievalHit(
             issue_id=row.get("issue_id"),
-            score=float(row.get("score", 0.0)),
+            score=float(row.get("score") or 0.0),
             channel_id=row.get("channel_id"),
             sentiment=row.get("sentiment"),
         ))

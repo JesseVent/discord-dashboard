@@ -199,9 +199,12 @@ databricks-capstone/
     integration. The Databricks App itself only reaches Lakebase and the in-workspace LLM
     gateway — no `discord.com` — so the block does not affect it.
 - **pgvector is the primary retrieval backend** (decision). `all-MiniLM-L6-v2` (384d) over
-  pgvector with an HNSW cosine index, proven in bootcamp M3. Mosaic AI Vector Search /
-  `ai_embed(bge-large)` is kept behind an env flag (`DISCORD_RETRIEVER_BACKEND=vs`) as a bonus
-  path — unproven on this workspace.
+  pgvector with an HNSW cosine index, in the *same* Postgres as the rows the agent writes to, so
+  a retrieval and the write it justifies share one transaction boundary. Mosaic AI Vector Search
+  sits behind `DISCORD_RETRIEVER_BACKEND=vs` and is **verified working** — endpoint `discord-vs`,
+  a Delta Sync index with managed `databricks-bge-large-en` embeddings, returning real hits.
+  Running it also surfaced a genuine bug in that path (it parsed `result.data` instead of the
+  positional `result.data_array`) which is now fixed. See `FEATURES.md` → *Vector Search*.
 - **Agent runs embedded in-process** in the Streamlit app (decision), not as a served HTTP
   endpoint — one process, one secret ACL, no extra network hop to fail. It **is** registered in
   MLflow: `python -m agent.agent register` logged run `f6c307619e4c48b59f34e9f6092272c1` and

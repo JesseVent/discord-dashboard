@@ -511,6 +511,40 @@ Note what MLflow does while logging: to infer the signature it **invokes the age
 coming back through `langchain-core==0.3.0` — i.e. the logged run contains a real ReAct round
 trip, not a static signature.
 
+## Bonus: Vector Search backend (run for real)
+
+```bash
+$ DISCORD_RETRIEVER_BACKEND=vs DISCORD_VS_ENDPOINT=discord-vs \
+  DISCORD_VS_INDEX=workspace.discord.discord_issues_vs_small \
+  python -c "from rag.retriever import retrieve; [print(h) for h in retrieve('supabase auth failing', 3)]"
+backend: vs
+RetrievalHit(issue_id='1013859924771618886', score=0.6925505, channel_id='1006358244786196510', sentiment='unknown')
+RetrievalHit(issue_id='1015308892315590748', score=0.6878665, channel_id='1006358244786196510', sentiment='unknown')
+RetrievalHit(issue_id='1015877810629386310', score=0.6814146, channel_id='1006358244786196510', sentiment='unknown')
+```
+
+Same query through the default backend, for comparison:
+
+```
+backend: pgvector
+RetrievalHit(issue_id='1496622334595960902', score=0.8448565694775377, …)
+RetrievalHit(issue_id='1054287740411334666', score=0.8336440523095128, …)
+RetrievalHit(issue_id='1150015896090316810', score=0.8291663135091943, …)
+```
+
+Different issues and different score scales, as expected: different embedding models
+(`all-MiniLM-L6-v2` 384-d vs `databricks-bge-large-en`) over different corpus sizes (all 40,570
+issues vs the 500-row index that finished syncing today). Neither is "the right answer" — the
+point is that the flag switches backends and both return real rows.
+
+Running this path for the first time found a real bug in it: `_retrieve_vs` parsed
+`result.data` as dict rows, but the API returns positional rows in `result.data_array` with the
+column order in `manifest.columns`. It had been silently returning **zero hits**. Fixed at
+`rag/retriever.py:110-123`. Full detail, including why there are two indexes and the local-auth
+gotcha, is in `FEATURES.md` → *Vector Search*.
+
+---
+
 ## Screenshots
 
 ![Streamlit app on load — KPI tiles, charts, issues table](screenshots/app_overview.png)
