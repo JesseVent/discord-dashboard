@@ -5,13 +5,13 @@
 # LLM gateway (databricks-langchain). No SQL-warehouse connector or HTTP agent
 # endpoint is required. Versions resolved together against Python 3.12.
 
-streamlit==1.45.1
+streamlit==1.54.0
 pandas==2.3.3
 plotly==6.2.0
 psycopg[binary]==3.2.4
 databricks-langchain==0.8.2
-langgraph==0.2.34
-langchain-core==0.3.0
+langgraph==1.0.10rc1
+langchain-core==1.3.3
 sentence-transformers==3.0.1
 
 # MCP server (mcp_server.py) — publishes the same six tools over streamable HTTP.
