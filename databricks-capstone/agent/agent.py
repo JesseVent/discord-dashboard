@@ -52,12 +52,12 @@ def _llm() -> ChatDatabricks:
 
 def build_agent():
     """Construct the ReAct agent with tools + system prompt."""
-    # ponytail: `state_modifier` (not `prompt`) — langgraph==0.2.34 predates the
-    # `prompt` kwarg (added in 0.2.40+/1.x). Re-evaluate if langgraph is bumped.
+    # langgraph 1.x renamed `state_modifier` → `prompt` (a str / SystemMessage /
+    # callable). `build_system_prompt()` returns a str, so it drops in directly.
     return create_react_agent(
         model=_llm(),
         tools=ALL_TOOLS,
-        state_modifier=build_system_prompt(),
+        prompt=build_system_prompt(),
     )
 
 
