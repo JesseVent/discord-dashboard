@@ -19,7 +19,7 @@ text below names a file as `DEMO.md` or `agent/tools.py`, the archived copy is t
 
 ---
 
-## The five mandatory requirements
+## The mandatory requirements
 
 | # | Requirement | Implemented in | Evidence it actually runs |
 |---|---|---|---|
@@ -28,6 +28,8 @@ text below names a file as `DEMO.md` or `agent/tools.py`, the archived copy is t
 | 3 | **Unstructured data → retrieval** | `notebooks/03_build_embeddings.py.txt`, `rag/retriever.py.txt`, `notebooks/04_cluster_duplicates.py.txt` | `all-MiniLM-L6-v2` (384-d) embeds each issue's title + first message + tags into pgvector `discord.issue_embeddings` — **40,570 rows**, HNSW cosine index. Semantic search verified live (query "RLS policy not working" → top hit at 0.778). Near-duplicate clustering by pgvector self-similarity + union-find at cosine 0.86 groups **1,978 issues into 701 clusters** (largest: 125 issues, "Can't successfully authenticate with Supabase?"). Verified live in `DEMO.md` turn 3. |
 | 4 | **Databricks App with a frontend** | `app/app.py.txt` + `app.yaml.txt` | Streamlit app, state `RUNNING` (deployment `01f193adc38d1882a1b51914e617a11a`, SUCCEEDED). 9 KPI tiles (40,570 issues · 19,048 users · 306,922 messages · 19,469 answered · 11,541 resolved · 48% response rate), 3 Plotly charts, filterable issues table (`app/app.py.txt:215`), per-issue thread inspector (`:224`), and the agent chat panel (`:249`). All six are captured, full-page and at native resolution, across `screenshots/app_overview.png` (tiles, charts, table, inspector) and `screenshots/turn1_dashboard.png` (the agent panel) — two consecutive slices of one continuous scroll of the running app. |
 | 5 | **AI agent that does stuff** | `agent/tools.py.txt`, `agent/agent.py.txt`, `agent/prompts.py.txt`, `mcp_server.py.txt` | LangGraph ReAct agent on `databricks-deepseek-v4-flash-0731` via the AI Gateway. **6 tools — 4 read, 2 write**, also published over **MCP streamable HTTP** (`mcp_server.py.txt`, one implementation behind both surfaces). The write tools mutate production rows: `update_resolution_status` UPDATEs `discord.issues`, `add_note` INSERTs into `discord.notes`. Seven verbatim transcripts in `DEMO.md`; the write path fires **12 times across turns 2 and 5**, every write reconcilable to a row by id. |
+| 6 | **Change Data Feed → Delta analytics** | `notebooks/02_compute_analytics.py.txt`, `notebooks/05_cdf_change_analytics.py.txt`, `app/app.py.txt` | `issues_enriched` carries `delta.enableChangeDataFeed` and is **MERGEd** (guarded on 7 tracked columns with null-safe equality) rather than overwritten — so the feed records real transitions, not a full rewrite per run. Notebook 05 reads `readChangeFeed` into `workspace.discord.issues_changes`: one row per issue per commit, with `changed_cols` and `old → new` resolution status; resumes from `MAX(_commit_version)` so it is incremental and idempotent. A daily rollup is mirrored into Lakebase `discord.issues_changes`, and the app renders it as the **Triage Activity** panel (3 KPIs + stacked daily bars). Closes the loop on the agent: `update_resolution_status` → Lakebase → merge → CDF → dashboard. **Code complete; first CDF rows appear on the second notebook-02 run after deploy** (CDF only records changes made after it is enabled) — see `FEATURES.md` → *6*. |
+
 
 **"306,922 messages" vs "233,147 replies" — different measures, not a contradiction.** Replies are
 rows actually loaded into `discord.replies`. `total_messages` is `SUM(issues.message_count)`
@@ -66,6 +68,7 @@ notebooks/00, 00b                  NDJSON bulk load → Lakebase
 notebooks/01                       Discord v9 REST ingest          (Req 2)
 notebooks/02                       Spark → Delta analytics          (Req 1)
 notebooks/03, 04                   embeddings + duplicate clusters  (Req 3)
+notebooks/05                       CDF -> issues_changes analytics  (Req 6)
 rag/retriever.py.txt               pgvector semantic search         (Req 3)
 agent/tools.py.txt                 6 tools, 4 read + 2 write        (Req 5)
 agent/prompts.py.txt               system prompt + guardrails

@@ -210,6 +210,52 @@ if not issues_df.empty:
 st.divider()
 
 # ============================================================
+# Triage activity — sourced from the Delta Change Data Feed
+# ============================================================
+# discord.issues_changes is written by notebooks/05_cdf_change_analytics.py from
+# the CDF of workspace.discord.issues_enriched. Every other panel on this page
+# shows *state*; this one shows *transitions* — including the agent's own
+# re-classifications, since update_resolution_status writes flow Lakebase ->
+# issues_enriched -> CDF -> here.
+st.subheader("📈 Triage Activity")
+st.caption("Issue state transitions captured from the Delta Change Data Feed "
+           "(notebooks/05 → `discord.issues_changes`).")
+
+
+@st.cache_data(ttl=300)
+def load_changes() -> pd.DataFrame:
+    """Change rollup; empty frame if notebook 05 has not run yet."""
+    try:
+        return _q("""select change_date, operation,
+                            sum(change_count)   as change_count,
+                            sum(status_changes) as status_changes
+                     from discord.issues_changes
+                     group by change_date, operation
+                     order by change_date""")
+    except Exception:
+        # UndefinedTable (42P01) before the first CDF run — the panel is additive,
+        # so degrade to a hint instead of taking the dashboard down with it.
+        return pd.DataFrame()
+
+
+changes_df = load_changes()
+if changes_df.empty:
+    st.info("No change feed data yet — run `notebooks/05_cdf_change_analytics.py` "
+            "after a `notebooks/02_compute_analytics.py` refresh.")
+else:
+    c1, c2, c3 = st.columns(3)
+    c1.metric("Tracked changes", int(changes_df["change_count"].sum()))
+    c2.metric("Status re-classifications", int(changes_df["status_changes"].sum()))
+    c3.metric("Days with activity", changes_df["change_date"].nunique())
+
+    fig = px.bar(changes_df, x="change_date", y="change_count", color="operation",
+                 labels={"change_date": "date", "change_count": "changes"})
+    fig.update_layout(height=260, margin=dict(l=0, r=0, t=10, b=0))
+    st.plotly_chart(fig, use_container_width=True)
+
+st.divider()
+
+# ============================================================
 # Issues table with detail (ports issues-table.tsx + IssueDetailDialog)
 # ============================================================
 st.subheader("Issues")

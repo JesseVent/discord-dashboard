@@ -74,6 +74,46 @@ from Apps, so notebook 01 runs locally. The code is unchanged by that; see `READ
 
 Verify: `databricks apps list-deployments discord-capstone-app` — and `screenshots/app_overview.png`.
 
+## 6. Change Data Feed → Delta analytics table
+
+> **Status: implemented, first run pending.** Unlike every other section in this file, the row
+> counts below have not yet been observed — CDF records only changes made *after* it is enabled,
+> so this pipeline produces its first rows on the second `notebooks/02` run following deployment.
+> The code is complete and the commands to verify it are given per-feature. This notice is removed
+> once the run output is pasted in, the same way MLflow and Vector Search were promoted from
+> claimed to verified.
+
+Every other panel in this capstone reports **state**. This one reports **transitions** — and the
+transitions that matter most are the agent's own, because `update_resolution_status` writes are
+exactly what shows up here.
+
+The flow: agent (or human) writes Lakebase → notebook 02 **MERGEs** into
+`workspace.discord.issues_enriched` (CDF enabled) → notebook 05 reads that table's change feed →
+`workspace.discord.issues_changes` (row-level Delta analytics table) → a small daily rollup is
+mirrored into Lakebase `discord.issues_changes` → the app charts it.
+
+| Feature | Where | Verify |
+|---|---|---|
+| CDF enabled on the analytics source table | `notebooks/02_compute_analytics.py` — `delta.enableChangeDataFeed` at create, re-asserted per run | `DESCRIBE DETAIL workspace.discord.issues_enriched` → properties |
+| **MERGE instead of overwrite**, guarded on tracked columns | same file, `TRACKED` + `MERGE … WHEN MATCHED AND NOT (<null-safe equality>)` | re-running notebook 02 with no upstream change appends **no** CDF rows |
+| Change feed → row-level Delta table | `notebooks/05_cdf_change_analytics.py` (`readChangeFeed`) | `SELECT * FROM workspace.discord.issues_changes LIMIT 10` |
+| `changed_cols` — which fields actually moved | same, `array_compact` over null-safe comparisons of pre/post images | `SELECT explode(changed_cols) col, count(*) FROM …changes GROUP BY 1` |
+| Status transitions (`old → new`) | same, `old_resolution_status` / `new_resolution_status` | `SELECT old_resolution_status, new_resolution_status, count(*) FROM …` |
+| Incremental + idempotent resume | same — resumes from `MAX(_commit_version)` in the output table | re-run immediately → "no new commits … nothing to do" |
+| Rollup mirrored to Lakebase for the app | same, psycopg upsert on `(change_date, channel_id, operation)` | `SELECT * FROM discord.issues_changes ORDER BY change_date DESC` |
+| Surfaced in the app | `app/app.py` → **Triage Activity** — 3 KPIs + a stacked daily bar chart | the panel, or the `st.info` hint before notebook 05 has run |
+| Lakebase DDL | `sql/01_lakebase_schema.sql` → `discord.issues_changes` | — |
+
+**Why MERGE was the load-bearing change.** Notebook 02 previously wrote `issues_enriched` with
+`mode("overwrite")`. CDF would have faithfully reported all 40,570 rows as changed on every
+refresh — a change feed that is technically present and analytically worthless. The MERGE is
+guarded with null-safe equality (`<=>`) across the tracked columns, so a row is rewritten only
+when one of them genuinely moved, and the feed answers "what did triage change this week?"
+instead of "did the job run?".
+
+**Degrades safely.** The app panel catches the missing-table case (`42P01`) and shows a hint
+rather than failing, so the dashboard works before the first CDF run.
+
 ## 5. AI agent that takes actions
 
 Six tools, `agent/tools.py`. Four read, two write:
@@ -285,6 +325,6 @@ Each of these is a decision with a reason, not unfinished work.
 | Not built | Why |
 |---|---|
 | **Agent served as an HTTP endpoint** | The agent runs in-process inside the Streamlit app so the App is one self-contained process with one secret ACL. The model is registered (above), so serving it is a UI click — but a second network hop buys nothing here and doubles the failure surface. |
-| **CDC / Change Data Feed streaming into the rollups** | Notebook 02 recomputes rollups with a batch overwrite in well under a minute over 40k rows. Streaming is the right answer at a volume this pipeline does not have. CDF *is* enabled on the Vector Search source table, where Delta Sync requires it. |
+| **Continuous/streaming CDF reader** | The CDF pipeline (below) runs as a batch job, not a structured-streaming reader. It resumes from its own high-water mark, so scheduling it more often is a cron change, not a code change. An always-on stream would add a checkpoint to maintain for latency this dashboard has no use for. |
 | **Live Discord ingest on serverless** | Blocked by workspace egress policy (`discord.com` is not a trusted domain), not by the code. Notebook 01 runs locally and is unchanged. |
 | **Prisma / an ORM layer** | The source repo removed Prisma; this port never added one. Plain SQL over psycopg. |
