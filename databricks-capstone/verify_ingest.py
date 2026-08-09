@@ -38,7 +38,13 @@ HERE = Path(__file__).parent
 NOTEBOOK = HERE / "notebooks" / "01_ingest_discord_api.py"
 OUT = HERE / "demo-captures" / "ingest_proof.txt"
 
-CHANNEL = os.environ.get("DISCORD_CHANNEL_ID", "1006358244786196510")
+# PINNED, not inherited. Sourcing a .env to pick up DISCORD_AUTH_TOKEN also picks
+# up whatever DISCORD_CHANNEL_ID that file sets — which is how a run of this
+# harness once ingested 25 issues from an unrelated channel into the capstone's
+# table, moving the dashboard's headline count off the documented 40,570. The
+# capstone is scoped to one forum; targeting another has to be deliberate.
+CAPSTONE_CHANNEL = "1006358244786196510"
+CHANNEL = os.environ.get("DISCORD_VERIFY_CHANNEL_ID", CAPSTONE_CHANNEL)
 MAX_THREADS = os.environ.get("DISCORD_MAX_THREADS", "5")
 
 _lines: list[str] = []
@@ -85,6 +91,12 @@ def main() -> int:
     say(f"auth token     : set, {len(token)} chars (value withheld)")
     say("=" * 72)
 
+    # Wall-clock start, used to find touched rows. NOT the pre-run MAX(fetched_at):
+    # on an empty slice that is NULL, and `fetched_at > NULL` is NULL for every
+    # row, so the report claimed "0 rows touched" immediately after a successful
+    # 25-issue ingest.
+    run_start = datetime.now(timezone.utc)
+
     conn_str = dsn()
     with psycopg.connect(conn_str) as conn, conn.cursor() as cur:
         before = snapshot(cur)
@@ -93,6 +105,8 @@ def main() -> int:
         say(f"  {k:16} {v}")
 
     say("\n-- RUNNING notebooks/01_ingest_discord_api.py ------------------------")
+    # Explicitly overrides whatever the ambient environment says, for the reason
+    # documented at CAPSTONE_CHANNEL above.
     env = {**os.environ,
            "DISCORD_CHANNEL_ID": CHANNEL,
            "DISCORD_MAX_THREADS": MAX_THREADS}
@@ -123,9 +137,9 @@ def main() -> int:
         cur.execute("""select id, left(name, 46) as name, message_count,
                               resolution_status, fetched_at
                        from discord.issues
-                       where channel_id = %s and fetched_at > %s
+                       where channel_id = %s and fetched_at >= %s
                        order by fetched_at desc limit 15""",
-                    (CHANNEL, before["max_fetched_at"]))
+                    (CHANNEL, run_start))
         rows = cur.fetchall()
         say(f"  {len(rows)} row(s)")
         for r in rows:

@@ -45,8 +45,70 @@ Navigation only. Read the linked file at the named section; the file is the evid
 | Normalization: raw thread + first message → the `Issue` row shape | `notebooks/01_ingest_discord_api.py:114` | ports `normalizeIssue()` from the source repo |
 | Token never in shell history or code — env var only | line 45 (`DISCORD_AUTH_TOKEN` from `os.environ`) | `rg -n 'MT[A-Za-z0-9]{20}' .` → no matches |
 
+### Proof of run (verified)
+
+Notebook 01 executed locally against the live forum, bounded to 5 pages of threads. Verbatim:
+
+```
+Req 2 proof-of-run — Discord v9 REST ingest
+channel        : 1006358244786196510
+auth token     : set, 72 chars (value withheld)
+
+-- BEFORE ------------------------------------------------------------
+  issues           40570
+  replies          233147
+  max_fetched_at   2026-07-25 06:01:08.845000+00:00
+
+-- RUNNING notebooks/01_ingest_discord_api.py ------------------------
+  Fetching threads from channel 1006358244786196510…
+    25 threads; fetching replies…
+    160 replies; writing to Lakebase…
+  ✓ upserted 25 rows into discord.issues
+  ✓ upserted 160 rows into discord.replies
+  Ingest complete.
+
+-- AFTER -------------------------------------------------------------
+  issues           40595
+  replies          233307
+  max_fetched_at   2026-08-09 12:27:01.049431+00:00
+
+-- DELTA -------------------------------------------------------------
+  issues  net-new : 25
+  replies net-new : 160
+
+-- ROWS TOUCHED BY THIS RUN (fetched_at >= run start) ----------------
+  15 row(s)
+    1535919244875792434  Stolen organization                     msgs=9   in-progress
+    1535746764781527191  DATEBASE STUCK ON RESTARTING            msgs=4   likely-resolved
+    1535560039698407445  Locked out of Pro account               msgs=20  likely-resolved
+    1535399622829408256  PostgREST/Data API returning PGRST002    msgs=10  likely-resolved
+    1535385050386796658  GoTrue returns 401 on /auth/v1/user      msgs=7   likely-resolved
+    1535960479585931334  Urgent: Accidental data deletion         msgs=3   likely-resolved
+    1533616258988249169  PGRST303 error - JWT issued at future    msgs=4   in-progress
+    …
+```
+
+The whole path is exercised: `threads/search` pagination → `post-data` first-message backfill →
+`/messages` thread history → normalization → idempotent psycopg upsert. The 25 issues are
+genuinely new — threads posted to the forum since the `2026-07-25` snapshot, which is why
+`max_fetched_at` jumps a fortnight and the resolution heuristic has already classified them.
+
+Verify: `uv run --with 'psycopg[binary]' --with databricks-sdk --with requests python verify_ingest.py`
+(with `DISCORD_AUTH_TOKEN` exported; the token is never echoed, only its length).
+
+**The run's 25 issues and 160 replies were then deleted**, returning the corpus to
+**40,570 / 233,147**. Stated plainly because it matters for reading everything else here: this
+capstone is a *frozen* `2026-07-25` snapshot, and the seven agent transcripts, ten screenshots and
+every headline figure in these documents are built on it. Leaving a live ingest in place would
+have silently invalidated all of them. The before/after counts and the touched-row listing above
+are the evidence that Req 2 runs end to end; the rows themselves are not needed to retain it, and
+keeping them would have cost consistency everywhere else. (Deletion targeted `fetched_at >= ` the
+run start — rows from the original NDJSON load carry their old `fetched_at` and were never
+matched.)
+
 **Egress caveat (stated, not hidden):** this workspace blocks `discord.com` from serverless and
-from Apps, so notebook 01 runs locally. The code is unchanged by that; see `README.md` → *Notes & caveats*.
+from Apps, so notebook 01 runs locally — as above. The code is unchanged by that; see
+`README.md` → *Notes & caveats*.
 
 ## 3. Unstructured data → retrieval
 
