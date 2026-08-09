@@ -126,24 +126,39 @@ docstring — the same docstrings the agent consumes. Verify without a client:
 PYTHONPATH=. python mcp_server.py --selftest
 ```
 
-Actual output:
+Actual output — **read-only by default**:
 
 ```
-✓ 6 tools published over MCP: add_note, dashboard_metrics, get_issue_detail,
-  search_issues_sql, semantic_search, update_resolution_status
+mcp_server: 4 read tools published; write tools withheld (add_note,
+update_resolution_status). Set DISCORD_MCP_ALLOW_WRITES=1 to publish them — only behind auth.
+✓ 4 read tools published: dashboard_metrics, get_issue_detail, search_issues_sql, semantic_search
+✓ write tools correctly withheld: add_note, update_resolution_status
+```
+
+and with the opt-in set:
+
+```
+$ DISCORD_MCP_ALLOW_WRITES=1 PYTHONPATH=. python mcp_server.py --selftest
+✓ 6 tools published (DISCORD_MCP_ALLOW_WRITES=1): add_note, dashboard_metrics,
+  get_issue_detail, search_issues_sql, semantic_search, update_resolution_status
 ✓ write tools present: add_note, update_resolution_status
-    add_note(issue_id, content, author)
-    dashboard_metrics()
-    get_issue_detail(issue_id)
-    search_issues_sql(sql)
-    semantic_search(query, top_k)
-    update_resolution_status(issue_id, status, reason)
 ```
 
-The self-check asserts all six names are published, that every tool carries a description and a
-non-empty input schema (`dashboard_metrics` excepted — it is nullary), and that both write tools
-survived registration. It imports `agent.tools` for real, so it also proves the Lakebase DSN
-resolves and the module loads clean.
+The self-check asserts the published set matches what the mode should expose, that every tool
+carries a description and a non-empty input schema (`dashboard_metrics` excepted — it is nullary),
+and — the property that actually matters — that **no write tool is reachable without the opt-in**.
+It imports `agent.tools` for real, so it also proves the Lakebase DSN resolves and the module
+loads clean.
+
+**Why writes are off by default.** This server does not authenticate callers: it is built without
+an `auth_server_provider`/`token_verifier`, because the intended transports are stdio (a local
+client spawns the process) and loopback HTTP. Bound to a routable interface as-is it would expose
+arbitrary read-only SQL over the whole `discord` schema, two row-mutating tools, and a
+caller-supplied `add_note(author=...)` attribution field. So the default surface is the four read
+tools, the documented run command binds `127.0.0.1`, and publishing the write tools is a
+deliberate act gated on `DISCORD_MCP_ALLOW_WRITES=1` — to be set only behind real auth
+(Databricks Apps OAuth, or an MCP `token_verifier`). The in-process agent is unaffected: it calls
+`agent/tools.py` directly and always has all six.
 
 Serving it:
 

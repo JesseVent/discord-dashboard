@@ -22,9 +22,26 @@ Run locally over stdio (what Claude Desktop / `mcp` CLI clients expect):
     PYTHONPATH=. uv run --with mcp --with 'psycopg[binary]' --with databricks-sdk \
       --with sentence-transformers python mcp_server.py
 
-Run as an HTTP service (what a Databricks App would serve):
-    PYTHONPATH=. uvicorn mcp_server:app --host 0.0.0.0 --port 8000
+Run as an HTTP service — LOOPBACK ONLY unless you put auth in front of it:
+    PYTHONPATH=. uvicorn mcp_server:app --host 127.0.0.1 --port 8000
     # -> POST /mcp   (streamable HTTP transport)
+
+SECURITY — read before exposing this on a network.
+  This server does NOT authenticate callers: it is constructed without an
+  `auth_server_provider` / `token_verifier`, because the intended transports are
+  stdio (a local client spawns it) and loopback HTTP. Consequences if you bind it
+  to a routable interface as-is:
+    • `search_issues_sql` is arbitrary read-only SQL over the whole `discord`
+      schema — an unauthenticated caller can read every issue and reply.
+    • the write tools mutate production rows.
+    • `add_note(author=...)` is caller-supplied, so notes can be attributed to
+      any name.
+  Two mitigations are built in:
+    1. Write tools are NOT published unless DISCORD_MCP_ALLOW_WRITES=1. The
+       default surface is the four read tools.
+    2. `--host 127.0.0.1` above, not 0.0.0.0.
+  To expose it for real, terminate auth in front (Databricks Apps OAuth, or an
+  MCP `token_verifier`) and only then set DISCORD_MCP_ALLOW_WRITES=1.
 
 Verify the wiring without a client:
     PYTHONPATH=. python mcp_server.py --selftest
@@ -34,11 +51,19 @@ from LAKEBASE_DSN, else the `database/lakebase-url` secret via the Databricks
 SDK — identical to the app and the agent.
 """
 from __future__ import annotations
+import os
 import sys
 
 from mcp.server.mcpserver import MCPServer
 
 from agent.tools import ALL_TOOLS
+
+WRITE_TOOLS = {"update_resolution_status", "add_note"}
+
+# Read-only by default. This server has no authentication (see SECURITY above),
+# so publishing row-mutating tools has to be a deliberate act, not the default
+# a careless `uvicorn mcp_server:app` inherits.
+ALLOW_WRITES = os.environ.get("DISCORD_MCP_ALLOW_WRITES") == "1"
 
 INSTRUCTIONS = """\
 Discord support-forum triage over a Lakebase Postgres corpus of ~40.5k forum
@@ -60,8 +85,18 @@ mcp = MCPServer(name="discord-triage", instructions=INSTRUCTIONS)
 # `.func` is the undecorated callable behind LangChain's @tool StructuredTool.
 # Passing it (not the StructuredTool) lets MCP derive the JSON schema from the
 # real signature + docstring, exactly as the LangGraph agent does.
-for _t in ALL_TOOLS:
+PUBLISHED = [t for t in ALL_TOOLS if ALLOW_WRITES or t.name not in WRITE_TOOLS]
+
+for _t in PUBLISHED:
     mcp.add_tool(_t.func, name=_t.name, description=_t.description)
+
+if not ALLOW_WRITES:
+    print(
+        f"mcp_server: {len(PUBLISHED)} read tools published; "
+        f"write tools withheld ({', '.join(sorted(WRITE_TOOLS))}). "
+        "Set DISCORD_MCP_ALLOW_WRITES=1 to publish them — only behind auth.",
+        file=sys.stderr,
+    )
 
 # ASGI app for HTTP serving; `/mcp` is the streamable-HTTP endpoint.
 app = mcp.streamable_http_app()
@@ -73,9 +108,8 @@ def _selftest() -> int:
 
     tools = asyncio.run(mcp.list_tools())
     names = sorted(t.name for t in tools)
-    expected = sorted(t.name for t in ALL_TOOLS)
+    expected = sorted(t.name for t in PUBLISHED)
     assert names == expected, f"published {names}, expected {expected}"
-    assert len(names) == 6, f"expected 6 tools, got {len(names)}"
 
     for t in tools:
         assert t.description, f"{t.name}: no description (docstring missing?)"
@@ -84,11 +118,18 @@ def _selftest() -> int:
         if t.name != "dashboard_metrics":
             assert props, f"{t.name}: empty input schema"
 
-    writes = {"update_resolution_status", "add_note"}
-    assert writes <= set(names), f"write tools missing: {writes - set(names)}"
-
-    print(f"✓ {len(names)} tools published over MCP: {', '.join(names)}")
-    print(f"✓ write tools present: {', '.join(sorted(writes))}")
+    # The security property that matters: writes are withheld unless opted in.
+    leaked = WRITE_TOOLS & set(names)
+    if ALLOW_WRITES:
+        assert leaked == WRITE_TOOLS, f"write tools missing: {WRITE_TOOLS - leaked}"
+        assert len(names) == 6, f"expected 6 tools, got {len(names)}"
+        print(f"✓ 6 tools published (DISCORD_MCP_ALLOW_WRITES=1): {', '.join(names)}")
+        print(f"✓ write tools present: {', '.join(sorted(WRITE_TOOLS))}")
+    else:
+        assert not leaked, f"write tools published without opt-in: {leaked}"
+        assert len(names) == 4, f"expected 4 read tools, got {len(names)}"
+        print(f"✓ 4 read tools published: {', '.join(names)}")
+        print(f"✓ write tools correctly withheld: {', '.join(sorted(WRITE_TOOLS))}")
     for t in sorted(tools, key=lambda x: x.name):
         args = ", ".join((t.input_schema or {}).get("properties", {}))
         print(f"    {t.name}({args})")
