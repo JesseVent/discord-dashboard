@@ -68,3 +68,8 @@ bootcamp/
 
 # Capstone submission bundle — regenerate with databricks-capstone/build_submission.sh
 databricks-capstone/databricks-capstone-submission.zip
+
+# Editor / agent tooling noise (never commit)
+.vscode/
+.playwright-mcp/
+.zcode/

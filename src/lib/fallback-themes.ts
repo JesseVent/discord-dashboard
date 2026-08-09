@@ -289,11 +289,18 @@ const DATAEXPERT_RULES: Rule[] = [
 ];
 
 // Channel id → rule set. Channel ids live in CHANNEL_LABELS (discord-types).
-// Unknown / 'all' / Supabase channel falls back to SUPABASE_RULES.
-const DATAEXPERT_CHANNEL_ID = '1378263233437106207';
-const CHANNEL_RULES: Record<string, Rule[]> = {
-  [DATAEXPERT_CHANNEL_ID]: DATAEXPERT_RULES,
-};
+// All four DataExpert bootcamp channels share the data-engineering theme set
+// (questions, study-group, faq, general). Unknown / 'all' / Supabase falls
+// back to SUPABASE_RULES.
+const DATAEXPERT_CHANNEL_IDS = [
+  '1378263233437106207', // questions
+  '1378263313271623712', // looking-for-study-group
+  '1388499411289505862', // faq
+  '1377924226538799106', // general
+];
+const CHANNEL_RULES: Record<string, Rule[]> = Object.fromEntries(
+  DATAEXPERT_CHANNEL_IDS.map((id) => [id, DATAEXPERT_RULES]),
+);
 
 function rulesForChannel(channelId?: string): Rule[] {
   return (channelId && CHANNEL_RULES[channelId]) || SUPABASE_RULES;

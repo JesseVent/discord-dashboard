@@ -97,6 +97,9 @@ export interface PostDataResponse {
 export const CHANNEL_LABELS: Record<string, string> = {
   '1006358244786196510': 'Supabase · help-and-questions',
   '1378263233437106207': 'DataExpert · questions',
+  '1378263313271623712': 'DataExpert · looking-for-study-group',
+  '1388499411289505862': 'DataExpert · faq',
+  '1377924226538799106': 'DataExpert · general',
 };
 
 export function channelLabel(channelId: string): string {

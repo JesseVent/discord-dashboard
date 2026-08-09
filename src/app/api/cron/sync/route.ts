@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { revalidatePath } from 'next/cache';
 import { supabaseAdmin, ensureDatabaseReady } from '@/lib/supabase';
 import { env } from 'process';
 
@@ -122,6 +123,10 @@ export async function GET(req: Request) {
         await supabaseAdmin.from('issues').update({ fetched_at: new Date().toISOString() }).eq('id', issue.id);
       }
     }
+
+    // Refresh the ISR-cached metrics route so newly ingested threads surface
+    // immediately instead of waiting up to the route's 1h revalidate window.
+    revalidatePath('/api/dashboard/metrics');
 
     return NextResponse.json({ ok: true, syncedIssues, syncedReplies });
   } catch (err) {
