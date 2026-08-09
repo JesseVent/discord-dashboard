@@ -76,12 +76,31 @@ Verify: `databricks apps list-deployments discord-capstone-app` — and `screens
 
 ## 6. Change Data Feed → Delta analytics table
 
-> **Status: implemented, first run pending.** Unlike every other section in this file, the row
-> counts below have not yet been observed — CDF records only changes made *after* it is enabled,
-> so this pipeline produces its first rows on the second `notebooks/02` run following deployment.
-> The code is complete and the commands to verify it are given per-feature. This notice is removed
-> once the run output is pasted in, the same way MLflow and Vector Search were promoted from
-> claimed to verified.
+**Verified on this workspace.** Notebook 02 then notebook 05, run on serverless:
+
+```json
+{"cdf_enabled_at": 1, "latest_version": 2, "reading_from": 3,
+ "changes_table_existed": true, "change_rows": 0,
+ "lakebase_rows": 1, "lakebase_upsert": "ok", "status": "complete"}
+```
+
+and the resulting rollup, read straight out of Postgres:
+
+```sql
+SELECT * FROM discord.issues_changes;
+--  change_date | operation | change_count | status_changes
+--  2026-08-09  | update    |            4 |              4
+```
+
+**All four captured changes are `resolution_status` moves** — the feed caught exactly the agent's
+triage writes and nothing else. Not six, despite twelve write-tool calls across `DEMO.md` turns 2
+and 5: turn 5 wrote `unanswered` onto rows already `unanswered`, and the null-safe MERGE guard
+correctly emitted nothing for them. That is the guard doing its job, and it is why the number is
+4 rather than "however many times a tool fired".
+
+(`change_rows: 0` on this run is the incremental path working: the feed had already been consumed
+up to `_commit_version` 2 by the previous run, so there was nothing new to append — but the
+Lakebase mirror still ran and caught up. See the note on that below.)
 
 Every other panel in this capstone reports **state**. This one reports **transitions** — and the
 transitions that matter most are the agent's own, because `update_resolution_status` writes are
@@ -113,6 +132,24 @@ instead of "did the job run?".
 
 **Degrades safely.** The app panel catches the missing-table case (`42P01`) and shows a hint
 rather than failing, so the dashboard works before the first CDF run.
+
+**The mirror runs on the no-op path too**, and that is deliberate rather than incidental. The
+Lakebase rollup is derived from the *whole* `issues_changes` table and upserted on its primary
+key, so re-running it is cheap and idempotent. An earlier build exited before the mirror when
+there were no new commits — which meant a mirror that failed once (it did: serverless ships no
+`psycopg`) left the Delta rows permanently stranded from the app, because every later run
+short-circuited as "no new commits" before reaching it. Recovery has to be reachable on the quiet
+path, not just the busy one.
+
+**Two workspace-specific gotchas this run exposed**, both fixed in the notebook:
+
+- `startingVersion=0` fails with `DELTA_MISSING_CHANGE_DATA` on a table that predates CDF. The
+  feed exists only from the commit that enabled it, so notebook 05 reads `DESCRIBE HISTORY`, finds
+  that commit, and starts from `max(own high-water mark, that version)`.
+- Inside a notebook `dbutils.secrets.get()` returns the DSN **already decoded** — base64-decoding
+  it again yields `UnicodeDecodeError: 'utf-8' codec can't decode byte 0xa6`. That is only correct
+  for the SDK path, where `get_secret().value` is base64 for transport. Notebooks 00 and 02 carry
+  the same warning.
 
 ## 5. AI agent that takes actions
 
