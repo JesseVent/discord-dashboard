@@ -735,6 +735,11 @@ other by construction rather than by assertion.
 - `screenshots/turn2_triage.png` — agent chat with both write calls flagged `✍️`
 - `screenshots/turn3_sql.png` — SQL tool calls + duplicate-cluster table
 - `screenshots/turn4_guardrail.png` — empty-result honesty
+- `screenshots/app_triage_activity.png` — the **Triage Activity** panel (Req 6): change analytics
+  derived from the Delta Change Data Feed. Its KPIs (4 tracked changes / 4 status
+  re-classifications / 1 day) reconcile exactly with
+  `SELECT * FROM discord.issues_changes` — and all four are the agent's own
+  `update_resolution_status` writes, captured by CDF and rendered back in the dashboard.
 - `screenshots/source_react_dashboard.png`, `…_full.png` — the Next.js/Supabase dashboard this
   capstone ports from (see README.md, "The source solution this ports from")
 

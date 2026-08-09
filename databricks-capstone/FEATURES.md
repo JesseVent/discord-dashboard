@@ -102,6 +102,15 @@ correctly emitted nothing for them. That is the guard doing its job, and it is w
 up to `_commit_version` 2 by the previous run, so there was nothing new to append — but the
 Lakebase mirror still ran and caught up. See the note on that below.)
 
+The panel rendering that data in the deployed app:
+
+![Triage Activity — CDF-derived change analytics in the Databricks App](screenshots/app_triage_activity.png)
+
+The three KPIs reconcile exactly with the SQL above (4 / 4 / 1), which is the point: the app is
+reading `discord.issues_changes` from Lakebase, written by notebook 05 from the Delta change feed,
+which recorded notebook 02's MERGE, which pulled the agent's writes out of `discord.issues`. Every
+hop in that chain is visible in one panel.
+
 Every other panel in this capstone reports **state**. This one reports **transitions** — and the
 transitions that matter most are the agent's own, because `update_resolution_status` writes are
 exactly what shows up here.
@@ -120,7 +129,7 @@ mirrored into Lakebase `discord.issues_changes` → the app charts it.
 | Status transitions (`old → new`) | same, `old_resolution_status` / `new_resolution_status` | `SELECT old_resolution_status, new_resolution_status, count(*) FROM …` |
 | Incremental + idempotent resume | same — resumes from `MAX(_commit_version)` in the output table | re-run immediately → "no new commits … nothing to do" |
 | Rollup mirrored to Lakebase for the app | same, psycopg upsert on `(change_date, channel_id, operation)` | `SELECT * FROM discord.issues_changes ORDER BY change_date DESC` |
-| Surfaced in the app | `app/app.py` → **Triage Activity** — 3 KPIs + a stacked daily bar chart | the panel, or the `st.info` hint before notebook 05 has run |
+| Surfaced in the app | `app/app.py` → **Triage Activity** — 3 KPIs + a stacked daily bar chart | `screenshots/app_triage_activity.png` (live panel), or the `st.info` hint before notebook 05 has run |
 | Lakebase DDL | `sql/01_lakebase_schema.sql` → `discord.issues_changes` | — |
 
 **Why MERGE was the load-bearing change.** Notebook 02 previously wrote `issues_enriched` with
