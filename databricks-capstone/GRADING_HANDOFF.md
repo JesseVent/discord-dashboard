@@ -141,9 +141,30 @@ comment flagging the version coupling — **re-evaluate if langgraph is bumped.*
 - Secret scan clean (Databricks PAT, JWT, DSN-with-password, `sk-`/`ghp_`, service-role patterns).
 - Committed to `backup/hosted-discord-schema`.
 
+- **`FEATURES.md` added** — every capability → `file:line` → a verification command, plus the
+  rubric-dimension → evidence map (that map used to live only here, in a file that is
+  deliberately *not* shipped) and an explicit scoped-out list.
+- **MLflow registration run for real.** `workspace.discord.discord_triage_agent` v1, status
+  `READY`, run `f6c307619e4c48b59f34e9f6092272c1`. Two blockers hit and fixed, both now
+  documented in `DEMO.md` + `FEATURES.md`: (1) `log_model` can't cloudpickle a
+  `CompiledStateGraph` → added `agent/mlflow_model.py` (models-from-code); (2) the legacy
+  workspace registry is disabled → registry is UC, model name must be three-level.
+- **`docs/architecture.md` + `docs/design-decisions.md` reconciled with what shipped.** Both
+  still described the pre-pivot design (Vector Search as *the* retrieval path) while the code
+  runs pgvector. Now: pgvector default with the reason (retrieval + the agent's writes share one
+  Postgres transaction boundary), VS as the flagged second backend.
+- **CDC reframed** from "bonus only" TODO to a scoped-out decision with its reason.
+
 ### ⏳ Remaining
-1. **Upload `databricks-capstone-submission.zip`** — the only step left.
-2. (Optional bonus) MLflow-served agent endpoint; Mosaic Vector Search upgrade; CDC streaming.
+1. **Vector Search index sync** — endpoint `discord-vs` is ONLINE; index
+   `workspace.discord.discord_issues_vs` (DELTA_SYNC/TRIGGERED, managed `databricks-bge-large-en`
+   over `discord_issues_vs_source`, 39,302 rows, CDF on) was still reporting
+   *"pending endpoint provisioning"* at last check. If it never becomes ready, say exactly that
+   in `FEATURES.md` — provisioned, sync blocked by the workspace — rather than claiming a
+   verified query.
+2. **Rebuild the ZIP + re-run the secret scan** (FEATURES.md and `agent/mlflow_model.py` are new
+   files and must be in it).
+3. **Upload `databricks-capstone-submission.zip`**.
 
 **Screenshot capture, if it ever needs redoing:** driving the deployed app through a browser
 extension failed (cross-extension tab access + a competing debugger client). What worked was

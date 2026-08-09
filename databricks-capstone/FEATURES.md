@@ -56,7 +56,7 @@ from Apps, so notebook 01 runs locally. The code is unchanged by that; see `READ
 | Batch encode with `all-MiniLM-L6-v2` (384-d) | `notebooks/03_build_embeddings.py:116,130` | `SELECT COUNT(*) FROM discord.issue_embeddings;` |
 | pgvector table + HNSW cosine index | `sql/02_issue_embeddings.sql` | `\d discord.issue_embeddings` shows the HNSW index |
 | Semantic search over pgvector (primary backend) | `rag/retriever.py:69` (`_retrieve_pgvector`) | `DISCORD_RETRIEVER_BACKEND=pgvector python -c "from rag.retriever import retrieve; print(retrieve('supabase auth', 3))"` |
-| Mosaic AI Vector Search backend behind an env flag | `rag/retriever.py:87` (`_retrieve_vs`), selected at line 127 | see [Vector Search](#vector-search-verified) below |
+| Mosaic AI Vector Search backend behind an env flag | `rag/retriever.py:87` (`_retrieve_vs`), selected at line 127 | see [Vector Search](#vector-search-provisioned--sync-status-below) below |
 | Near-duplicate clustering — pgvector self-join at cosine 0.86 + union-find | `notebooks/04_cluster_duplicates.py:55-105` | see the reconciliation SQL in `DEMO.md` (turn 3) |
 
 ## 4. Databricks App + frontend
@@ -129,7 +129,7 @@ of …, found CompiledStateGraph`). The supported route is *models-from-code* �
 legacy workspace model registry **disabled**, so the model name must be the three-level Unity
 Catalog name (`agent/agent.py:69`, override with `DISCORD_AGENT_UC_MODEL`).
 
-### Vector Search (verified)
+### Vector Search (provisioned — sync status below)
 
 `rag/retriever.py` selects its backend at line 127. To run the Mosaic AI Vector Search path:
 
