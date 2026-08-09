@@ -9,6 +9,8 @@ detection via Vectorize.
 
 ![Stack](https://img.shields.io/badge/Next.js-16-black) ![React](https://img.shields.io/badge/React-19-blue) ![Supabase](https://img.shields.io/badge/Supabase-Postgres-green) ![Bun](https://img.shields.io/badge/runtime-bun-fb9e00)
 
+**Repository:** <https://github.com/JesseVent/discord-dashboard>
+
 ## Features
 
 **KPI strips**

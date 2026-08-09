@@ -1,6 +1,6 @@
 # Databricks AI Capstone — Discord Solution Data Engine
 
-A Databricks port of the **Discord support-forum analytics solution** (`../`), built to satisfy
+A Databricks port of the **Discord support-forum analytics solution** ([`../`](https://github.com/JesseVent/discord-dashboard)), built to satisfy
 every requirement of the "Rise of the AI Data Engineer" capstone. The Discord repo is the
 **standard**: every component here is a one-to-one port of an existing piece of that solution,
 retargeted to the Databricks platform — with one net-new addition (the tool-using agent).
@@ -28,7 +28,7 @@ Plus the shared architectural skeleton: **relational tables in Lakebase** (`sql/
 
 ## The source solution this ports from
 
-The "Ported from" column above is not aspirational — the Discord repo at `../` is a running
+The "Ported from" column above is not aspirational — the Discord repo at [`../`](https://github.com/JesseVent/discord-dashboard) is a running
 Next.js/React dashboard over Supabase Postgres. It is the thing being retargeted, and the
 Streamlit app in `app/app.py` reproduces its KPI tiles and charts on Databricks.
 
