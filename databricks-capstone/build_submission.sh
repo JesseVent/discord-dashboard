@@ -16,10 +16,14 @@ mkdir -p "$STAGE/databricks-capstone"
 # The handoffs + notes are working documents: they enumerate open items, bug
 # history and self-assessed weak spots. They stay in git; they do not ship to
 # the grader, who would read them as the author's own deduction list.
+# verify_ingest.py is a proof-of-run harness, not a capstone artifact — its
+# OUTPUT ships (pasted into the docs), the harness itself does not. It has to be
+# named here because .py files are otherwise copied in as .py.txt.
 DROP=(
   "README copy.md" "README copy.pdf"
   "databricks-capstone-submission.zip"
   "GRADING_HANDOFF.md" "HANDOFF.md" "notes.md"
+  "verify_ingest.py"
 )
 
 copy_as_txt() {
