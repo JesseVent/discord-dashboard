@@ -13,3 +13,8 @@ databricks-langchain==0.8.2
 langgraph==0.2.34
 langchain-core==0.3.0
 sentence-transformers==3.0.1
+
+# MCP server (mcp_server.py) — publishes the same six tools over streamable HTTP.
+# The Streamlit app does not import it; it is here so one deployed bundle can
+# serve either entrypoint by changing app.yaml's `command`.
+mcp==2.0.0

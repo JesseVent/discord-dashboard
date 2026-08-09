@@ -8,8 +8,14 @@ issues / 233,147 replies**, vector retrieval over their unstructured text, a Str
 Databricks App, and a LangGraph agent with six tools that both reads the data and **writes real
 rows back to it**.
 
-All source files carry a `.txt` suffix (`tools.py.txt`, `01_lakebase_schema.sql.txt`) so every
-file in this archive is plain-text readable. The stem keeps the real language.
+**Every file in this archive is `.txt`, `.png` or `.pdf`** — the only formats the submission
+accepts. Source and docs therefore carry a `.txt` suffix (`tools.py.txt`,
+`01_lakebase_schema.sql.txt`, `DEMO.md.txt`), keeping the original stem so the real language and
+format stay obvious. Strip the trailing `.txt` to run or render any of them.
+
+**Read `00_START_HERE.md.txt` → `DEMO.md.txt` → `FEATURES.md.txt` → `README.md.txt`.** Where the
+text below names a file as `DEMO.md` or `agent/tools.py`, the archived copy is that name plus
+`.txt`.
 
 ---
 
@@ -20,21 +26,21 @@ file in this archive is plain-text readable. The stem keeps the real language.
 | 1 | **Data pipeline in Spark** | `notebooks/02_compute_analytics.py.txt` | `pyspark.sql` job: JDBC read from Lakebase → `.write.format("delta")` → 5 Delta tables in `workspace.discord`. Row counts: `issues_enriched` **40,570**, `dashboard_daily_stats` **1,445**, `top_responders` **4,712**, plus `dashboard_issues_light` and `dashboard_global_metrics`. Runs on serverless. |
 | 2 | **Third-party API integration** | `notebooks/01_ingest_discord_api.py.txt` | Live `requests` calls to the Discord v9 REST API — `threads/search`, `post-data`, `messages` — with cursor pagination, rate-limit backoff and env-based credentials. Runs locally: this workspace's network policy blocks `discord.com` egress from serverless and Apps (see *Caveats*). |
 | 3 | **Unstructured data → retrieval** | `notebooks/03_build_embeddings.py.txt`, `rag/retriever.py.txt`, `notebooks/04_cluster_duplicates.py.txt` | `all-MiniLM-L6-v2` (384-d) embeds each issue's title + first message + tags into pgvector `discord.issue_embeddings` — **40,570 rows**, HNSW cosine index. Semantic search verified live (query "RLS policy not working" → top hit at 0.778). Near-duplicate clustering by pgvector self-similarity + union-find at cosine 0.86 groups **1,978 issues into 701 clusters** (largest: 125 issues, "Can't successfully authenticate with Supabase?"). Verified live in `DEMO.md` turn 3. |
-| 4 | **Databricks App with a frontend** | `app/app.py.txt` + `app.yaml.txt` | Streamlit app, state `RUNNING` (deployment `01f193adc38d1882a1b51914e617a11a`, SUCCEEDED). 9 KPI tiles (40,570 issues · 19,048 users · 306,922 messages · 19,469 answered · 11,541 resolved · 48% response rate), 4 Plotly charts, filterable issues table (`app/app.py.txt:215`), per-issue thread inspector (`:224`), and the agent chat panel (`:249`). → `screenshots/app_overview.png` (tiles + charts), `screenshots/turn1_dashboard.png` (agent panel) |
+| 4 | **Databricks App with a frontend** | `app/app.py.txt` + `app.yaml.txt` | Streamlit app, state `RUNNING` (deployment `01f193adc38d1882a1b51914e617a11a`, SUCCEEDED). 9 KPI tiles (40,570 issues · 19,048 users · 306,922 messages · 19,469 answered · 11,541 resolved · 48% response rate), 3 Plotly charts, filterable issues table (`app/app.py.txt:215`), per-issue thread inspector (`:224`), and the agent chat panel (`:249`). All six are captured, full-page and at native resolution, across `screenshots/app_overview.png` (tiles, charts, table, inspector) and `screenshots/turn1_dashboard.png` (the agent panel) — two consecutive slices of one continuous scroll of the running app. |
+| 5 | **AI agent that does stuff** | `agent/tools.py.txt`, `agent/agent.py.txt`, `agent/prompts.py.txt`, `mcp_server.py.txt` | LangGraph ReAct agent on `databricks-deepseek-v4-flash-0731` via the AI Gateway. **6 tools — 4 read, 2 write**, also published over **MCP streamable HTTP** (`mcp_server.py.txt`, one implementation behind both surfaces). The write tools mutate production rows: `update_resolution_status` UPDATEs `discord.issues`, `add_note` INSERTs into `discord.notes`. Seven verbatim transcripts in `DEMO.md`; the write path fires **12 times across turns 2 and 5**, every write reconcilable to a row by id. |
 
 **"306,922 messages" vs "233,147 replies" — different measures, not a contradiction.** Replies are
 rows actually loaded into `discord.replies`. `total_messages` is `SUM(issues.message_count)`
 (`notebooks/02_compute_analytics.py.txt:152`) — Discord's *own* per-thread counter, carried on each
 thread record, which counts every message the thread ever held including ones never scraped and
 ones since deleted. The tile reports what Discord says the forum contains; the reply count reports
-what this pipeline holds.
-| 5 | **AI agent that does stuff** | `agent/tools.py.txt`, `agent/agent.py.txt`, `agent/prompts.py.txt` | LangGraph ReAct agent on `databricks-deepseek-v4-flash-0731` via the AI Gateway. **6 tools — 4 read, 2 write.** The write tools mutate production rows: `update_resolution_status` UPDATEs `discord.issues`, `add_note` INSERTs into `discord.notes`. Full read→decide→write loop captured verbatim in `DEMO.md` turn 2 — 11 tool calls ending in a real UPDATE + INSERT (note `13201d0a-4d09-4685-9293-96550ece16a9`). |
+what this pipeline holds. `DEMO.md` turn 6 is the agent finding one such gap on its own.
 
 ---
 
 ## Read in this order
 
-1. **`DEMO.md`** — four live agent transcripts, every tool call and result verbatim, each mapped
+1. **`DEMO.md`** — seven live agent transcripts, every tool call and result verbatim, each mapped
    to the requirement it evidences, with matching screenshots.
 2. **`FEATURES.md`** — the index: every feature → the file and line that implements it → a command
    that proves it runs. Also carries the rubric-dimension → evidence map and the explicit
@@ -64,6 +70,8 @@ rag/retriever.py.txt               pgvector semantic search         (Req 3)
 agent/tools.py.txt                 6 tools, 4 read + 2 write        (Req 5)
 agent/prompts.py.txt               system prompt + guardrails
 agent/agent.py.txt                 LangGraph ReAct wiring + MLflow
+mcp_server.py.txt                  same 6 tools over MCP streamable HTTP
+                                   (one impl, two surfaces; --selftest)
 app/app.py.txt                     Streamlit dashboard + agent chat (Req 4)
 ```
 

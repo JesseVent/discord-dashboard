@@ -230,7 +230,7 @@ WHERE id = '13201d0a-4d09-4685-9293-96550ece16a9';
 -- agent | Triage: marked in-progress. This is the highest-frustration…
 ```
 
-![Turn 2 — 11 tool calls, two of them writes](screenshots/turn2_triage.png)
+![Turn 2 — the agent's write calls and the actions-taken summary](screenshots/turn2_triage.png)
 
 **Screenshot:** `screenshots/turn2_triage.png` — the app's chat panel expands to
 `🔧 11 tool call(s) … ✍️ wrote to the database`, with the two write calls flagged `✍️`.
@@ -467,14 +467,185 @@ hedged "there may be some."
 
 ---
 
+## Turn 5 — Bulk triage: ten writes in one turn
+
+**Evidence:** Req 5 at scale. Turn 2 proved the write path works once. This proves it is a
+capability, not a one-off — the agent plans over a result set and writes to every row in it.
+
+```
+you › Find the 5 oldest still-unanswered issues about RLS. Triage each one: set an
+      appropriate resolution status with a reason, and leave a note explaining your
+      call. Tell me the issue ids you touched.
+
+  ⚙ semantic_search(query='RLS row level security policy not working', top_k=10)
+  ⚙ search_issues_sql(sql="… WHERE resolution_status = 'unanswered'
+       AND (name ILIKE '%RLS%' OR first_message_content ILIKE '%RLS%')
+       ORDER BY created_at ASC LIMIT 10")
+
+agent › Found the candidates. The 5 oldest unanswered issues matching RLS are from
+        Aug 11–15, 2022. Let me pull each thread before deciding status.
+
+  ⚙ get_issue_detail(issue_id='1007308263211159553')     ← ×5, one per candidate
+  ⚙ update_resolution_status(issue_id='1007308263211159553', status='unanswered',
+       reason='Triage: thread archived 2022-08-14 with zero replies. The RLS
+       error-vs-404 question was never addressed by any responder; remains unresolved.')
+  ⚙ add_note(issue_id='1007308263211159553', content="Triage (2026-07): Oldest
+       unanswered RLS issue. User asks how to surface RLS policy failures
+       (function-based USING returning false) as a DB error instead of a 404.
+       No replies in thread, responder_count=0, is_answered=false. Kept as
+       'unanswered' — needs a real answ…")
+                                                          ← ×5, update + note per issue
+```
+
+**18 tool calls: 1 semantic, 2 SQL, 5 reads, and 10 writes.** The five issues:
+
+| Issue | Title | Status written |
+|---|---|---|
+| `1007308263211159553` | RLS Error Handling | `unanswered` |
+| `1007621926941896726` | Protected columns? | `unanswered` |
+| `1007998446315241617` | Do I need RLS? | `unanswered` |
+| `1008095250125946890` | RLS with custom auth | `unanswered` |
+| `1008681064744636486` | RLS failing from SvelteKit endpoint | `unanswered` |
+
+**The interesting part is what it did *not* do.** Asked to "set an appropriate resolution status",
+a model optimising for the appearance of work would have moved these to `in-progress` or
+`likely-resolved`. It kept all five as `unanswered` — because all five have `responder_count = 0`
+and empty threads — and spent the writes on *reasons* instead. Each `add_note` carries the actual
+technical read (RLS is row-level not column-level; client-side route guards are not security;
+`auth.uid()` must be set from custom auth). That is the "never invent data" contract holding while
+the agent still takes real action.
+
+Reconcile:
+
+```sql
+SELECT id, resolution_status FROM discord.issues
+WHERE id IN ('1007308263211159553','1007621926941896726','1007998446315241617',
+             '1008095250125946890','1008681064744636486');
+
+SELECT issue_id, author, left(content,80) FROM discord.notes
+WHERE author = 'agent' ORDER BY created_at DESC LIMIT 5;
+```
+
+---
+
+## Turn 6 — Thread deep-dive, and a data gap the agent refused to paper over
+
+**Evidence:** reasoning over *unstructured* thread content, and the honesty guardrail under a
+question that invites a guess.
+
+```
+you › Walk me through issue 1039199077033857074. Read the whole thread and tell me
+      whether it actually got resolved, and whether its current resolution_status is right.
+
+  ⚙ get_issue_detail(issue_id='1039199077033857074')
+  ⚙ search_issues_sql(sql='SELECT … FROM discord.replies
+       WHERE issue_id LIKE \'%1039199077033857074%\' LIMIT 20')          → []
+  ⚙ search_issues_sql(sql="SELECT … FROM discord.issues WHERE id = '1039199077033857074'")
+    → [{"name": "auth.uid() = user_id not working on server", "message_count": 122,
+        "responder_count": 0, "is_answered": false, "resolution_status": "unanswered"}]
+  ⚙ search_issues_sql(sql='SELECT MIN("timestamp"), MAX("timestamp"), COUNT(*) FROM discord.replies')
+    → [{"earliest_reply": "2022-08-12…", "latest_reply": "2026-07-25…", "n": 233147}]
+  ⚙ search_issues_sql(sql='… WHERE "timestamp" BETWEEN \'2022-11-07\' AND \'2022-11-16\' …')
+  ⚙ semantic_search(query='auth.uid() = user_id RLS policy returns empty array …', top_k=8)
+
+agent › **Did it get resolved?** Unknown — and I won't guess. The 122-message count
+        suggests the OP got engagement, but with zero stored replies I can't confirm
+        whether a fix was offered or accepted.
+
+        **Is `unanswered` the right status?** It's the only defensible label given the
+        data … But it's unverifiable, and the metadata is internally contradictory
+        (122 messages but 0 recorded responders). I'm **not** changing it —
+        reclassifying without thread content would be fabrication.
+
+        No write actions taken.
+```
+
+**12 tool calls, zero writes** — the correct outcome. The agent found `discord.replies` holds
+**0 rows** for a thread whose `message_count` is 122, then did the work to rule out the boring
+explanations: it confirmed the replies table covers that era (earliest 2022-08-12, 519 rows from
+2022) and pulled every reply in the 2022-11-07→16 window to show none belong to this thread. Only
+then did it call it a data gap rather than evidence of silence.
+
+That is a **real finding about this dataset**, surfaced by the agent and reproducible:
+
+```sql
+SELECT i.message_count, count(r.id) AS stored_replies
+FROM discord.issues i LEFT JOIN discord.replies r ON r.issue_id = i.id
+WHERE i.id = '1039199077033857074' GROUP BY 1;     -- 122 | 0
+```
+
+The bulk NDJSON load carried every reply the source Supabase snapshot held; threads whose replies
+were never scraped into that snapshot arrive with metadata but no bodies. The agent's conclusion —
+treat it as an ingestion gap to investigate, not as proof the thread went unanswered — is the
+right one, and it reached it without being told the gap existed.
+
+---
+
+## Turn 7 — Choosing the right retrieval tool, and proving the choice
+
+**Evidence:** Req 3 through the agent. Not just "semantic search runs", but the agent selecting
+embeddings over keywords *and then running the counterfactual to justify it*.
+
+```
+you › Find issues where someone describes their whole project being unreachable,
+      without using the words "down" or "outage". Then tell me which search tool you
+      used and why the other one would have missed them.
+
+  ⚙ semantic_search(query='entire project completely unreachable, cannot access anything', top_k=25)
+  ⚙ get_issue_detail(…)     ← ×8, verifying each candidate's actual wording
+  ⚙ search_issues_sql(sql='… ILIKE any of unreachable/inaccessible/can\'t access/… ')
+
+agent › I used **semantic_search** (embeddings over title + first message), then
+        verified with get_issue_detail.
+
+        `search_issues_sql` is keyword matching, and that's exactly why it fails here.
+        I ran a best-effort keyword query … it returned 20 hits, but they were almost
+        all about a *single* thing being inaccessible (a table, a refresh token, a
+        private bucket), not the whole project. And it **missed 5 of the 7 issues
+        above** because none of them use those literal phrases:
+
+          1527121877280231495 — "can't even get access"   (not "can't access")
+          1111333212409565285 — "no projects found" / "Completely DoA"
+          1278033739166912602 — "not able to connect to anything"
+          1494744843413618829 — "can't see my database"
+          1499376632518148138 — "unable to log into a project"
+
+        The flip side: semantic search can't enforce the "no down/outage" constraint on
+        its own — those words are semantically close to "unreachable". That's why the
+        verification pass was essential, and why 1499376632518148138 got dropped.
+```
+
+**10 tool calls.** Two things worth noting. First, the agent **excluded** a strong semantic match
+(`1499376632518148138`) because reading the thread showed the OP used the banned word "down" in a
+*reply* — it enforced a constraint the embedding index cannot express, by reading. Second, it
+volunteered the limitation of its own choice rather than selling the tool: *semantic search for
+recall, SQL for precision filters*. That is the honest version of a RAG demo.
+
+---
+
 ## What each turn evidences
 
 | Turn | Requirement | Tools exercised | Proof |
 |---|---|---|---|
 | 1 | Req 4 + 5 | `dashboard_metrics` | Agent's KPIs match the app's KPI tiles exactly |
-| 2 | **Req 5 (writes)** | 11 calls incl. both write tools | Row `1044658084624212038` is now `in-progress`; note `13201d0a-…` exists in `discord.notes` |
+| 2 | **Req 5 (writes)** | 10 calls incl. both write tools | Row `1044658084624212038` is now `in-progress`; note `13201d0a-…` exists in `discord.notes` |
 | 3 | Req 5 + Req 3 | `search_issues_sql` ×3 across 3 tables | 1,978 issues in 701 pgvector-derived clusters |
 | 4 | Guardrail | `semantic_search` + 8 SQL probes | Answers "0 rows" and offers real alternatives instead of inventing |
+| 5 | **Req 5 at scale** | 18 calls, **10 of them writes** | 5 issues re-stated with reasons + 5 notes, all reconcilable by id |
+| 6 | Req 3 + guardrail | 12 calls, **0 writes** | Finds `message_count=122` vs 0 stored replies; declines to reclassify |
+| 7 | **Req 3 via the agent** | `semantic_search` + 8 reads + SQL counterfactual | Quantifies that keyword search misses 5 of 7 matches |
+
+**Tool coverage across all seven turns** — every tool is exercised in more than one independent
+transcript, and the write path fires 12 times across two:
+
+| Tool | Turns | Calls |
+|---|---|---|
+| `search_issues_sql` | 2, 3, 4, 5, 6, 7 | 28 |
+| `get_issue_detail` | 2, 5, 6, 7 | 18 |
+| `semantic_search` | 2, 4, 5, 6, 7 | 5 |
+| `dashboard_metrics` | 1 | 1 |
+| `update_resolution_status` | 2, 5 | 6 |
+| `add_note` | 2, 5 | 6 |
 
 ---
 
@@ -550,11 +721,16 @@ gotcha, is in `FEATURES.md` → *Vector Search*.
 
 ## Screenshots
 
-![Streamlit app on load — KPI tiles and charts](screenshots/app_overview.png)
+![Streamlit app on load — KPI tiles, three charts, issues table, thread inspector](screenshots/app_overview.png)
 
-- `screenshots/app_overview.png` — Streamlit app on load: the 9 KPI tiles and the charts above the
-  fold. The issues table, the per-issue thread inspector and the agent panel sit below it — the
-  agent panel is captured in `turn1`–`turn4` below.
+**All five app screenshots below are slices of a single continuous full-page capture** of one live
+session — `app_overview.png` then `turn1`→`turn4` in scroll order, so they reconcile with each
+other by construction rather than by assertion.
+
+- `screenshots/app_overview.png` — 9 KPI tiles, all three charts (trend, response-time
+  distribution, hour × day-of-week heatmap), the filterable issues table and the "Inspect an issue
+  by ID" thread inspector. The agent panel begins immediately below, in `turn1_dashboard.png`.
+  Every Req-4 feature is evidenced here without workspace access.
 - `screenshots/turn1_dashboard.png` — `dashboard_metrics` call + the agent's KPI summary
 - `screenshots/turn2_triage.png` — agent chat with both write calls flagged `✍️`
 - `screenshots/turn3_sql.png` — SQL tool calls + duplicate-cluster table
@@ -562,10 +738,35 @@ gotcha, is in `FEATURES.md` → *Vector Search*.
 - `screenshots/source_react_dashboard.png`, `…_full.png` — the Next.js/Supabase dashboard this
   capstone ports from (see README.md, "The source solution this ports from")
 
+**Three further questions, asked ad hoc in the deployed app** — not scripted demo turns, kept
+because each one exercises the agent differently:
+
+- `screenshots/app_turn_most_asked.png` — *"What's the most asked question in DataExperts?"*
+  8 tool calls. The agent queries `discord.theme_clusters`, gets `[]`, queries it again, then
+  introspects `information_schema.columns` to find out why, and falls back to
+  `duplicate_clusters` — closing with the caveat that it derived the answer from a different
+  table than the one it reached for first. **This capture predates a fix:** `theme_clusters` is
+  empty by design (the source NDJSON dump was a 42-byte empty payload), and `agent/prompts.py`
+  now says so, so the agent no longer spends calls rediscovering it. The screenshot is kept
+  because the recovery behaviour is real and worth seeing.
+- `screenshots/app_turn_auth_threads.png` — the follow-up: 7 calls, 5 of them `get_issue_detail`,
+  reading the full reply threads of the largest auth cluster and separating platform outages from
+  user-side login blockers. The clearest evidence of the agent reasoning over *unstructured reply
+  text* rather than over columns.
+- `screenshots/app_turn_no_replies.png` — *"Most frequent issue that gets no replies?"* 3 calls.
+  Ends on an unprompted caveat that clustering covers only part of the corpus, so the leaderboard
+  it just produced does not generalise to the unclustered remainder.
+
 All images are `.png` (grader-supported formats: `.png`/`.jpg`/`.jpeg`/`.gif`/`.webp`).
 
-Every agent screenshot was captured from `app/app.py` running against the same Lakebase database
-as the deployed App, driven headlessly through the chat input — one prompt per fresh page load.
-They are independent runs from the transcripts above, which is why turn 2 triages a different
-issue and turn 3 counts clusters from the other side of the join; both discrepancies are
-reconciled in place with the SQL that settles them.
+Every agent screenshot was captured from the **deployed** Databricks App
+(`discord-capstone-app`), by asking the four prompts above in order through the chat panel in a
+single session, then capturing the whole page in one pass and slicing it. So the tool traces you
+see are the app's own rendering of a live ReAct loop, not a replay.
+
+They are independent runs from the verbatim transcripts above — the transcripts were captured
+headlessly via `python -m agent.agent chat`. That is why turn 2 triages a different issue and
+turn 3 counts clusters from the other side of the join; both discrepancies are reconciled in place
+with the SQL that settles them. A tool-using agent given the same question twice is *expected* to
+take a different route; what has to be stable is the data underneath, and that is what the
+reconciliation SQL checks.

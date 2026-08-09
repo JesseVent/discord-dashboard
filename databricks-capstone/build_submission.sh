@@ -47,18 +47,31 @@ while IFS= read -r f; do
   [[ "$skip" -eq 1 ]] && continue
 
   case "$f" in
-    *.py|*.sql|*.yaml|*.yml) copy_as_txt "$f" ;;
-    *.md|*.txt|*.pdf)        copy_keep  "$f" ;;
-    *.png|*.jpg|*.jpeg|*.gif|*.webp) copy_keep "$f" ;;   # grader-supported images
+    # Grader accepts ONLY: .zip .png .jpg .jpeg .pdf .txt
+    # Everything textual therefore ships with a .txt suffix, keeping its original
+    # stem so the real language/format is still obvious (tools.py.txt, DEMO.md.txt).
+    *.py|*.sql|*.yaml|*.yml|*.md) copy_as_txt "$f" ;;
+    *.txt|*.pdf)                  copy_keep  "$f" ;;
+    *.png|*.jpg|*.jpeg)           copy_keep  "$f" ;;   # grader-supported images
     *) echo "SKIP (unsupported): $f" ;;
   esac
 # --exclude databricks-capstone: if the zip was ever unpacked in place, that copy
 # must not be re-staged — it would ship a doubled tree with .txt.txt suffixes.
-done < <(fd -t f --exclude 'databricks-capstone-submission.zip' --exclude databricks-capstone)
+# --exclude demo-captures: raw agent transcripts are working input for DEMO.md,
+# not submission files. They are also gitignored, but do not rely on fd honouring
+# that — a copy of this tree without .gitignore would otherwise ship them.
+done < <(fd -t f --exclude 'databricks-capstone-submission.zip' \
+            --exclude databricks-capstone --exclude demo-captures)
 
 # Report
 echo "=== staged tree ==="
 eza -T "$STAGE/databricks-capstone" 2>/dev/null || find "$STAGE" -type f | sort
+
+# Docs now ship as *.md.txt, so markdown links between them (](docs/architecture.md))
+# would dangle. Rewrite link targets in the staged copies only — the originals in git
+# keep working as normal markdown.
+find "$STAGE" -name '*.md.txt' -exec \
+  sd '\]\(([^)]+)\.md\)' ']($1.md.txt)' {} +
 
 ( cd "$STAGE" && zip -rq "$OUT" databricks-capstone )
 echo "=== zip ==="

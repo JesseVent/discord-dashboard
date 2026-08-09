@@ -15,12 +15,12 @@ Navigation only. Read the linked file at the named section; the file is the evid
 
 | Rubric dimension | Primary evidence | Supporting |
 |---|---|---|
-| MCP/tool server correctness | `agent/tools.py` — 6 tools, each returning `{error, hint}` instead of raising (`_err`, line 89) | `DEMO.md` turns 1–4 (real tool traces) |
+| MCP/tool server correctness | `mcp_server.py` — the same 6 tools published over **MCP streamable HTTP**; `agent/tools.py` is the single implementation, each tool returning `{error, hint}` instead of raising (`_err`, line 89) | `python mcp_server.py --selftest`; `DEMO.md` turns 1–7 (real tool traces) |
 | Prediction / decision logic | `agent/agent.py` (ReAct loop, line 57), `agent/prompts.py` (decision rules, lines 63–82) | `notebooks/02_compute_analytics.py` (resolution + response heuristics) |
 | Secrets handling | `agent/tools.py:42-51`, `app/app.py:61-70`, `rag/retriever.py:35-43` — every DSN read comes from the `database/lakebase-url` secret scope | `README.md` → *Secrets*; `app.yaml` (scope/key by env, no values) |
 | Agent configuration | `agent/agent.py:36-61` (model choice + probe table), `agent/prompts.py` | `README.md` → *Model* table; `docs/design-decisions.md` |
 | Documentation | `README.md`, `docs/architecture.md`, `docs/design-decisions.md`, this file | `00_START_HERE.md` (reading order) |
-| Demonstration | `DEMO.md` — 4 agent turns with SQL that reconciles each write to a real row | `screenshots/*.png` |
+| Demonstration | `DEMO.md` — 7 agent turns with SQL that reconciles each write to a real row | `screenshots/*.png` |
 
 ---
 
@@ -101,6 +101,66 @@ Six tools, `agent/tools.py`. Four read, two write:
 ---
 
 ## Verified bonus paths
+
+### MCP server (verified)
+
+The six tools are also published over **MCP**, streamable-HTTP transport, by
+`mcp_server.py`. This is a protocol surface, not a second implementation: it registers the exact
+function objects the LangGraph agent calls, so there is one copy of the SQL, one set of
+guardrails, and one error contract.
+
+```python
+from mcp.server.mcpserver import MCPServer
+from agent.tools import ALL_TOOLS
+
+mcp = MCPServer(name="discord-triage", instructions=INSTRUCTIONS)
+for _t in ALL_TOOLS:                      # .func = the callable behind @tool
+    mcp.add_tool(_t.func, name=_t.name, description=_t.description)
+app = mcp.streamable_http_app()           # POST /mcp
+```
+
+Tool schemas are derived by MCP from each function's type hints and its `Args:`/`Returns:`
+docstring — the same docstrings the agent consumes. Verify without a client:
+
+```bash
+PYTHONPATH=. python mcp_server.py --selftest
+```
+
+Actual output:
+
+```
+✓ 6 tools published over MCP: add_note, dashboard_metrics, get_issue_detail,
+  search_issues_sql, semantic_search, update_resolution_status
+✓ write tools present: add_note, update_resolution_status
+    add_note(issue_id, content, author)
+    dashboard_metrics()
+    get_issue_detail(issue_id)
+    search_issues_sql(sql)
+    semantic_search(query, top_k)
+    update_resolution_status(issue_id, status, reason)
+```
+
+The self-check asserts all six names are published, that every tool carries a description and a
+non-empty input schema (`dashboard_metrics` excepted — it is nullary), and that both write tools
+survived registration. It imports `agent.tools` for real, so it also proves the Lakebase DSN
+resolves and the module loads clean.
+
+Serving it:
+
+```bash
+PYTHONPATH=. python mcp_server.py                              # stdio (Claude Desktop, mcp CLI)
+PYTHONPATH=. uvicorn mcp_server:app --host 0.0.0.0 --port 8000 # HTTP  -> POST /mcp
+```
+
+**Why the agent still runs in-process.** MCP is an additional surface for *external* clients, not
+the dashboard's path to its own tools. The Streamlit app keeps calling the tools directly — one
+process, one secret ACL, no extra hop (see `docs/design-decisions.md`). One deployed bundle can
+serve either entrypoint by changing `app.yaml`'s `command`, which is why `mcp==2.0.0` is in
+`requirements.txt` even though the Streamlit path never imports it.
+
+**API note.** `mcp` 2.x moved the server class: it is `mcp.server.mcpserver.MCPServer`, and
+`mcp.server.fastmcp` no longer exists. Tool metadata is `tool.input_schema` (snake_case), not
+`inputSchema`.
 
 ### MLflow registration (verified)
 

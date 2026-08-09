@@ -217,7 +217,10 @@ status_filter = st.multiselect("Resolution status",
     options=sorted(issues_df["resolution_status"].dropna().unique()) if not issues_df.empty else [],
     default=[])
 view = issues_df[~issues_df["resolution_status"].isin(status_filter)] if status_filter else issues_df
-st.dataframe(view[["name", "owner_username", "created_at", "message_count",
+# Sort before head(200): the underlying SELECT has no ORDER BY, so without this
+# the 200 rows shown vary between page loads (Postgres makes no ordering promise).
+st.dataframe(view.sort_values("created_at", ascending=False)
+                 [["name", "owner_username", "created_at", "message_count",
                    "resolution_status", "sentiment", "response_time_ms"]].head(200),
              use_container_width=True, hide_index=True)
 

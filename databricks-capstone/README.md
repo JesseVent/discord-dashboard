@@ -1,5 +1,10 @@
 # Databricks AI Capstone — Discord Solution Data Engine
 
+**This capstone on GitHub:**
+https://github.com/JesseVent/discord-dashboard/tree/main/databricks-capstone
+*(browsable source — the same files this archive ships as `.txt`, in their original
+`.py` / `.sql` / `.md` form, with syntax highlighting and rendered markdown.)*
+
 A Databricks port of the **Discord support-forum analytics solution** ([`../`](https://github.com/JesseVent/discord-dashboard)), built to satisfy
 every requirement of the "Rise of the AI Data Engineer" capstone. The Discord repo is the
 **standard**: every component here is a one-to-one port of an existing piece of that solution,
@@ -157,7 +162,7 @@ See [`docs/architecture.md`](docs/architecture.md) for the expanded flow and
 ```
 databricks-capstone/
 ├── 00_START_HERE.md                  ← the five requirements → evidence, and the reading order
-├── DEMO.md                           ← four live agent transcripts, every tool call verbatim
+├── DEMO.md                           ← seven live agent transcripts, every tool call verbatim
 ├── FEATURES.md                       ← every feature → implementing file+line → command that proves it
 ├── README.md                         ← you are here
 ├── app.yaml                          ← Databricks App entrypoint + env (streamlit run app/app.py)
@@ -210,6 +215,11 @@ databricks-capstone/
   a Delta Sync index with managed `databricks-bge-large-en` embeddings, returning real hits.
   Running it also surfaced a genuine bug in that path (it parsed `result.data` instead of the
   positional `result.data_array`) which is now fixed. See `FEATURES.md` → *Vector Search*.
+- **The six tools are also served over MCP.** `mcp_server.py` publishes them on the
+  streamable-HTTP transport (`POST /mcp`) by registering the *same* function objects the agent
+  calls — one implementation, one set of guardrails, one error contract, two surfaces. Verify with
+  `PYTHONPATH=. python mcp_server.py --selftest` (asserts all six publish with schemas, both write
+  tools included). Details and the `mcp` 2.x API notes are in `FEATURES.md` → *MCP server*.
 - **Agent runs embedded in-process** in the Streamlit app (decision), not as a served HTTP
   endpoint — one process, one secret ACL, no extra network hop to fail. It **is** registered in
   MLflow: `python -m agent.agent register` logged run `f6c307619e4c48b59f34e9f6092272c1` and

@@ -44,6 +44,9 @@ READ tools (investigate first):
     discord.theme_clusters(
       id, theme, description, keywords, count, sample_issue_ids, method,
       channel_id, created_at)
+      -- EMPTY in this dataset: the source NDJSON dump was a 42-byte empty
+      -- payload, so the table ships for schema parity but has 0 rows. Do not
+      -- query it; use discord.duplicate_clusters for topic/theme grouping.
 - `get_issue_detail(issue_id)` — pull one issue + its full reply thread before
   deciding on an action.
 - `dashboard_metrics()` — global KPIs + 30-day daily trend, for "how are we doing".
