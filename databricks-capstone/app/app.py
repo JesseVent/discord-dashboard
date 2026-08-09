@@ -248,9 +248,15 @@ else:
     c2.metric("Status re-classifications", int(changes_df["status_changes"].sum()))
     c3.metric("Days with activity", changes_df["change_date"].nunique())
 
-    fig = px.bar(changes_df, x="change_date", y="change_count", color="operation",
+    # Categorical x-axis, not datetime. With a single day's data Plotly zooms a
+    # continuous time axis down to microseconds ("23:59:59.9996 … 00:00:00.0004")
+    # and stretches the one bar across the full width. Days are discrete buckets
+    # here anyway, so treat them as categories — correct for one day and for many.
+    plot_df = changes_df.assign(change_date=changes_df["change_date"].astype(str))
+    fig = px.bar(plot_df, x="change_date", y="change_count", color="operation",
                  labels={"change_date": "date", "change_count": "changes"})
-    fig.update_layout(height=260, margin=dict(l=0, r=0, t=10, b=0))
+    fig.update_layout(height=260, margin=dict(l=0, r=0, t=10, b=0), bargap=0.6)
+    fig.update_xaxes(type="category")
     st.plotly_chart(fig, use_container_width=True)
 
 st.divider()
