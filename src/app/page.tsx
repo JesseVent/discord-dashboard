@@ -31,6 +31,8 @@ import {
 import { initSampleDataIfEmpty } from '@/lib/data-loader';
 import { fallbackThemes } from '@/lib/fallback-themes';
 import type { Issue } from '@/lib/discord-types';
+import { DATAEXPERT_CHANNEL_IDS, DATAEXPERT_FILTER } from '@/lib/discord-types';
+import { sumKpisList, combineDailyStats, combineResponders, type Kpis } from '@/lib/channel-aggregate';
 import { KpiCard } from '@/components/dashboard/kpi-card';
 import { IssuesOverTimeChart } from '@/components/dashboard/issues-over-time-chart';
 import { TagDistributionChart } from '@/components/dashboard/tag-distribution-chart';
@@ -95,32 +97,53 @@ export default function Home() {
       .catch(err => console.error('Failed to load server metrics:', err));
   }, []);
 
-  // Channel filter: 'all' = combined dashboard; otherwise scope to one channel.
+  // Channel filter: 'all' = every channel combined; 'dataexpert' = the four
+  // DataExpert forum channels combined into one view; any other string = that
+  // single channel id. `filterIds` is null for 'all' (use the server's
+  // pre-computed aggregate) or the list of channel ids to combine client-side
+  // from the per-channel maps the metrics route already ships.
+  const filterIds = useMemo<string[] | null>(() => {
+    if (channelFilter === 'all') return null;
+    if (channelFilter === DATAEXPERT_FILTER) return DATAEXPERT_CHANNEL_IDS;
+    return [channelFilter];
+  }, [channelFilter]);
+
   // Per-channel KPIs/charts come from the server route (full dataset via views); the client's
   // loaded issues only drive the issues table + row-driven memos.
   const channelIssues = useMemo(
-    () => (channelFilter === 'all' ? issues : issues.filter((i) => i.channelId === channelFilter)),
-    [issues, channelFilter],
+    () => (filterIds === null ? issues : issues.filter((i) => i.channelId != null && filterIds.includes(i.channelId as string))),
+    [issues, filterIds],
   );
-  const activeKpis = useMemo(
-    () => (channelFilter === 'all' ? serverMetrics?.kpis : serverMetrics?.byChannel?.[channelFilter]),
-    [serverMetrics, channelFilter],
+  const activeKpis = useMemo<Kpis | undefined>(
+    () =>
+      filterIds === null
+        ? serverMetrics?.kpis
+        : sumKpisList(filterIds.map((id) => serverMetrics?.byChannel?.[id]).filter(Boolean) as Kpis[]),
+    [serverMetrics, filterIds],
   );
   const activeDailyStats = useMemo(
-    () => (channelFilter === 'all' ? serverMetrics?.dailyStats : serverMetrics?.dailyStatsByChannel?.[channelFilter]),
-    [serverMetrics, channelFilter],
+    () =>
+      filterIds === null
+        ? serverMetrics?.dailyStats
+        : combineDailyStats(filterIds.flatMap((id) => serverMetrics?.dailyStatsByChannel?.[id] ?? [])),
+    [serverMetrics, filterIds],
   );
   const activeResponders = useMemo(
-    () => (channelFilter === 'all' ? serverMetrics?.topResponders : serverMetrics?.topRespondersByChannel?.[channelFilter]),
-    [serverMetrics, channelFilter],
+    () =>
+      filterIds === null
+        ? serverMetrics?.topResponders
+        : combineResponders(filterIds.flatMap((id) => serverMetrics?.topRespondersByChannel?.[id] ?? [])),
+    [serverMetrics, filterIds],
   );
   // Metrics route returns channels as { id, label, issueCount }; FilterBar wants { id, label, count }.
   const channelOptions = useMemo(
     () => (serverMetrics?.channels ?? []).map((c: any) => ({ id: c.id, label: c.label, count: c.issueCount })),
     [serverMetrics],
   );
-  // channelId for Discord links in the rendered view: the selected channel when filtering, else the configured fetch channel.
-  const displayChannelId = channelFilter === 'all' ? channelId : channelFilter;
+  // channelId for Discord links in the rendered view: the single selected channel when filtering
+  // to one; otherwise (all / subset) fall back to the configured fetch channel. Per-issue Discord
+  // links use the issue's own channelId, so this is only the fallback for shared props.
+  const displayChannelId = filterIds === null || filterIds.length > 1 ? channelId : filterIds[0];
   const channelTotal = activeKpis?.totalIssues ?? channelIssues.length;
 
   // Themes/duplicates must reflect the selected channel, not the global store (which is dominated
@@ -128,20 +151,20 @@ export default function Home() {
   // ids, so it can't be filtered by membership — recompute from the channel's loaded issues.
   // ponytail: deterministic fallback per channel (LLM route is 404 in dev anyway); upgrade to an
   // LLM-per-channel route if richer theme names are needed. For 'all' keep the store themes
-  // (potentially LLM-quality) to avoid a regression.
+  // (potentially LLM-quality) to avoid a regression. 'dataexpert' uses the shared DataExpert rule set.
   const channelThemes = useMemo(
-    () => (channelFilter === 'all' ? themes : fallbackThemes(channelIssues, channelFilter)),
-    [themes, channelFilter, channelIssues],
+    () => (filterIds === null ? themes : fallbackThemes(channelIssues, channelFilter)),
+    [themes, filterIds, channelIssues, channelFilter],
   );
   // Duplicate clusters: keep only clusters with ≥1 member in the channel's loaded issues, and trim
   // each cluster's issueIds to channel members so the "N dupes" count is per-channel-accurate.
   const channelClusters = useMemo(() => {
-    if (channelFilter === 'all') return duplicateClusters;
+    if (filterIds === null) return duplicateClusters;
     const ids = new Set(channelIssues.map((i) => i.id));
     return duplicateClusters
       .map((c) => ({ ...c, issueIds: c.issueIds.filter((id) => ids.has(id)) }))
       .filter((c) => c.issueIds.length > 0);
-  }, [duplicateClusters, channelFilter, channelIssues]);
+  }, [duplicateClusters, filterIds, channelIssues]);
 
   const uniqueUsers = useMemo(() => {
     if (activeKpis?.uniqueUsers != null) return activeKpis.uniqueUsers;
@@ -271,6 +294,7 @@ export default function Home() {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">All channels</SelectItem>
+                    <SelectItem value={DATAEXPERT_FILTER}>DataExpert (all)</SelectItem>
                     {channelOptions.map((c) => (
                       <SelectItem key={c.id} value={c.id}>
                         {c.label} ({c.count.toLocaleString()})

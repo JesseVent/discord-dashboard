@@ -102,6 +102,19 @@ export const CHANNEL_LABELS: Record<string, string> = {
   '1377924226538799106': 'DataExpert · general',
 };
 
+// The four DataExpert bootcamp forum channels, grouped under the `dataexpert`
+// channel-filter sentinel so the dashboard can combine them into one view.
+export const DATAEXPERT_CHANNEL_IDS: string[] = [
+  '1378263233437106207', // questions
+  '1378263313271623712', // looking-for-study-group
+  '1388499411289505862', // faq
+  '1377924226538799106', // general
+];
+
+// channelFilter sentinels: 'all' = every channel combined; 'dataexpert' = the
+// DataExpert subset above; any other string = that single channel id.
+export const DATAEXPERT_FILTER = 'dataexpert';
+
 export function channelLabel(channelId: string): string {
   return CHANNEL_LABELS[channelId] ?? channelId;
 }
