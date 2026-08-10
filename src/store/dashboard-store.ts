@@ -31,7 +31,7 @@ interface DashboardState {
   themeMethod: 'llm' | 'fallback' | null;
   lastFetchedAt: string | null;
   hasMore: boolean;
-  source: 'sample' | 'discord' | 'upload' | 'database' | null;
+  source: 'discord' | 'upload' | 'database' | null;
   repliesFetchedAt: string | null; // timestamp when replies were last fetched
   fetchingReplies: boolean; // true while reply fetch is in progress
   replyProgress: { done: number; total: number } | null;
@@ -50,7 +50,7 @@ interface DashboardState {
   setThemes: (themes: ThemeCluster[], method?: 'llm' | 'fallback') => void;
   setTotalResults: (n: number) => void;
   setHasMore: (b: boolean) => void;
-  setSource: (s: 'sample' | 'discord' | 'upload' | 'database' | null) => void;
+  setSource: (s: 'discord' | 'upload' | 'database' | null) => void;
   markFetched: () => void;
   setRepliesFetchedAt: (ts: string | null) => void;
   setFetchingReplies: (b: boolean) => void;
