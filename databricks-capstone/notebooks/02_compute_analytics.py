@@ -129,11 +129,41 @@ issues_enriched = (
             "responder_count_computed", "likely_resolved", "response_time_ms_calc")
 )
 
-# write issues_enriched to Delta
-(issues_enriched.write
-   .format("delta").mode("overwrite")
-   .saveAsTable(f"{CATALOG}.{SCHEMA}.issues_enriched"))
-print(f"✓ {CATALOG}.{SCHEMA}.issues_enriched")
+# ---------- 1. issues_enriched (Change Data Feed source) ----------
+# This table is MERGEd, not overwritten, and carries delta.enableChangeDataFeed.
+#
+# Why it matters: notebook 05 reads this table's change feed to build
+# `issues_changes`, the change-analytics table the app renders. An overwrite
+# rewrites every row every run, so CDF would report all 40,570 rows as changed
+# on each refresh — technically a change feed, analytically useless. A MERGE
+# guarded on the tracked columns emits a row only when something genuinely
+# moved, which is what makes "what did the agent re-classify this week?" answerable.
+ENRICHED = f"{CATALOG}.{SCHEMA}.issues_enriched"
+
+# Columns whose movement is worth recording. `<=>` is null-safe equality, so a
+# NULL -> value transition counts as a change and NULL -> NULL does not.
+TRACKED = ["resolution_status", "is_answered", "response_time_ms",
+           "responder_count", "message_count", "sentiment", "archived"]
+_unchanged = " AND ".join(f"t.{c} <=> s.{c}" for c in TRACKED)
+
+if not spark.catalog.tableExists(ENRICHED):
+    # First run: create with CDF on. CDF only records changes made *after* it is
+    # enabled, so it has to be set at creation for history to be complete.
+    (issues_enriched.write
+       .format("delta")
+       .option("delta.enableChangeDataFeed", "true")
+       .saveAsTable(ENRICHED))
+    print(f"✓ {ENRICHED} (created, CDF enabled)")
+else:
+    spark.sql(f"ALTER TABLE {ENRICHED} SET TBLPROPERTIES (delta.enableChangeDataFeed = true)")
+    issues_enriched.createOrReplaceTempView("_src_enriched")
+    spark.sql(f"""
+        MERGE INTO {ENRICHED} AS t
+        USING _src_enriched AS s ON t.id = s.id
+        WHEN MATCHED AND NOT ({_unchanged}) THEN UPDATE SET *
+        WHEN NOT MATCHED THEN INSERT *
+    """)
+    print(f"✓ {ENRICHED} (merged; CDF records only tracked-column changes)")
 
 # ---------- 2. dashboard_issues_light ----------
 # (ports the view: truncates first_message_content to 250 chars for cheap bulk loads)

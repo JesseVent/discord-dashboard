@@ -24,7 +24,6 @@ import {
   RefreshCw,
   Upload,
   Sparkles,
-  Database,
   Trash2,
   KeyRound,
   ListChecks,
@@ -41,7 +40,6 @@ import {
   fetchFromDiscord,
   fetchRepliesForIssues,
   getDiscordEnvConfig,
-  loadSampleData,
   loadFromJsonFile,
   persistToDb,
   runThemeAnalysis,
@@ -133,33 +131,6 @@ export function ConfigPanel() {
       // Persist to SQLite so reloads don't need to re-fetch from Discord
       persistToDb({ issues: newIssues, channelId }).catch((err) =>
         console.warn('[handleFetch] persist failed:', err),
-      );
-      markFetched();
-    } catch (e) {
-      setErr(e instanceof Error ? e.message : String(e));
-      setProgress({ stage: 'error', message: '' });
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  async function handleSample() {
-    setErr(null);
-    setBusy(true);
-    try {
-      setProgress({ stage: 'fetching-threads', fetchedCount: 0, totalResults: 0, message: 'Loading sample data…' });
-      const { issues: newIssues, totalResults, hasMore } = await loadSampleData();
-      setIssues(newIssues);
-      setTotalResults(totalResults);
-      setHasMore(hasMore);
-      setSource('sample');
-
-      setProgress({ stage: 'analyzing-themes', message: 'Analyzing themes with LLM…' });
-      const newThemes = await runThemeAnalysis(newIssues, 'llm');
-      setThemes(newThemes, 'llm');
-      // Persist sample data to DB so reloads are instant
-      persistToDb({ issues: newIssues, channelId }).catch((err) =>
-        console.warn('[handleSample] persist failed:', err),
       );
       markFetched();
     } catch (e) {
@@ -354,10 +325,6 @@ export function ConfigPanel() {
               <Button onClick={handleFetch} disabled={busy || !canFetchFromDiscord} size="sm">
                 <RefreshCw className={`h-4 w-4 mr-1.5 ${busy ? 'animate-spin' : ''}`} />
                 Fetch from Discord
-              </Button>
-              <Button onClick={handleSample} disabled={busy} variant="outline" size="sm">
-                <Database className="h-4 w-4 mr-1.5" />
-                Load Sample Data
               </Button>
               <Button onClick={() => fileRef.current?.click()} disabled={busy} variant="outline" size="sm">
                 <Upload className="h-4 w-4 mr-1.5" />

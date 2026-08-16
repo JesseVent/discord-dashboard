@@ -8,36 +8,6 @@ import { fallbackThemes } from '@/lib/fallback-themes';
 import { useDashboardStore } from '@/store/dashboard-store';
 
 /**
- * Load sample data from /sample-data/search-discord-sample.json
- * (a snapshot of the user's Discord threads/search response)
- */
-export async function loadSampleData(): Promise<{
-  issues: Issue[];
-  totalResults: number;
-  hasMore: boolean;
-}> {
-  const res = await fetch('/sample-data/search-discord-sample.json');
-  if (!res.ok) throw new Error(`Failed to load sample data: ${res.status}`);
-  const data = await res.json();
-
-  // Build a lookup of first_messages by channel_id
-  const firstMessages = new Map<string, DiscordMessage>();
-  for (const fm of data.first_messages ?? []) {
-    if (fm?.channel_id) firstMessages.set(fm.channel_id, fm);
-  }
-
-  const issues: Issue[] = (data.threads ?? []).map((t: any) =>
-    normalizeIssue(t, firstMessages.get(t.id)),
-  );
-
-  return {
-    issues,
-    totalResults: data.total_results ?? issues.length,
-    hasMore: data.has_more ?? false,
-  };
-}
-
-/**
  * Load data from an uploaded JSON file (drag-drop or file picker).
  * Accepts either a threads/search response or a post-data response.
  */
@@ -447,9 +417,8 @@ export async function fetchRepliesForIssues(opts: {
 
 /**
  * Initialize the dashboard on mount.
- * Priority: localStorage (persisted Zustand) > SQLite DB > sample data.
- * If sample data is loaded, it's also persisted to DB so the user sees
- * the same data on next visit.
+ * Priority: localStorage (persisted Zustand) > Supabase DB.
+ * If neither has data, the dashboard stays empty until a Discord fetch is run.
  */
 export async function initSampleDataIfEmpty() {
   const store = useDashboardStore.getState();
@@ -476,23 +445,9 @@ export async function initSampleDataIfEmpty() {
       return;
     }
 
-    // 2. Fall back to sample data + persist to DB
-    store.setProgress({ stage: 'fetching-threads', fetchedCount: 0, totalResults: 0, message: 'Loading sample data…' });
-    const { issues, totalResults, hasMore } = await loadSampleData();
-    store.setIssues(issues);
-    store.setTotalResults(totalResults);
-    store.setHasMore(hasMore);
-    store.setSource('sample');
-
-    // Persist to DB in the background (non-blocking). Sample data carries its own channel_id.
-    persistToDb({ issues, channelId: store.channelId || process.env.NEXT_PUBLIC_DISCORD_CHANNEL_ID || '' }).catch((err) =>
-      console.warn('[initSampleDataIfEmpty] persist failed:', err),
-    );
-
-    store.setProgress({ stage: 'analyzing-themes', message: 'Analyzing themes…' });
-    const themes = await runThemeAnalysis(issues);
-    store.setThemes(themes);
-    store.markFetched();
+    // Nothing in localStorage or the DB — leave the dashboard empty and let the
+    // user kick off a Discord fetch from the config panel.
+    store.setProgress({ stage: 'idle' });
   } catch (err) {
     console.error('[initSampleDataIfEmpty]', err);
     store.setProgress({ stage: 'error', message: err instanceof Error ? err.message : String(err) });

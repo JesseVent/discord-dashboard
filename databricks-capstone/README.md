@@ -218,19 +218,23 @@ databricks-capstone/
 - **The six tools are also served over MCP.** `mcp_server.py` publishes them on the
   streamable-HTTP transport (`POST /mcp`) by registering the *same* function objects the agent
   calls — one implementation, one set of guardrails, one error contract, two surfaces. Verify with
-  `PYTHONPATH=. python mcp_server.py --selftest` (asserts all six publish with schemas, both write
-  tools included). Details and the `mcp` 2.x API notes are in `FEATURES.md` → *MCP server*.
+  `PYTHONPATH=. python mcp_server.py --selftest`. **Read-only by default:** the server does not
+  authenticate callers, so the two write tools are withheld unless `DISCORD_MCP_ALLOW_WRITES=1`,
+  and the documented run command binds `127.0.0.1`. Details, the threat model and the `mcp` 2.x
+  API notes are in `FEATURES.md` → *MCP server*.
 - **Agent runs embedded in-process** in the Streamlit app (decision), not as a served HTTP
   endpoint — one process, one secret ACL, no extra network hop to fail. It **is** registered in
   MLflow: `python -m agent.agent register` logged run `f6c307619e4c48b59f34e9f6092272c1` and
   created `workspace.discord.discord_triage_agent` **v1 (READY)**, so serving it is a UI click
   away. Details and the two workspace-specific gotchas are in `FEATURES.md` → *MLflow*.
-- **CDC — scoped out, deliberately.** Notebook 02 recomputes the rollups with a batch
-  overwrite; over 40,570 issues that finishes in well under a minute on serverless, so a
-  streaming Change Data Feed reader would add an always-on job and a checkpoint to maintain in
-  exchange for latency this dashboard has no use for. CDF *is* enabled where it is actually
-  required — on `discord_issues_vs_source`, because a Delta Sync index cannot exist without it.
-  Not a TODO; see `FEATURES.md` → *Scoped out*.
+- **Change Data Feed → change analytics.** `issues_enriched` has CDF enabled and is **MERGEd**
+  (not overwritten) by notebook 02, so the feed records only rows whose tracked columns actually
+  moved. `notebooks/05_cdf_change_analytics.py` reads that feed into
+  `workspace.discord.issues_changes` — one row per issue per commit, with `changed_cols` and the
+  `old → new` resolution status — and mirrors a daily rollup into Lakebase for the app's
+  **Triage Activity** panel. This closes the loop on the agent: `update_resolution_status` writes
+  Lakebase → notebook 02 merges → CDF captures the transition → the dashboard shows it. Details in
+  `FEATURES.md` → *6. Change Data Feed*.
 - **Model**: `databricks-deepseek-v4-flash-0731` via the AI Gateway, chosen by probing every
   endpoint on the workspace against the hardest demo turn (investigate → decide → two writes):
 

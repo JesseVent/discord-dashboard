@@ -198,3 +198,26 @@ select
 from discord.notes n
 join discord.issues i on n.issue_id = i.id
 order by n.updated_at desc;
+
+-- ---------------------------------------------------------------------------
+-- discord.issues_changes — Change Data Feed rollup.
+--
+-- Written by notebooks/05_cdf_change_analytics.py from the Delta CDF of
+-- workspace.discord.issues_enriched. The Delta table
+-- workspace.discord.issues_changes is the row-level analytics artifact; this is
+-- the small daily rollup mirrored into Lakebase so the Streamlit app (which
+-- reads Postgres, not Delta) can chart it without a SQL-warehouse connector.
+--
+-- One row per (day, channel, operation). Re-runnable: notebook 05 upserts on the
+-- primary key, so recomputing a window corrects it rather than duplicating it.
+-- ---------------------------------------------------------------------------
+create table if not exists discord.issues_changes (
+  change_date    date    not null,
+  channel_id     text    not null,
+  operation      text    not null,          -- 'update' | 'insert'
+  change_count   integer not null,
+  status_changes integer not null default 0, -- subset where resolution_status moved
+  primary key (change_date, channel_id, operation)
+);
+
+create index if not exists idx_issues_changes_date on discord.issues_changes (change_date);

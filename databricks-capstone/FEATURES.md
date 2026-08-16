@@ -45,8 +45,70 @@ Navigation only. Read the linked file at the named section; the file is the evid
 | Normalization: raw thread + first message → the `Issue` row shape | `notebooks/01_ingest_discord_api.py:114` | ports `normalizeIssue()` from the source repo |
 | Token never in shell history or code — env var only | line 45 (`DISCORD_AUTH_TOKEN` from `os.environ`) | `rg -n 'MT[A-Za-z0-9]{20}' .` → no matches |
 
+### Proof of run (verified)
+
+Notebook 01 executed locally against the live forum, bounded to 5 pages of threads. Verbatim:
+
+```
+Req 2 proof-of-run — Discord v9 REST ingest
+channel        : 1006358244786196510
+auth token     : set, 72 chars (value withheld)
+
+-- BEFORE ------------------------------------------------------------
+  issues           40570
+  replies          233147
+  max_fetched_at   2026-07-25 06:01:08.845000+00:00
+
+-- RUNNING notebooks/01_ingest_discord_api.py ------------------------
+  Fetching threads from channel 1006358244786196510…
+    25 threads; fetching replies…
+    160 replies; writing to Lakebase…
+  ✓ upserted 25 rows into discord.issues
+  ✓ upserted 160 rows into discord.replies
+  Ingest complete.
+
+-- AFTER -------------------------------------------------------------
+  issues           40595
+  replies          233307
+  max_fetched_at   2026-08-09 12:27:01.049431+00:00
+
+-- DELTA -------------------------------------------------------------
+  issues  net-new : 25
+  replies net-new : 160
+
+-- ROWS TOUCHED BY THIS RUN (fetched_at >= run start) ----------------
+  15 row(s)
+    1535919244875792434  Stolen organization                     msgs=9   in-progress
+    1535746764781527191  DATEBASE STUCK ON RESTARTING            msgs=4   likely-resolved
+    1535560039698407445  Locked out of Pro account               msgs=20  likely-resolved
+    1535399622829408256  PostgREST/Data API returning PGRST002    msgs=10  likely-resolved
+    1535385050386796658  GoTrue returns 401 on /auth/v1/user      msgs=7   likely-resolved
+    1535960479585931334  Urgent: Accidental data deletion         msgs=3   likely-resolved
+    1533616258988249169  PGRST303 error - JWT issued at future    msgs=4   in-progress
+    …
+```
+
+The whole path is exercised: `threads/search` pagination → `post-data` first-message backfill →
+`/messages` thread history → normalization → idempotent psycopg upsert. The 25 issues are
+genuinely new — threads posted to the forum since the `2026-07-25` snapshot, which is why
+`max_fetched_at` jumps a fortnight and the resolution heuristic has already classified them.
+
+Verify: `uv run --with 'psycopg[binary]' --with databricks-sdk --with requests python verify_ingest.py`
+(with `DISCORD_AUTH_TOKEN` exported; the token is never echoed, only its length).
+
+**The run's 25 issues and 160 replies were then deleted**, returning the corpus to
+**40,570 / 233,147**. Stated plainly because it matters for reading everything else here: this
+capstone is a *frozen* `2026-07-25` snapshot, and the seven agent transcripts, ten screenshots and
+every headline figure in these documents are built on it. Leaving a live ingest in place would
+have silently invalidated all of them. The before/after counts and the touched-row listing above
+are the evidence that Req 2 runs end to end; the rows themselves are not needed to retain it, and
+keeping them would have cost consistency everywhere else. (Deletion targeted `fetched_at >= ` the
+run start — rows from the original NDJSON load carry their old `fetched_at` and were never
+matched.)
+
 **Egress caveat (stated, not hidden):** this workspace blocks `discord.com` from serverless and
-from Apps, so notebook 01 runs locally. The code is unchanged by that; see `README.md` → *Notes & caveats*.
+from Apps, so notebook 01 runs locally — as above. The code is unchanged by that; see
+`README.md` → *Notes & caveats*.
 
 ## 3. Unstructured data → retrieval
 
@@ -73,6 +135,92 @@ from Apps, so notebook 01 runs locally. The code is unchanged by that; see `READ
 | Deployment entrypoint + secret-scope env (no secret values) | `app.yaml` | — |
 
 Verify: `databricks apps list-deployments discord-capstone-app` — and `screenshots/app_overview.png`.
+
+## 6. Change Data Feed → Delta analytics table
+
+**Verified on this workspace.** Notebook 02 then notebook 05, run on serverless:
+
+```json
+{"cdf_enabled_at": 1, "latest_version": 2, "reading_from": 3,
+ "changes_table_existed": true, "change_rows": 0,
+ "lakebase_rows": 1, "lakebase_upsert": "ok", "status": "complete"}
+```
+
+and the resulting rollup, read straight out of Postgres:
+
+```sql
+SELECT * FROM discord.issues_changes;
+--  change_date | operation | change_count | status_changes
+--  2026-08-09  | update    |            4 |              4
+```
+
+**All four captured changes are `resolution_status` moves** — the feed caught exactly the agent's
+triage writes and nothing else. Not six, despite twelve write-tool calls across `DEMO.md` turns 2
+and 5: turn 5 wrote `unanswered` onto rows already `unanswered`, and the null-safe MERGE guard
+correctly emitted nothing for them. That is the guard doing its job, and it is why the number is
+4 rather than "however many times a tool fired".
+
+(`change_rows: 0` on this run is the incremental path working: the feed had already been consumed
+up to `_commit_version` 2 by the previous run, so there was nothing new to append — but the
+Lakebase mirror still ran and caught up. See the note on that below.)
+
+The panel rendering that data in the deployed app:
+
+![Triage Activity — CDF-derived change analytics in the Databricks App](screenshots/app_triage_activity.png)
+
+The three KPIs reconcile exactly with the SQL above (4 / 4 / 1), which is the point: the app is
+reading `discord.issues_changes` from Lakebase, written by notebook 05 from the Delta change feed,
+which recorded notebook 02's MERGE, which pulled the agent's writes out of `discord.issues`. Every
+hop in that chain is visible in one panel.
+
+Every other panel in this capstone reports **state**. This one reports **transitions** — and the
+transitions that matter most are the agent's own, because `update_resolution_status` writes are
+exactly what shows up here.
+
+The flow: agent (or human) writes Lakebase → notebook 02 **MERGEs** into
+`workspace.discord.issues_enriched` (CDF enabled) → notebook 05 reads that table's change feed →
+`workspace.discord.issues_changes` (row-level Delta analytics table) → a small daily rollup is
+mirrored into Lakebase `discord.issues_changes` → the app charts it.
+
+| Feature | Where | Verify |
+|---|---|---|
+| CDF enabled on the analytics source table | `notebooks/02_compute_analytics.py` — `delta.enableChangeDataFeed` at create, re-asserted per run | `DESCRIBE DETAIL workspace.discord.issues_enriched` → properties |
+| **MERGE instead of overwrite**, guarded on tracked columns | same file, `TRACKED` + `MERGE … WHEN MATCHED AND NOT (<null-safe equality>)` | re-running notebook 02 with no upstream change appends **no** CDF rows |
+| Change feed → row-level Delta table | `notebooks/05_cdf_change_analytics.py` (`readChangeFeed`) | `SELECT * FROM workspace.discord.issues_changes LIMIT 10` |
+| `changed_cols` — which fields actually moved | same, `array_compact` over null-safe comparisons of pre/post images | `SELECT explode(changed_cols) col, count(*) FROM …changes GROUP BY 1` |
+| Status transitions (`old → new`) | same, `old_resolution_status` / `new_resolution_status` | `SELECT old_resolution_status, new_resolution_status, count(*) FROM …` |
+| Incremental + idempotent resume | same — resumes from `MAX(_commit_version)` in the output table | re-run immediately → "no new commits … nothing to do" |
+| Rollup mirrored to Lakebase for the app | same, psycopg upsert on `(change_date, channel_id, operation)` | `SELECT * FROM discord.issues_changes ORDER BY change_date DESC` |
+| Surfaced in the app | `app/app.py` → **Triage Activity** — 3 KPIs + a stacked daily bar chart | `screenshots/app_triage_activity.png` (live panel), or the `st.info` hint before notebook 05 has run |
+| Lakebase DDL | `sql/01_lakebase_schema.sql` → `discord.issues_changes` | — |
+
+**Why MERGE was the load-bearing change.** Notebook 02 previously wrote `issues_enriched` with
+`mode("overwrite")`. CDF would have faithfully reported all 40,570 rows as changed on every
+refresh — a change feed that is technically present and analytically worthless. The MERGE is
+guarded with null-safe equality (`<=>`) across the tracked columns, so a row is rewritten only
+when one of them genuinely moved, and the feed answers "what did triage change this week?"
+instead of "did the job run?".
+
+**Degrades safely.** The app panel catches the missing-table case (`42P01`) and shows a hint
+rather than failing, so the dashboard works before the first CDF run.
+
+**The mirror runs on the no-op path too**, and that is deliberate rather than incidental. The
+Lakebase rollup is derived from the *whole* `issues_changes` table and upserted on its primary
+key, so re-running it is cheap and idempotent. An earlier build exited before the mirror when
+there were no new commits — which meant a mirror that failed once (it did: serverless ships no
+`psycopg`) left the Delta rows permanently stranded from the app, because every later run
+short-circuited as "no new commits" before reaching it. Recovery has to be reachable on the quiet
+path, not just the busy one.
+
+**Two workspace-specific gotchas this run exposed**, both fixed in the notebook:
+
+- `startingVersion=0` fails with `DELTA_MISSING_CHANGE_DATA` on a table that predates CDF. The
+  feed exists only from the commit that enabled it, so notebook 05 reads `DESCRIBE HISTORY`, finds
+  that commit, and starts from `max(own high-water mark, that version)`.
+- Inside a notebook `dbutils.secrets.get()` returns the DSN **already decoded** — base64-decoding
+  it again yields `UnicodeDecodeError: 'utf-8' codec can't decode byte 0xa6`. That is only correct
+  for the SDK path, where `get_secret().value` is base64 for transport. Notebooks 00 and 02 carry
+  the same warning.
 
 ## 5. AI agent that takes actions
 
@@ -126,24 +274,39 @@ docstring — the same docstrings the agent consumes. Verify without a client:
 PYTHONPATH=. python mcp_server.py --selftest
 ```
 
-Actual output:
+Actual output — **read-only by default**:
 
 ```
-✓ 6 tools published over MCP: add_note, dashboard_metrics, get_issue_detail,
-  search_issues_sql, semantic_search, update_resolution_status
+mcp_server: 4 read tools published; write tools withheld (add_note,
+update_resolution_status). Set DISCORD_MCP_ALLOW_WRITES=1 to publish them — only behind auth.
+✓ 4 read tools published: dashboard_metrics, get_issue_detail, search_issues_sql, semantic_search
+✓ write tools correctly withheld: add_note, update_resolution_status
+```
+
+and with the opt-in set:
+
+```
+$ DISCORD_MCP_ALLOW_WRITES=1 PYTHONPATH=. python mcp_server.py --selftest
+✓ 6 tools published (DISCORD_MCP_ALLOW_WRITES=1): add_note, dashboard_metrics,
+  get_issue_detail, search_issues_sql, semantic_search, update_resolution_status
 ✓ write tools present: add_note, update_resolution_status
-    add_note(issue_id, content, author)
-    dashboard_metrics()
-    get_issue_detail(issue_id)
-    search_issues_sql(sql)
-    semantic_search(query, top_k)
-    update_resolution_status(issue_id, status, reason)
 ```
 
-The self-check asserts all six names are published, that every tool carries a description and a
-non-empty input schema (`dashboard_metrics` excepted — it is nullary), and that both write tools
-survived registration. It imports `agent.tools` for real, so it also proves the Lakebase DSN
-resolves and the module loads clean.
+The self-check asserts the published set matches what the mode should expose, that every tool
+carries a description and a non-empty input schema (`dashboard_metrics` excepted — it is nullary),
+and — the property that actually matters — that **no write tool is reachable without the opt-in**.
+It imports `agent.tools` for real, so it also proves the Lakebase DSN resolves and the module
+loads clean.
+
+**Why writes are off by default.** This server does not authenticate callers: it is built without
+an `auth_server_provider`/`token_verifier`, because the intended transports are stdio (a local
+client spawns the process) and loopback HTTP. Bound to a routable interface as-is it would expose
+arbitrary read-only SQL over the whole `discord` schema, two row-mutating tools, and a
+caller-supplied `add_note(author=...)` attribution field. So the default surface is the four read
+tools, the documented run command binds `127.0.0.1`, and publishing the write tools is a
+deliberate act gated on `DISCORD_MCP_ALLOW_WRITES=1` — to be set only behind real auth
+(Databricks Apps OAuth, or an MCP `token_verifier`). The in-process agent is unaffected: it calls
+`agent/tools.py` directly and always has all six.
 
 Serving it:
 
@@ -270,6 +433,6 @@ Each of these is a decision with a reason, not unfinished work.
 | Not built | Why |
 |---|---|
 | **Agent served as an HTTP endpoint** | The agent runs in-process inside the Streamlit app so the App is one self-contained process with one secret ACL. The model is registered (above), so serving it is a UI click — but a second network hop buys nothing here and doubles the failure surface. |
-| **CDC / Change Data Feed streaming into the rollups** | Notebook 02 recomputes rollups with a batch overwrite in well under a minute over 40k rows. Streaming is the right answer at a volume this pipeline does not have. CDF *is* enabled on the Vector Search source table, where Delta Sync requires it. |
+| **Continuous/streaming CDF reader** | The CDF pipeline (below) runs as a batch job, not a structured-streaming reader. It resumes from its own high-water mark, so scheduling it more often is a cron change, not a code change. An always-on stream would add a checkpoint to maintain for latency this dashboard has no use for. |
 | **Live Discord ingest on serverless** | Blocked by workspace egress policy (`discord.com` is not a trusted domain), not by the code. Notebook 01 runs locally and is unchanged. |
 | **Prisma / an ORM layer** | The source repo removed Prisma; this port never added one. Plain SQL over psycopg. |
