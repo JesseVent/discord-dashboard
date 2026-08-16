@@ -165,6 +165,26 @@ comment flagging the version coupling — **re-evaluate if langgraph is bumped.*
 2. **Rebuild the ZIP + re-run the secret scan** (FEATURES.md and `agent/mlflow_model.py` are new
    files and must be in it).
 3. **Upload `databricks-capstone-submission.zip`**.
+4. **Security dep upgrade — `fix/capstone-deps-security` branch, NOT yet merged.** Clears the 20
+   Dependabot pip alerts (langchain-core 2 critical + high, langgraph medium, streamlit
+   medium/low) via a coordinated major upgrade:
+   - `langchain-core` 0.3.0 → **1.5.3**, `langgraph` 0.2.34 → **1.2.10** (requires
+     langchain-core ≥1.4.7), `databricks-langchain` 0.8.2 → **0.20.0** (requires langchain ≥1.0),
+     `streamlit` 1.45.1 → **1.54.0**. Bumped in both `requirements.txt` and `app/requirements.txt`.
+   - `agent/agent.py`: `create_react_agent(..., state_modifier=...)` → `prompt=...` (the 1.x kwarg;
+     `build_system_prompt()` is a str, drops in directly). `@tool` / `ChatDatabricks(endpoint=...)`
+     are unchanged across the jump.
+   - **Cannot be tested off-Databricks** (Databricks runtime only). Before merging, on the workspace:
+     `uv run --python 3.12 --with -r databricks-capstone/requirements.txt python -m agent.agent chat`
+     → exercise the full read→decide→write loop (DEMO turn 2), then redeploy the Streamlit App and
+     confirm the agent panel + KPIs render. If `ChatDatabricks(endpoint=)` errors on 0.20, switch to
+     `model=` (the AI-Gateway-vs-served-endpoint distinction may have moved).
+   - **After it verifies**, update the now-stale version refs: `FEATURES.md:92`
+     (`state_modifier — the 0.2.34 API` → `prompt — the 1.x API`), `DEMO.md:43` +
+     `capture_demo_turns.sh:27` (`langgraph==0.2.34` → `1.2.10`), `DEMO.md:514`
+     (`langchain-core==0.3.0` → `1.5.3`), and this file's bug-history note at line ~101. Then rebuild
+     the ZIP. The current ZIP on `main` ships the verified 0.2.34 run; do NOT ship the upgraded
+     pins until the demo re-verifies.
 
 **Screenshot capture, if it ever needs redoing:** driving the deployed app through a browser
 extension failed (cross-extension tab access + a competing debugger client). What worked was
